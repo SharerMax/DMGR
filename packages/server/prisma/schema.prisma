@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  username           String              @unique
+  password           String
+  email              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  domains            Domain[]
+  providers          Provider[]
+  notificationChannels NotificationChannel[]
+}
+
+model Provider {
+  id               Int      @id @default(autoincrement())
+  type             String   // 服务商类型: aliyun, tencent, cloudflare, dnspod, namecheap, custom
+  name             String   // 显示名称
+  config           String   // JSON 格式的动态配置
+  supportsAutoRenew Boolean @default(false)  // 是否支持自动续期
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  domains          Domain[]
+
+  @@index([userId])
+}
+
+model Domain {
+  id           Int        @id @default(autoincrement())
+  name         String
+  providerId   Int?
+  provider     Provider?  @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiryDate   DateTime
+  autoRenew    Boolean    @default(false)
+  renewalPrice Float?
+  status       String     @default("active")
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  reminders    Reminder[]
+  dnsRecords   DNSRecord[]
+
+  @@index([userId])
+  @@index([providerId])
+  @@index([expiryDate])
+}
+
+model Reminder {
+  id         Int      @id @default(autoincrement())
+  domainId   Int
+  domain     Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  daysBefore Int
+  notified   Boolean  @default(false)
+  notifyDate DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([domainId])
+}
+
+model NotificationChannel {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String   // email, sms, webhook
+  name            String
+  config          String   // JSON string for config
+  defaultDays     Int      @default(90) // 默认提前天数
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model DNSRecord {
+  id          Int      @id @default(autoincrement())
+  domainId    Int
+  domain      Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  type        String   // A, AAAA, CNAME, MX, TXT, NS, SRV, etc.
+  name        String   // 主机名，如 www, @, mail
+  value       String   // 记录值
+  ttl         Int      @default(3600) // 生存时间（秒）
+  priority    Int?     // MX记录的优先级
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([domainId])
+}
