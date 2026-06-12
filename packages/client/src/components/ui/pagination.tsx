@@ -18,7 +18,7 @@ function Pagination({
 }) {
   const totalPages = Math.ceil(totalItems / itemsPerPage)
 
-  if (totalPages <= 1)
+  if (totalItems === 0)
     return null
 
   const pages = []
