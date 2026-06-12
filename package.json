@@ -3,6 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@11.3.0",
   "engines": {
     "node": ">=22.21"
   },
@@ -14,15 +15,15 @@
     "lint:fix": "eslint --fix ."
   },
   "dependencies": {
-    "date-fns": "^4.4.0",
-    "zod": "^4.4.3"
+    "date-fns": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.0.0",
-    "@eslint-react/eslint-plugin": "^5.8.17",
-    "@types/node": "^22.13.14",
-    "eslint": "^10.4.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "typescript": "^6.0.3"
+    "@antfu/eslint-config": "catalog:",
+    "@eslint-react/eslint-plugin": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-react-refresh": "catalog:",
+    "typescript": "catalog:"
   }
 }

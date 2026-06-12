@@ -10,6 +10,7 @@ export default antfu({
     '*.local',
     '*.db',
     'PROJECT_CONTEXT.md',
+    '**/prisma/generated/**',
   ],
   rules: {
     'no-alert': 'off',

@@ -39,13 +39,15 @@ domain/
 ├── packages/
 │   ├── server/                          # 后端项目
 │   │   ├── prisma/
-│   │   │   ├── schema.prisma           # Prisma 数据模型定义
-│   │   │   ├── seed.ts                 # 数据库种子数据
 │   │   │   ├── dev.db                  # SQLite 数据库文件
-│   │   │   └── migrations/             # Prisma 迁移文件
 │   │   ├── src/
 │   │   │   ├── db/
 │   │   │   │   └── index.ts           # Prisma Client 初始化
+│   │   │   ├── prisma/
+│   │   │   │   ├── schema.prisma           # Prisma 数据模型定义
+│   │   │   │   ├── seed.ts                 # 数据库种子数据
+│   │   │   │   ├── dev.db                  # SQLite 数据库文件
+│   │   │   │   └── migrations/             # Prisma 迁移文件
 │   │   │   ├── models/
 │   │   │   │   ├── user.ts            # 用户模型
 │   │   │   │   ├── domain.ts          # 域名模型

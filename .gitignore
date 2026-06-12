@@ -37,10 +37,10 @@ Desktop.ini
 # Database
 *.db
 *.db-journal
-prisma/migrations/*.db
+packages/**/prisma/migrations/*.db
 
 # Prisma
-prisma/generated
+packages/**/prisma/generated
 
 # TypeScript cache
 *.tsbuildinfo

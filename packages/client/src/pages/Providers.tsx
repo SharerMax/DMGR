@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
 
@@ -319,6 +318,16 @@ export default function Providers() {
               </div>
             )}
 
+            {/* 编辑模式下显示服务商类型 */}
+            {editingProvider && (
+              <div className="space-y-2">
+                <Label>服务商类型</Label>
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  {providerTypes.find(t => t.id === selectedType)?.name}
+                </div>
+              </div>
+            )}
+
             {/* 服务商名称 */}
             <div className="space-y-2">
               <Label htmlFor="name">名称</Label>
@@ -340,22 +349,6 @@ export default function Providers() {
                 {getCurrentType()?.fields.map(field => renderField(field))}
               </div>
             )}
-
-            {/* 自动续期 */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="supportsAutoRenew">支持自动续期</Label>
-                {getCurrentType() && !getCurrentType()?.supportsAutoRenew && (
-                  <p className="text-xs text-gray-500">该服务商不支持自动续期</p>
-                )}
-              </div>
-              <Switch
-                id="supportsAutoRenew"
-                checked={formData.supportsAutoRenew}
-                onCheckedChange={checked => setFormData({ ...formData, supportsAutoRenew: checked })}
-                disabled={!!(getCurrentType() && !getCurrentType()?.supportsAutoRenew)}
-              />
-            </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>

@@ -1,6 +1,6 @@
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import { PrismaClient } from '../../prisma/src/generated/prisma/client'
 import path from 'node:path'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { PrismaClient } from '../../src/prisma/generated/client'
 
 const dbPath = path.join(process.cwd(), 'prisma', 'dev.db')
 
