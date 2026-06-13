@@ -6,6 +6,8 @@ import dnsRecordRoutes from './routes/dnsRecords.js'
 import domainRoutes from './routes/domains.js'
 import notificationChannelRoutes from './routes/notificationChannels.js'
 import providerRoutes from './routes/providers.js'
+import renewalLogRoutes from './routes/renewalLogs.js'
+import { startAutoRenewalScheduler } from './services/autoRenew.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -20,6 +22,7 @@ app.use('/api/providers', providerRoutes)
 app.use('/api/domains', domainRoutes)
 app.use('/api/notification-channels', notificationChannelRoutes)
 app.use('/api/dns-records', dnsRecordRoutes)
+app.use('/api/renewal-logs', renewalLogRoutes)
 
 // 健康检查
 app.get('/api/health', (req, res) => {
@@ -37,6 +40,10 @@ async function start() {
   try {
     // 初始化数据库
     await initDatabase()
+
+    // 启动自动续期定时任务
+    const renewalIntervalHours = Number(process.env.RENEWAL_INTERVAL_HOURS) || 24
+    startAutoRenewalScheduler(renewalIntervalHours)
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`)

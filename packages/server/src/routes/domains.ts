@@ -51,10 +51,25 @@ const reminderSchema = z.object({
   daysBefore: z.number().positive(),
 })
 
-// 获取所有域名
+// 获取所有域名（支持过滤）
 router.get('/', authMiddleware, async (req: any, res) => {
   try {
-    const domains = await getDomainsByUserId(req.userId)
+    // 解析过滤参数
+    const { search, providerId } = req.query
+
+    let domains = await getDomainsByUserId(req.userId)
+
+    // 应用过滤
+    if (search) {
+      const searchTerm = String(search).toLowerCase()
+      domains = domains.filter(d => d.name.toLowerCase().includes(searchTerm))
+    }
+
+    if (providerId) {
+      const providerIdNum = Number(providerId)
+      domains = domains.filter(d => d.providerId === providerIdNum)
+    }
+
     // 为每个域名获取提醒设置
     const domainsWithReminders = await Promise.all(
       domains.map(async domain => ({

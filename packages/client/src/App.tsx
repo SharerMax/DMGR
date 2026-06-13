@@ -1,4 +1,4 @@
-import { Bell, Globe, LogOut, Moon, Server, Sun, SunMoon, User } from 'lucide-react'
+import { Bell, Globe, LogOut, Moon, Server, Sun, SunMoon, User, FileText } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import Login from '@/pages/Login'
 import NotificationChannels from '@/pages/NotificationChannels'
 import Profile from '@/pages/Profile'
 import Providers from '@/pages/Providers'
+import RenewalLogs from '@/pages/RenewalLogs'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 
@@ -64,6 +65,10 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/notification-channels')}>
                   <Bell className="h-4 w-4 mr-2" />
                   通知渠道
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/renewal-logs')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  续期日志
                 </Button>
               </nav>
             </div>
@@ -165,6 +170,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/renewal-logs"
+        element={(
+          <ProtectedRoute>
+            <RenewalLogs />
           </ProtectedRoute>
         )}
       />

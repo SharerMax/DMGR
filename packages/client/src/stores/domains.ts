@@ -31,11 +31,16 @@ interface DomainState {
   domains: Domain[]
   loading: boolean
   error: string | null
-  fetchDomains: () => Promise<void>
+  fetchDomains: (filters?: DomainFilters) => Promise<void>
   createDomain: (data: CreateDomainInput) => Promise<Domain>
   updateDomain: (id: number, data: Partial<CreateDomainInput>) => Promise<Domain>
   deleteDomain: (id: number) => Promise<void>
   addReminder: (domainId: number, daysBefore: number) => Promise<Reminder>
+}
+
+export interface DomainFilters {
+  search?: string
+  providerId?: number | 'all'
 }
 
 export interface CreateDomainInput {
@@ -53,10 +58,21 @@ export const useDomainStore = create<DomainState>(set => ({
   loading: false,
   error: null,
 
-  fetchDomains: async () => {
+  fetchDomains: async (filters?: DomainFilters) => {
     set({ loading: true, error: null })
     try {
-      const response = await api.get('/domains')
+      // 构建查询参数
+      const params = new URLSearchParams()
+      if (filters?.search) {
+        params.append('search', filters.search)
+      }
+      if (filters?.providerId && filters.providerId !== 'all') {
+        params.append('providerId', filters.providerId.toString())
+      }
+
+      const queryString = params.toString()
+      const url = queryString ? `/domains?${queryString}` : '/domains'
+      const response = await api.get(url)
       set({ domains: response.data, loading: false })
     }
     catch (error: any) {

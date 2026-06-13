@@ -48,6 +48,11 @@ export default function Domains() {
   const [editingDNSRecord, setEditingDNSRecord] = useState<DNSRecord | null>(null)
   const [selectedDomainId, setSelectedDomainId] = useState<number | null>(null)
 
+  const [filters, setFilters] = useState({
+    search: '',
+    providerId: 'all',
+  })
+
   const [formData, setFormData] = useState({
     name: '',
     providerId: '',
@@ -66,11 +71,19 @@ export default function Domains() {
     priority: undefined,
   })
 
+  // 当过滤器改变时重新获取数据
   useEffect(() => {
-    fetchDomains()
+    fetchDomains({
+      search: filters.search,
+      providerId: filters.providerId === 'all' ? 'all' : Number(filters.providerId),
+    })
+    setCurrentPage(1)
+  }, [filters, fetchDomains])
+
+  useEffect(() => {
     fetchProviders()
     fetchProviderTypes()
-  }, [fetchDomains, fetchProviders, fetchProviderTypes])
+  }, [fetchProviders, fetchProviderTypes])
 
   useEffect(() => {
     if (selectedDomainId) {
@@ -320,6 +333,56 @@ export default function Domains() {
         </Button>
       </div>
 
+      {/* 过滤器 */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="domain_search">搜索域名</Label>
+              <Input
+                id="domain_search"
+                placeholder="输入域名进行搜索..."
+                value={filters.search}
+                onChange={e => setFilters({ ...filters, search: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="provider_filter">服务商筛选</Label>
+              <Select
+                value={filters.providerId}
+                onValueChange={value => setFilters({ ...filters, providerId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="全部服务商" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部服务商</SelectItem>
+                  {providers.map(p => (
+                    <SelectItem key={p.id} value={p.id.toString()}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {(filters.search || filters.providerId !== 'all') && (
+            <div className="mt-4 flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                共找到 {domains.length} 个域名
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilters({ search: '', providerId: 'all' })}
+              >
+                清除筛选
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="p-0">
           {loading
@@ -329,7 +392,7 @@ export default function Domains() {
             : domains.length === 0
               ? (
                   <div className="text-center py-12 text-gray-500">
-                    暂无域名，点击上方按钮添加
+                    {domains.length === 0 ? '暂无域名，点击上方按钮添加' : '没有找到匹配的域名'}
                   </div>
                 )
               : (

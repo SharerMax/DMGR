@@ -17,6 +17,7 @@ model User {
   domains            Domain[]
   providers          Provider[]
   notificationChannels NotificationChannel[]
+  notificationLogs   NotificationLog[]
 }
 
 model Provider {
@@ -51,6 +52,8 @@ model Domain {
   updatedAt    DateTime   @updatedAt
   reminders    Reminder[]
   dnsRecords   DNSRecord[]
+  renewalLogs  RenewalLog[]
+  notificationLogs NotificationLog[]
 
   @@index([userId])
   @@index([providerId])
@@ -97,4 +100,35 @@ model DNSRecord {
   updatedAt   DateTime @updatedAt
 
   @@index([domainId])
+}
+
+model RenewalLog {
+  id         Int       @id @default(autoincrement())
+  domainId   Int
+  domain     Domain    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  status     String    // pending, processing, completed, failed, skipped
+  message    String?   // 成功/跳过时的消息
+  error      String?   // 失败时的错误信息
+  renewedAt  DateTime? // 实际续期时间（如果成功）
+  createdAt  DateTime  @default(now())
+
+  @@index([domainId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domainId   Int?
+  domain     Domain?   @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  type       String    // expiry_reminder, renewal_success, renewal_failed, sync_completed
+  content    String    // 通知内容
+  channel    String    // 发送渠道
+  sentAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([sentAt])
 }
