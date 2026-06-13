@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react'
+import type { RenewalLog, RenewalLogFilters } from '@/api/renewalLogs'
+import type { DateRange } from '@/components/ui/calendar'
 import { format } from 'date-fns'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from 'react'
+import { getRenewalLogs, getRenewalLogStats } from '@/api/renewalLogs'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateRangePicker } from '@/components/ui/date-picker'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
-import { getRenewalLogs, getRenewalLogStats, type RenewalLog, type RenewalLogFilters } from '@/api/renewalLogs'
-import { useDomainStore } from '@/stores/domains'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
+import { useDomainStore } from '@/stores/domains'
 
 const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-green-500',
@@ -55,36 +57,18 @@ export default function RenewalLogs() {
     totalPages: 0,
   })
 
-  const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({
-    start: null,
-    end: null,
-  })
-
-  useEffect(() => {
-    if (token) {
-      useDomainStore.getState().fetchDomains()
-    }
-  }, [token])
-
-  useEffect(() => {
-    fetchData()
-  }, [filters])
-
-  useEffect(() => {
-    if (token) {
-      fetchStats()
-    }
-  }, [token])
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   const fetchData = async () => {
-    if (!token) return
+    if (!token)
+      return
 
     setLoading(true)
     try {
       const queryFilters: RenewalLogFilters = {
         ...filters,
-        startDate: dateRange.start ? format(dateRange.start, 'yyyy-MM-dd') : undefined,
-        endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') : undefined,
+        startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+        endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       }
 
       const response = await getRenewalLogs(queryFilters)
@@ -109,6 +93,22 @@ export default function RenewalLogs() {
     }
   }
 
+  useEffect(() => {
+    if (token) {
+      useDomainStore.getState().fetchDomains()
+    }
+  }, [token])
+
+  useEffect(() => {
+    fetchData()
+  }, [filters])
+
+  useEffect(() => {
+    if (token) {
+      fetchStats()
+    }
+  }, [token])
+
   const handlePageChange = (newPage: number) => {
     setFilters(prev => ({ ...prev, page: newPage }))
   }
@@ -117,19 +117,19 @@ export default function RenewalLogs() {
     setFilters(prev => ({ ...prev, [key]: value, page: 1 }))
   }
 
-  const handleDateRangeChange = (start: Date | null, end: Date | null) => {
-    setDateRange({ start, end })
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
     setFilters(prev => ({
       ...prev,
-      startDate: start ? format(start, 'yyyy-MM-dd') : undefined,
-      endDate: end ? format(end, 'yyyy-MM-dd') : undefined,
+      startDate: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+      endDate: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
       page: 1,
     }))
   }
 
   const clearFilters = () => {
     setFilters({ page: 1, pageSize: 10 })
-    setDateRange({ start: null, end: null })
+    setDateRange(undefined)
   }
 
   return (
@@ -178,7 +178,10 @@ export default function RenewalLogs() {
               <CardTitle className="text-sm font-medium">成功率</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.successRate}%</div>
+              <div className="text-2xl font-bold">
+                {stats.successRate}
+                %
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -191,18 +194,18 @@ export default function RenewalLogs() {
             <Input
               placeholder="搜索域名..."
               value={filters.domainName || ''}
-              onChange={(e) => handleFilterChange('domainName', e.target.value || undefined)}
+              onChange={e => handleFilterChange('domainName', e.target.value || undefined)}
             />
             <Select
               value={filters.domainId?.toString() || 'all'}
-              onValueChange={(value) => handleFilterChange('domainId', value === 'all' ? undefined : parseInt(value))}
+              onValueChange={value => handleFilterChange('domainId', value === 'all' ? undefined : Number.parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="选择域名" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部域名</SelectItem>
-                {domains.map((domain) => (
+                {domains.map(domain => (
                   <SelectItem key={domain.id} value={domain.id.toString()}>
                     {domain.name}
                   </SelectItem>
@@ -211,7 +214,7 @@ export default function RenewalLogs() {
             </Select>
             <Select
               value={filters.status || 'all'}
-              onValueChange={(value) => handleFilterChange('status', value === 'all' ? undefined : value)}
+              onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="选择状态" />
@@ -225,10 +228,8 @@ export default function RenewalLogs() {
               </SelectContent>
             </Select>
             <DateRangePicker
-              startDate={dateRange.start}
-              endDate={dateRange.end}
-              onStartDateChange={(date) => handleDateRangeChange(date, dateRange.end)}
-              onEndDateChange={(date) => handleDateRangeChange(dateRange.start, date)}
+              value={dateRange}
+              onChange={handleDateRangeChange}
             />
             <Button variant="outline" onClick={clearFilters}>
               清除筛选
@@ -240,55 +241,55 @@ export default function RenewalLogs() {
       {/* 日志列表 */}
       <Card>
         <CardContent className="pt-6">
-          {loading ? (
-            <div className="text-center py-8">加载中...</div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">暂无续期日志</div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>域名</TableHead>
-                    <TableHead>服务商</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>消息</TableHead>
-                    <TableHead>错误信息</TableHead>
-                    <TableHead>创建时间</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-medium">{log.domain?.name || '-'}</TableCell>
-                      <TableCell>{log.domain?.provider?.name || '-'}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={`${STATUS_COLORS[log.status] || 'bg-gray-500'} text-white`}
-                        >
-                          {STATUS_LABELS[log.status] || log.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{log.message || '-'}</TableCell>
-                      <TableCell className="text-red-600">{log.error || '-'}</TableCell>
-                      <TableCell>
-                        {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          {loading
+            ? <div className="text-center py-8">加载中...</div>
+            : logs.length === 0
+              ? <div className="text-center py-8 text-muted-foreground">暂无续期日志</div>
+              : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>域名</TableHead>
+                          <TableHead>服务商</TableHead>
+                          <TableHead>状态</TableHead>
+                          <TableHead>消息</TableHead>
+                          <TableHead>错误信息</TableHead>
+                          <TableHead>创建时间</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {logs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-medium">{log.domain?.name || '-'}</TableCell>
+                            <TableCell>{log.domain?.provider?.name || '-'}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className={`${STATUS_COLORS[log.status] || 'bg-gray-500'} text-white`}
+                              >
+                                {STATUS_LABELS[log.status] || log.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{log.message || '-'}</TableCell>
+                            <TableCell className="text-red-600">{log.error || '-'}</TableCell>
+                            <TableCell>
+                              {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
 
-              {/* 分页 */}
-              <Pagination
-                itemsPerPage={pagination.pageSize}
-                totalItems={pagination.total}
-                currentPage={pagination.page}
-                onPageChange={handlePageChange}
-              />
-            </>
-          )}
+                    {/* 分页 */}
+                    <Pagination
+                      itemsPerPage={pagination.pageSize}
+                      totalItems={pagination.total}
+                      currentPage={pagination.page}
+                      onPageChange={handlePageChange}
+                    />
+                  </>
+                )}
         </CardContent>
       </Card>
     </div>

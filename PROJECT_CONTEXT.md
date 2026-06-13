@@ -60,7 +60,8 @@ domain/
 │   │   │   ├── domains.ts         # 域名路由
 │   │   │   ├── providers.ts       # 服务商路由
 │   │   │   ├── notificationChannels.ts # 通知渠道路由
-│   │   │   └── dnsRecords.ts      # DNS记录路由
+│   │   │   ├── dnsRecords.ts      # DNS记录路由
+│   │   │   └── renewalLogs.ts     # 续期日志路由
 │   │   ├── providers/            # DNS 提供商抽象实现
 │   │   │   ├── base.ts           # 抽象基类
 │   │   │   ├── providers.ts     # 内置服务商配置列表
@@ -73,13 +74,17 @@ domain/
 │   └── client/                         # 前端项目
 │       ├── src/
 │       │   ├── components/
-│       │   │   └── ui/                # shadcn UI 组件
+│       │       │   └── ui/                # shadcn UI 组件
+│       │   │       ├── badge.tsx
 │       │   │       ├── button.tsx
+│       │   │       ├── calendar.tsx   # 日历组件
 │       │   │       ├── card.tsx
+│       │   │       ├── date-picker.tsx # 日期选择组件
 │       │   │       ├── dialog.tsx
 │       │   │       ├── input.tsx
 │       │   │       ├── label.tsx
 │       │   │       ├── pagination.tsx # 分页组件
+│       │   │       ├── popover.tsx   # 弹出层组件
 │       │   │       ├── select.tsx
 │       │   │       ├── switch.tsx
 │       │   │       ├── table.tsx      # 表格组件
@@ -89,8 +94,9 @@ domain/
 │       │   │   └── utils.ts           # 工具函数
 │       │   ├── pages/
 │       │   │   ├── Login.tsx          # 登录/注册页
-│       │   │   ├── Domains.tsx        # 域名管理页（含DNS记录）
+│       │   │   ├── Domains.tsx        # 域名管理页（含DNS记录、域名过滤）
 │       │   │   ├── Providers.tsx      # 服务商管理页
+│       │   │   ├── RenewalLogs.tsx    # 续期日志页（含过滤）
 │       │   │   ├── NotificationChannels.tsx # 通知渠道管理页
 │       │   │   └── Profile.tsx        # 用户信息页
 │       │   ├── stores/
@@ -99,6 +105,8 @@ domain/
 │       │   │   ├── providers.ts      # 服务商状态
 │       │   │   ├── notificationChannels.ts # 通知渠道状态
 │       │   │   └── dnsRecords.ts      # DNS记录状态
+│       │   ├── api/                  # API 函数
+│       │   │   └── renewalLogs.ts    # 续期日志API
 │       │   ├── App.tsx               # 应用入口
 │       │   ├── main.tsx              # React 入口
 │       │   └── index.css             # 全局样式
@@ -452,6 +460,34 @@ model DNSRecord {
 #### DELETE /api/dns-records/:id
 删除DNS记录
 
+### 续期日志接口
+
+#### GET /api/renewal-logs
+获取续期日志列表
+```
+查询参数:
+- domainId: 域名ID
+- domainName: 域名名称（模糊搜索）
+- status: 状态（success/failed/skipped/processing）
+- startDate: 开始日期（yyyy-MM-dd）
+- endDate: 结束日期（yyyy-MM-dd）
+- page: 页码（默认1）
+- pageSize: 每页数量（默认10）
+```
+
+#### GET /api/renewal-logs/stats/summary
+获取续期统计摘要
+```
+响应:
+{
+  total: number,       // 总数
+  success: number,    // 成功数
+  failed: number,     // 失败数
+  skipped: number,    // 跳过数
+  processing: number  // 处理中数
+}
+```
+
 ## 前端状态管理
 
 ### useAuthStore
@@ -636,6 +672,7 @@ cd packages/client && pnpm exec tsc --noEmit
 - `/login` - 登录/注册页
 - `/` - 域名管理页（需要认证）
 - `/providers` - 服务商管理页（需要认证）
+- `/renewal-logs` - 续期日志页（需要认证）
 - `/notification-channels` - 通知渠道管理页（需要认证）
 - `/profile` - 用户信息页（需要认证）
 
@@ -646,6 +683,7 @@ cd packages/client && pnpm exec tsc --noEmit
 - 支持添加、编辑、删除域名
 - 显示域名过期状态（已过期/即将过期/正常）
 - 支持自动续期设置
+- 支持域名搜索过滤和服务商筛选
 
 ### DNS记录管理
 - 点击域名操作栏的设置图标打开 DNS 管理 Dialog
@@ -667,6 +705,12 @@ cd packages/client && pnpm exec tsc --noEmit
 - 支持设置是否支持自动续期
 - 支持一键同步域名（从服务商 API 获取）
 - 配置信息以 JSON 格式存储
+
+### 续期日志管理
+- 续期日志页面用于查看域名续期操作记录
+- 支持按域名、状态、日期范围过滤
+- 使用 Calendar 组件选择日期范围
+- 显示统计卡片（总计、成功、失败、已跳过、成功率）
 
 ### 用户信息管理
 - 查看用户名和注册时间

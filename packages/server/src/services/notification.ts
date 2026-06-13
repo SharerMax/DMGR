@@ -5,11 +5,11 @@
 
 import { prisma } from '../db/index.js'
 
-export type NotificationType =
-  | 'expiry_reminder'  // 域名即将过期提醒
-  | 'renewal_success'  // 续期成功
-  | 'renewal_failed'   // 续期失败
-  | 'sync_completed'    // 同步完成
+export type NotificationType
+  = | 'expiry_reminder' // 域名即将过期提醒
+    | 'renewal_success' // 续期成功
+    | 'renewal_failed' // 续期失败
+    | 'sync_completed' // 同步完成
 
 interface NotificationData {
   domainName: string
@@ -25,7 +25,7 @@ export async function sendNotification(
   userId: number,
   domainId: number,
   type: NotificationType,
-  data: NotificationData
+  data: NotificationData,
 ): Promise<void> {
   // 获取用户的通知渠道
   const channels = await prisma.notificationChannel.findMany({
@@ -92,7 +92,7 @@ function buildNotificationContent(type: NotificationType, data: NotificationData
  */
 async function sendViaChannel(
   channel: { id: number, type: string, name: string, config: string },
-  content: string
+  content: string,
 ): Promise<void> {
   const config = JSON.parse(channel.config)
 
@@ -130,7 +130,7 @@ async function sendWebhook(config: Record<string, any>, content: string): Promis
     throw new Error('Webhook URL 未配置')
   }
 
-  const payload = {
+  const _payload = {
     content,
     timestamp: new Date().toISOString(),
   }
@@ -139,7 +139,7 @@ async function sendWebhook(config: Record<string, any>, content: string): Promis
   // await fetch(url, {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(payload),
+  //   body: JSON.stringify(_payload),
   // })
 
   console.log(`[Notification] Webhook 通知: ${url} - ${content}`)
@@ -174,12 +174,12 @@ export async function checkExpiringDomains(): Promise<void> {
 
   for (const domain of domains) {
     const daysUntilExpiry = Math.ceil(
-      (domain.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (domain.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     )
 
     // 检查是否需要提醒
     const shouldRemind = domain.reminders.some(
-      r => r.daysBefore >= daysUntilExpiry && !r.notified
+      r => r.daysBefore >= daysUntilExpiry && !r.notified,
     )
 
     if (shouldRemind) {

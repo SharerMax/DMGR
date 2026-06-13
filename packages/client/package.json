@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "catalog:",
     "@radix-ui/react-alert-dialog": "catalog:",
     "@radix-ui/react-avatar": "catalog:",
     "@radix-ui/react-checkbox": "catalog:",
     "@radix-ui/react-dialog": "catalog:",
     "@radix-ui/react-dropdown-menu": "catalog:",
     "@radix-ui/react-label": "catalog:",
+    "@radix-ui/react-popover": "catalog:",
     "@radix-ui/react-select": "catalog:",
     "@radix-ui/react-slot": "catalog:",
     "@radix-ui/react-switch": "catalog:",
@@ -25,9 +27,12 @@
     "clsx": "catalog:",
     "date-fns": "catalog:",
     "lucide-react": "catalog:",
+    "radix-ui": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "catalog:",
     "react-dom": "catalog:",
     "react-router-dom": "catalog:",
+    "shadcn": "catalog:",
     "tailwind-merge": "catalog:",
     "zustand": "catalog:"
   },

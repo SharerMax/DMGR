@@ -1,4 +1,4 @@
-import { Bell, Globe, LogOut, Moon, Server, Sun, SunMoon, User, FileText } from 'lucide-react'
+import { Bell, FileText, Globe, LogOut, Moon, Server, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'

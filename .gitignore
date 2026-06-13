@@ -14,6 +14,10 @@ out
 !.env.example
 *.local
 
+# Trae AI
+.trae/agents
+.agents
+
 # Logs
 *.log*
 logs

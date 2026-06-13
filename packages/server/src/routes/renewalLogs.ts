@@ -36,8 +36,8 @@ const querySchema = z.object({
   status: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  page: z.string().optional().transform(v => v ? parseInt(v, 10) : 1),
-  pageSize: z.string().optional().transform(v => v ? parseInt(v, 10) : 20),
+  page: z.string().optional().transform(v => v ? Number.parseInt(v, 10) : 1),
+  pageSize: z.string().optional().transform(v => v ? Number.parseInt(v, 10) : 20),
 })
 
 // 获取续期日志列表
@@ -51,7 +51,7 @@ router.get('/', authMiddleware, async (req: any, res) => {
 
     // 域名过滤：需要关联查询
     if (domainId) {
-      where.domainId = parseInt(domainId, 10)
+      where.domainId = Number.parseInt(domainId, 10)
     }
     if (domainName) {
       where.domain = {
@@ -72,7 +72,7 @@ router.get('/', authMiddleware, async (req: any, res) => {
     if (endDate) {
       where.createdAt = {
         ...where.createdAt,
-        lte: new Date(endDate + 'T23:59:59.999Z'),
+        lte: new Date(`${endDate}T23:59:59.999Z`),
       }
     }
 
@@ -133,7 +133,7 @@ router.get('/', authMiddleware, async (req: any, res) => {
 router.get('/:id', authMiddleware, async (req: any, res) => {
   try {
     const log = await prisma.renewalLog.findUnique({
-      where: { id: parseInt(req.params.id, 10) },
+      where: { id: Number.parseInt(req.params.id, 10) },
       include: {
         domain: {
           include: {

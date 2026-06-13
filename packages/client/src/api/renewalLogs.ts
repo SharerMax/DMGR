@@ -63,13 +63,20 @@ export interface RenewalLogFilters {
 export async function getRenewalLogs(filters: RenewalLogFilters = {}): Promise<RenewalLogsResponse> {
   const params = new URLSearchParams()
 
-  if (filters.domainId) params.append('domainId', filters.domainId.toString())
-  if (filters.domainName) params.append('domainName', filters.domainName)
-  if (filters.status) params.append('status', filters.status)
-  if (filters.startDate) params.append('startDate', filters.startDate)
-  if (filters.endDate) params.append('endDate', filters.endDate)
-  if (filters.page) params.append('page', filters.page.toString())
-  if (filters.pageSize) params.append('pageSize', filters.pageSize.toString())
+  if (filters.domainId)
+    params.append('domainId', filters.domainId.toString())
+  if (filters.domainName)
+    params.append('domainName', filters.domainName)
+  if (filters.status)
+    params.append('status', filters.status)
+  if (filters.startDate)
+    params.append('startDate', filters.startDate)
+  if (filters.endDate)
+    params.append('endDate', filters.endDate)
+  if (filters.page)
+    params.append('page', filters.page.toString())
+  if (filters.pageSize)
+    params.append('pageSize', filters.pageSize.toString())
 
   const response = await api.get<RenewalLogsResponse>(`/renewal-logs?${params.toString()}`)
   return response.data

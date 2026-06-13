@@ -54,18 +54,18 @@ function Pagination({
           size="icon"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          className="h-8 w-8"
+          className="size-8"
         >
-          <ChevronsLeft className="h-4 w-4" />
+          <ChevronsLeft className="size-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="h-8 w-8"
+          className="size-8"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="size-4" />
         </Button>
         {pages.map((page, index) => (
           typeof page === 'number'
@@ -76,7 +76,7 @@ function Pagination({
                   size="icon"
                   onClick={() => onPageChange(page)}
                   className={cn(
-                    'h-8 w-8 min-w-8',
+                    'size-8 min-w-8',
                     currentPage === page && 'bg-primary text-primary-foreground',
                   )}
                 >
@@ -84,7 +84,7 @@ function Pagination({
                 </Button>
               )
             : (
-                <span key={index} className="flex items-center justify-center h-8 w-8 text-sm text-muted-foreground">
+                <span key={index} className="flex size-8 items-center justify-center text-sm text-muted-foreground">
                   ...
                 </span>
               )
@@ -94,18 +94,18 @@ function Pagination({
           size="icon"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="h-8 w-8"
+          className="size-8"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="size-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          className="h-8 w-8"
+          className="size-8"
         >
-          <ChevronsRight className="h-4 w-4" />
+          <ChevronsRight className="size-4" />
         </Button>
       </div>
     </div>

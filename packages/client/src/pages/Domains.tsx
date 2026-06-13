@@ -369,7 +369,11 @@ export default function Domains() {
           {(filters.search || filters.providerId !== 'all') && (
             <div className="mt-4 flex items-center gap-2">
               <span className="text-sm text-gray-500">
-                共找到 {domains.length} 个域名
+                共找到
+                {' '}
+                {domains.length}
+                {' '}
+                个域名
               </span>
               <Button
                 variant="ghost"

@@ -3,6 +3,7 @@ shellEmulator: true
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - undici-types@6.21.0
+  - semver@6.3.1
 packages:
   - 'packages/*'
 allowBuilds:
@@ -14,6 +15,7 @@ allowBuilds:
 catalog:
   '@antfu/eslint-config': ^9.0.0
   '@eslint-react/eslint-plugin': ^5.8.17
+  '@fontsource-variable/geist': ^5.2.9
   '@prisma/adapter-better-sqlite3': ^7.8.0
   '@prisma/client': ^7.8.0
   '@radix-ui/react-alert-dialog': ^1.0.5
@@ -22,6 +24,7 @@ catalog:
   '@radix-ui/react-dialog': ^1.0.5
   '@radix-ui/react-dropdown-menu': ^2.0.6
   '@radix-ui/react-label': ^2.0.2
+  '@radix-ui/react-popover': ^1.1.16
   '@radix-ui/react-select': ^2.0.0
   '@radix-ui/react-slot': ^1.0.2
   '@radix-ui/react-switch': ^1.0.3
@@ -40,7 +43,7 @@ catalog:
   bcryptjs: ^3.0.3
   better-sqlite3: ^12.10.0
   browserslist: ^4.28.2
-  class-variance-authority: ^0.7.0
+  class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   cors: ^2.8.5
   date-fns: ^4.4.0
@@ -51,9 +54,12 @@ catalog:
   lightningcss: ^1.32.0
   lucide-react: ^1.17.0
   prisma: ^7.8.0
+  radix-ui: ^1.5.0
   react: ^19.2.7
+  react-day-picker: ^10.0.1
   react-dom: ^19.2.7
   react-router-dom: ^7.17.0
+  shadcn: ^4.11.0
   tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.0
   tsx: ^4.11.0

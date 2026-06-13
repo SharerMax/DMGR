@@ -3,11 +3,9 @@
  * 定期检查需要续期的域名并自动执行续期
  */
 
-import { differenceInDays, parseISO } from 'date-fns'
+import { differenceInDays } from 'date-fns'
 import { prisma } from '../db/index.js'
-import { BUILT_IN_PROVIDERS } from '../providers/base.js'
 import { getProviderConfig } from '../providers/base.js'
-import { DNSProviderFactory } from '../providers/base.js'
 import { sendNotification } from './notification.js'
 
 // 续期状态
@@ -25,7 +23,7 @@ export interface RenewalResult {
 
 // 续期执行器接口
 export interface RenewalExecutor {
-  renew(domainName: string, config: Record<string, string>): Promise<{ success: boolean, error?: string }>
+  renew: (domainName: string, config: Record<string, string>) => Promise<{ success: boolean, error?: string }>
 }
 
 // 续期记录操作
@@ -33,7 +31,7 @@ export async function createRenewalLog(
   domainId: number,
   status: RenewalStatus,
   message?: string,
-  error?: string
+  error?: string,
 ) {
   return prisma.renewalLog.create({
     data: {
@@ -87,19 +85,21 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
         autoRenew: domain.autoRenew,
         autoRenewDays: domain.autoRenewDays,
       },
-      provider: domain.provider ? {
-        id: domain.provider.id,
-        type: domain.provider.type,
-        config: (() => {
-          try {
-            return JSON.parse(domain.provider!.config)
+      provider: domain.provider
+        ? {
+            id: domain.provider.id,
+            type: domain.provider.type,
+            config: (() => {
+              try {
+                return JSON.parse(domain.provider!.config)
+              }
+              catch {
+                return {}
+              }
+            })(),
+            supportsAutoRenew: domain.provider.supportsAutoRenew,
           }
-          catch {
-            return {}
-          }
-        })(),
-        supportsAutoRenew: domain.provider.supportsAutoRenew,
-      } : null,
+        : null,
     }))
     .filter(({ domain, provider }) => {
       // 检查是否到达续期触发时间
@@ -129,7 +129,7 @@ export async function renewDomain(
   domainId: number,
   domainName: string,
   providerType: string,
-  config: Record<string, string>
+  config: Record<string, string>,
 ): Promise<RenewalResult> {
   // 检查今天是否已经尝试过续期
   const today = new Date()
@@ -290,7 +290,7 @@ export async function executeAutoRenewal(): Promise<{
       domain.id,
       domain.name,
       provider.type,
-      provider.config
+      provider.config,
     )
 
     results.push(result)
@@ -336,13 +336,13 @@ export function startAutoRenewalScheduler(intervalHours: number = 24) {
   const intervalMs = intervalHours * 60 * 60 * 1000
 
   // 立即执行一次
-  executeAutoRenewal().catch(err => {
+  executeAutoRenewal().catch((err) => {
     console.error('[AutoRenew] 自动续期执行失败:', err)
   })
 
   // 设置定时任务
   renewalIntervalId = setInterval(() => {
-    executeAutoRenewal().catch(err => {
+    executeAutoRenewal().catch((err) => {
       console.error('[AutoRenew] 自动续期执行失败:', err)
     })
   }, intervalMs)
