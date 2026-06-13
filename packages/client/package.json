@@ -29,7 +29,6 @@
     "react-dom": "catalog:",
     "react-router-dom": "catalog:",
     "tailwind-merge": "catalog:",
-    "tailwindcss-animate": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
@@ -37,8 +36,10 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "autoprefixer": "catalog:",
+    "browserslist": "catalog:",
+    "lightningcss": "catalog:",
     "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
   }
