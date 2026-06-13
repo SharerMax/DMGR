@@ -1,4 +1,4 @@
-import type { DNSRecord } from '@prisma/client'
+import type { DNSRecord } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
 export type { DNSRecord }

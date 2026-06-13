@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useConfirm } from '@/hooks/useConfirm'
 import { useNotificationChannelStore } from '@/stores/notificationChannels'
 
 const channelTypeConfig = {
@@ -19,6 +20,7 @@ const channelTypeConfig = {
 export default function NotificationChannels() {
   const { channels, loading, fetchChannels, createChannel, updateChannel, deleteChannel }
     = useNotificationChannelStore()
+  const { confirm } = useConfirm()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<typeof channels[0] | null>(null)
   const [formData, setFormData] = useState<CreateChannelInput & { configValue: string }>({
@@ -106,13 +108,19 @@ export default function NotificationChannels() {
   }
 
   const handleDelete = async (id: number) => {
-    if (confirm('确定要删除这个通知渠道吗？')) {
-      try {
-        await deleteChannel(id)
-      }
-      catch (error) {
-        console.error('Delete channel error:', error)
-      }
+    const confirmed = await confirm({
+      title: '删除通知渠道',
+      description: '确定要删除这个通知渠道吗？此操作不可撤销。',
+      confirmText: '删除',
+      destructive: true,
+    })
+    if (!confirmed)
+      return
+    try {
+      await deleteChannel(id)
+    }
+    catch (error) {
+      console.error('Delete channel error:', error)
     }
   }
 

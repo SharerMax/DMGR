@@ -42,6 +42,7 @@ const domainSchema = z.object({
   providerId: z.number().optional().nullable(),
   expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   autoRenew: z.boolean().optional(),
+  autoRenewDays: z.number().int().positive().optional().nullable(), // 自动续期触发阈值
   renewalPrice: z.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
@@ -113,7 +114,7 @@ router.post('/', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Create domain error:', error)
     res.status(500).json({ error: '创建域名失败' })
@@ -134,7 +135,7 @@ router.put('/:id', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Update domain error:', error)
     res.status(500).json({ error: '更新域名失败' })
@@ -177,7 +178,7 @@ router.post('/:id/reminders', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Create reminder error:', error)
     res.status(500).json({ error: '创建提醒失败' })

@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Register error:', error)
     res.status(500).json({ error: '注册失败' })
@@ -92,7 +92,7 @@ router.post('/login', async (req, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Login error:', error)
     res.status(500).json({ error: '登录失败' })
@@ -157,7 +157,7 @@ router.put('/profile', async (req, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Update profile error:', error)
     res.status(500).json({ error: '更新失败' })
@@ -201,7 +201,7 @@ router.put('/password', async (req, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Change password error:', error)
     res.status(500).json({ error: '修改密码失败' })

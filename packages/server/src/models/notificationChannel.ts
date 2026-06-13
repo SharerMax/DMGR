@@ -1,4 +1,4 @@
-import type { NotificationChannel } from '@prisma/client'
+import type { NotificationChannel } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
 export type { NotificationChannel }

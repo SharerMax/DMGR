@@ -26,6 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { useConfirm } from '@/hooks/useConfirm'
 import { useDNSRecordStore } from '@/stores/dnsRecords'
 import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
@@ -34,8 +35,9 @@ const DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'PTR',
 
 export default function Domains() {
   const { domains, loading, fetchDomains, createDomain, updateDomain, deleteDomain } = useDomainStore()
-  const { providers, fetchProviders } = useProviderStore()
+  const { providers, providerTypes, fetchProviders, fetchProviderTypes } = useProviderStore()
   const { records, fetchRecords, createRecord, updateRecord, deleteRecord } = useDNSRecordStore()
+  const { confirm } = useConfirm()
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -51,6 +53,7 @@ export default function Domains() {
     providerId: '',
     expiryDate: '',
     autoRenew: false,
+    autoRenewDays: '',
     renewalPrice: '',
     notes: '',
   })
@@ -66,7 +69,8 @@ export default function Domains() {
   useEffect(() => {
     fetchDomains()
     fetchProviders()
-  }, [fetchDomains, fetchProviders])
+    fetchProviderTypes()
+  }, [fetchDomains, fetchProviders, fetchProviderTypes])
 
   useEffect(() => {
     if (selectedDomainId) {
@@ -76,12 +80,60 @@ export default function Domains() {
 
   const paginatedDomains = domains.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
+  // 渲染自动续期阈值配置字段
+  const renderAutoRenewDaysField = () => {
+    const selectedProvider = providers.find(p => p.id === Number(formData.providerId))
+    const providerType = selectedProvider
+      ? providerTypes.find(t => t.id === selectedProvider.type)
+      : null
+
+    if (providerType?.supportsAutoRenew && providerType.maxRenewalDays) {
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="auto_renew_days">
+            自动续期阈值（天）
+            <span className="text-xs text-gray-500 ml-2">
+              最大:
+              {' '}
+              {providerType.maxRenewalDays}
+              {' '}
+              天
+            </span>
+          </Label>
+          <Input
+            id="auto_renew_days"
+            type="number"
+            min={1}
+            max={providerType.maxRenewalDays}
+            value={formData.autoRenewDays}
+            onChange={e => setFormData({ ...formData, autoRenewDays: e.target.value })}
+            placeholder={`过期前多少天自动续期（最大 ${providerType.maxRenewalDays} 天）`}
+          />
+          <p className="text-xs text-gray-500">
+            域名过期前指定天数时触发自动续期
+          </p>
+        </div>
+      )
+    }
+
+    if (formData.providerId && !providerType?.supportsAutoRenew) {
+      return (
+        <p className="text-sm text-yellow-600">
+          当前服务商不支持自动续期
+        </p>
+      )
+    }
+
+    return null
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
       providerId: '',
       expiryDate: '',
       autoRenew: false,
+      autoRenewDays: '',
       renewalPrice: '',
       notes: '',
     })
@@ -112,6 +164,7 @@ export default function Domains() {
       providerId: domain.providerId?.toString() || '',
       expiryDate: domain.expiryDate.split('T')[0],
       autoRenew: !!domain.autoRenew,
+      autoRenewDays: domain.autoRenewDays?.toString() || '',
       renewalPrice: domain.renewalPrice?.toString() || '',
       notes: domain.notes || '',
     })
@@ -140,11 +193,31 @@ export default function Domains() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // 获取服务商配置以验证 autoRenewDays
+      const selectedProvider = formData.providerId
+        ? providers.find(p => p.id === Number(formData.providerId))
+        : null
+      const providerType = selectedProvider
+        ? providerTypes.find(t => t.id === selectedProvider.type)
+        : null
+
+      // 验证自动续期阈值
+      if (formData.autoRenew && formData.autoRenewDays) {
+        const renewDays = Number(formData.autoRenewDays)
+        if (providerType?.maxRenewalDays && renewDays > providerType.maxRenewalDays) {
+          alert(`自动续期阈值不能超过服务商限制的 ${providerType.maxRenewalDays} 天`)
+          return
+        }
+      }
+
       const data = {
         name: formData.name,
         providerId: formData.providerId ? Number(formData.providerId) : null,
         expiryDate: formData.expiryDate,
         autoRenew: formData.autoRenew,
+        autoRenewDays: formData.autoRenew && formData.autoRenewDays
+          ? Number(formData.autoRenewDays)
+          : null,
         renewalPrice: formData.renewalPrice ? Number(formData.renewalPrice) : null,
         notes: formData.notes || null,
       }
@@ -189,7 +262,13 @@ export default function Domains() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个域名吗？'))
+    const confirmed = await confirm({
+      title: '删除域名',
+      description: '确定要删除这个域名吗？此操作不可撤销。',
+      confirmText: '删除',
+      destructive: true,
+    })
+    if (!confirmed)
       return
     try {
       await deleteDomain(id)
@@ -200,7 +279,13 @@ export default function Domains() {
   }
 
   const handleDNSRecordDelete = async (id: number) => {
-    if (!confirm('确定要删除这个DNS记录吗？'))
+    const confirmed = await confirm({
+      title: '删除DNS记录',
+      description: '确定要删除这个DNS记录吗？此操作不可撤销。',
+      confirmText: '删除',
+      destructive: true,
+    })
+    if (!confirmed)
       return
     try {
       await deleteRecord(id)
@@ -396,6 +481,7 @@ export default function Domains() {
               />
               <Label htmlFor="auto_renew">自动续期</Label>
             </div>
+            {formData.autoRenew && formData.providerId && renderAutoRenewDaysField()}
             <div className="space-y-2">
               <Label htmlFor="renewal_price">续期价格（元）</Label>
               <Input

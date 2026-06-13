@@ -57,7 +57,7 @@ function authMiddleware(req: any, res: any, next: any) {
 const providerSchema = z.object({
   type: z.string().min(1), // 服务商类型
   name: z.string().min(1).max(100),
-  config: z.record(z.string()), // 动态配置
+  config: z.record(z.string(), z.unknown()), // 动态配置
   supportsAutoRenew: z.boolean().optional(),
 })
 
@@ -77,6 +77,7 @@ router.get('/types', (req, res) => {
       description: f.description,
     })),
     supportsAutoRenew: p.supportsAutoRenew,
+    maxRenewalDays: p.maxRenewalDays,
     features: p.features,
   }))
   res.json(types)
@@ -136,7 +137,7 @@ router.post('/', authMiddleware, async (req: any, res) => {
     const provider = await createProvider({
       type: data.type,
       name: data.name,
-      config: data.config,
+      config: data.config as Record<string, string>,
       supportsAutoRenew: providerConfig.supportsAutoRenew,
       userId: req.userId,
     })
@@ -144,7 +145,7 @@ router.post('/', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Create provider error:', error)
     res.status(500).json({ error: '创建服务商失败' })
@@ -177,7 +178,7 @@ router.put('/:id', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Update provider error:', error)
     res.status(500).json({ error: '更新服务商失败' })

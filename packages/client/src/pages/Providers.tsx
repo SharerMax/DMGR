@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useConfirm } from '@/hooks/useConfirm'
 import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
 
@@ -35,6 +36,7 @@ export default function Providers() {
     syncDomains,
   } = useProviderStore()
   const { fetchDomains } = useDomainStore()
+  const { confirm } = useConfirm()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [syncingProvider, setSyncingProvider] = useState<number | null>(null)
@@ -146,7 +148,13 @@ export default function Providers() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个服务商吗？'))
+    const confirmed = await confirm({
+      title: '删除服务商',
+      description: '确定要删除这个服务商吗？此操作不可撤销。',
+      confirmText: '删除',
+      destructive: true,
+    })
+    if (!confirmed)
       return
     try {
       await deleteProvider(id)
@@ -271,6 +279,15 @@ export default function Providers() {
                               {provider.supportsAutoRenew ? '✓ 支持自动续期' : '✗ 不支持自动续期'}
                             </span>
                           </p>
+                          {typeConfig?.supportsAutoRenew && typeConfig.maxRenewalDays && (
+                            <p className="text-sm text-gray-600">
+                              可续期时间: 过期前
+                              {' '}
+                              <span className="font-medium">{typeConfig.maxRenewalDays}</span>
+                              {' '}
+                              天内
+                            </p>
+                          )}
                           <p className="text-gray-400 text-xs">
                             添加于
                             {' '}

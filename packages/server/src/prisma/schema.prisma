@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/prisma/generated"
+  output   = "./generated"
 }
 
 datasource db {
@@ -43,6 +43,7 @@ model Domain {
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiryDate   DateTime
   autoRenew    Boolean    @default(false)
+  autoRenewDays Int?      // 自动续期触发阈值（过期前多少天）
   renewalPrice Float?
   status       String     @default("active")
   notes        String?

@@ -31,6 +31,7 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
       },
     ],
     supportsAutoRenew: true,
+    maxRenewalDays: 30, // 阿里云支持过期前30天内续期
     features: ['域名同步', 'DNS管理', '自动续期'],
   },
   {
@@ -56,6 +57,7 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
       },
     ],
     supportsAutoRenew: true,
+    maxRenewalDays: 60, // 腾讯云支持过期前60天内续期
     features: ['域名同步', 'DNS管理', '自动续期'],
   },
   {
@@ -131,6 +133,7 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
       },
     ],
     supportsAutoRenew: true,
+    maxRenewalDays: 90, // Namecheap 支持过期前90天内续期
     features: ['域名同步', 'DNS管理'],
   },
   {

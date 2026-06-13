@@ -71,6 +71,7 @@ export interface ProviderConfig {
   description?: string
   fields: ProviderField[]
   supportsAutoRenew: boolean
+  maxRenewalDays?: number // 过期前最大可续期天数（仅 supportsAutoRenew=true 时有效）
   features: string[]
 }
 

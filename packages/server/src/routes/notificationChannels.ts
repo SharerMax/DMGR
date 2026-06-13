@@ -79,7 +79,7 @@ router.post('/', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Create channel error:', error)
     res.status(500).json({ error: '创建通知渠道失败' })
@@ -99,7 +99,7 @@ router.put('/:id', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Update channel error:', error)
     res.status(500).json({ error: '更新通知渠道失败' })

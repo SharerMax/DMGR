@@ -1,4 +1,4 @@
-import type { Domain } from '@prisma/client'
+import type { Domain } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
 export type { Domain }
@@ -13,6 +13,7 @@ export interface CreateDomainInput {
   userId: number
   expiryDate: string
   autoRenew?: boolean
+  autoRenewDays?: number | null
   renewalPrice?: number | null
   notes?: string | null
 }
@@ -25,6 +26,7 @@ export async function createDomain(input: CreateDomainInput): Promise<Domain> {
       userId: input.userId,
       expiryDate: new Date(input.expiryDate),
       autoRenew: input.autoRenew ?? false,
+      autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,
       notes: input.notes,
     },
@@ -76,6 +78,7 @@ export interface UpdateDomainInput {
   providerId?: number | null
   expiryDate?: string
   autoRenew?: boolean
+  autoRenewDays?: number | null
   renewalPrice?: number | null
   status?: string
   notes?: string | null
@@ -92,6 +95,7 @@ export async function updateDomain(
       providerId: input.providerId,
       expiryDate: input.expiryDate ? new Date(input.expiryDate) : undefined,
       autoRenew: input.autoRenew,
+      autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,
       status: input.status,
       notes: input.notes,

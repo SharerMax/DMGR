@@ -1,4 +1,4 @@
-import type { Provider } from '@prisma/client'
+import type { Provider } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
 export type { Provider }
