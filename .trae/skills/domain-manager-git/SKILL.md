@@ -64,6 +64,50 @@ git merge feature/your-feature-name
 git push origin main
 ```
 
+## 主流 Shell 兼容性
+
+Git 命令在不同 shell 中的语法差异：
+
+### Bash / Zsh / Fish
+
+```bash
+# 多行提交信息（使用 HEREDOC）
+git commit -m "$(cat <<'EOF'
+feat: 添加新功能
+
+- 功能描述
+- 变更内容
+
+BREAKING CHANGE: 破坏性变更说明
+EOF
+)"
+
+# 或使用外部文件
+git commit -F commit-message.txt
+```
+
+### PowerShell
+
+PowerShell 不支持 HEREDOC 语法，使用 `-m` 多次叠加：
+
+```powershell
+# 多行提交信息（使用多个 -m）
+git commit -m "feat: 添加新功能" `
+  -m "- 功能描述" `
+  -m "- 变更内容" `
+  -m "" `
+  -m "BREAKING CHANGE: 破坏性变更说明"
+
+# 或使用 here-string
+$msg = @"
+feat: 添加新功能
+
+- 功能描述
+- 变更内容
+"@
+git commit -m $msg
+```
+
 ## 提交信息规范
 
 ### 格式
@@ -92,15 +136,21 @@ git push origin main
 ### 示例
 
 ```bash
-# 好的提交信息
-git commit -m "feat(domains): 添加域名自动续期配置"
-git commit -m "fix(pagination): 修复分页组件在数据少时不显示的问题"
-git commit -m "docs: 更新 README 中的部署说明"
+# Bash/Zsh 多行提交（推荐）
+git commit -m "feat(domains): 添加域名自动续期配置" -m "- 支持设置自动续期阈值" -m "- 添加服务商续期时间展示"
 
-# 不好的提交信息
-git commit -m "update"           # 太模糊
-git commit -m "fix bug"         # 缺少类型
-git commit -m "WIP"              # 不清晰
+# PowerShell 多行提交
+git commit -m "feat(domains): 添加域名自动续期配置" `
+  -m "- 支持设置自动续期阈值" `
+  -m "- 添加服务商续期时间展示"
+
+# 修改最后一次提交
+git commit --amend -m "新的提交信息"
+
+# 带详细说明的提交
+git commit -m "fix(pagination): 修复分页组件在数据少时不显示的问题" `
+  -m "问题：数据量小于一页时，分页组件被隐藏" `
+  -m "解决：将条件判断从 totalPages <= 1 改为 totalItems === 0"
 ```
 
 ## 避免的操作
