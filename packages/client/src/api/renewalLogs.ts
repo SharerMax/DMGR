@@ -53,6 +53,7 @@ export interface RenewalLogsResponse {
 export interface RenewalLogFilters {
   domainId?: number
   domainName?: string
+  providerId?: number
   status?: string
   startDate?: string
   endDate?: string

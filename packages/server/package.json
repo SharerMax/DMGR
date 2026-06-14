@@ -10,11 +10,13 @@
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/client": "catalog:",
+    "@types/node-cron": "catalog:",
     "bcryptjs": "catalog:",
     "better-sqlite3": "catalog:",
     "cors": "catalog:",
     "express": "catalog:",
     "jsonwebtoken": "catalog:",
+    "node-cron": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -25,6 +27,5 @@
     "prisma": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
-
   }
 }

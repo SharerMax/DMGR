@@ -1,4 +1,4 @@
-import { Bell, FileText, Globe, LogOut, Moon, Server, Sun, SunMoon, User } from 'lucide-react'
+import { Bell, FileText, Globe, LogOut, Moon, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ConfirmDialogProvider, useConfirm } from '@/hooks/useConfirm'
+import AutoRenewConfig from '@/pages/AutoRenewConfig'
 import Domains from '@/pages/Domains'
 import Login from '@/pages/Login'
 import NotificationChannels from '@/pages/NotificationChannels'
@@ -69,6 +70,10 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/renewal-logs')}>
                   <FileText className="h-4 w-4 mr-2" />
                   续期日志
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auto-renew-config')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  续期配置
                 </Button>
               </nav>
             </div>
@@ -178,6 +183,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <RenewalLogs />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/auto-renew-config"
+        element={(
+          <ProtectedRoute>
+            <AutoRenewConfig />
           </ProtectedRoute>
         )}
       />

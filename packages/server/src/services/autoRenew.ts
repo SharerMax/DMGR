@@ -4,6 +4,7 @@
  */
 
 import { differenceInDays } from 'date-fns'
+import cron from 'node-cron'
 import { prisma } from '../db/index.js'
 import { getProviderConfig } from '../providers/base.js'
 import { sendNotification } from './notification.js'
@@ -329,11 +330,14 @@ export async function executeAutoRenewal(): Promise<{
 }
 
 // 启动定时任务
-let renewalIntervalId: NodeJS.Timeout | null = null
+let renewalTask: ReturnType<typeof cron.schedule> | undefined
+let currentCronExpression: string = '0 2 * * *' // 默认每天凌晨2点
 
-export function startAutoRenewalScheduler(intervalHours: number = 24) {
-  // 检查间隔（默认 24 小时）
-  const intervalMs = intervalHours * 60 * 60 * 1000
+export function startAutoRenewalScheduler(cronExpression: string = '0 2 * * *') {
+  // 停止已有的定时任务
+  stopAutoRenewalScheduler()
+
+  currentCronExpression = cronExpression
 
   // 立即执行一次
   executeAutoRenewal().catch((err) => {
@@ -341,19 +345,33 @@ export function startAutoRenewalScheduler(intervalHours: number = 24) {
   })
 
   // 设置定时任务
-  renewalIntervalId = setInterval(() => {
+  console.log(`[AutoRenew] 开始设置定时任务，cron: ${cronExpression}`)
+  renewalTask = cron.schedule(cronExpression, () => {
     executeAutoRenewal().catch((err) => {
       console.error('[AutoRenew] 自动续期执行失败:', err)
     })
-  }, intervalMs)
+  })
 
-  console.log(`[AutoRenew] 自动续期定时任务已启动，每 ${intervalHours} 小时执行一次`)
+  console.log(`[AutoRenew] 自动续期定时任务已启动，cron: ${cronExpression}`)
+}
+
+export function updateAutoRenewalSchedule(cronExpression: string) {
+  if (cronExpression === currentCronExpression) {
+    return
+  }
+
+  startAutoRenewalScheduler(cronExpression)
 }
 
 export function stopAutoRenewalScheduler() {
-  if (renewalIntervalId) {
-    clearInterval(renewalIntervalId)
-    renewalIntervalId = null
+  if (renewalTask) {
+    renewalTask.stop()
+    renewalTask = undefined
+    currentCronExpression = ''
     console.log('[AutoRenew] 自动续期定时任务已停止')
   }
+}
+
+export function getCurrentCronExpression(): string {
+  return currentCronExpression
 }

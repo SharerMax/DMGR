@@ -3,11 +3,11 @@ import type { DateRange } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { useEffect, useState } from 'react'
 import { getRenewalLogs, getRenewalLogStats } from '@/api/renewalLogs'
+import { DomainFilter } from '@/components/DomainFilter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -190,50 +190,41 @@ export default function RenewalLogs() {
       {/* 筛选器 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Input
-              placeholder="搜索域名..."
-              value={filters.domainName || ''}
-              onChange={e => handleFilterChange('domainName', e.target.value || undefined)}
+          <div className="space-y-4">
+            {/* 域名过滤 - 使用统一组件 */}
+            <DomainFilter
+              domains={domains}
+              search={filters.domainName || ''}
+              providerId={filters.providerId?.toString() || 'all'}
+              onSearchChange={value => handleFilterChange('domainName', value || undefined)}
+              onProviderChange={value => handleFilterChange('providerId', value === 'all' ? undefined : Number(value))}
+              showProviderFilter={true}
             />
-            <Select
-              value={filters.domainId?.toString() || 'all'}
-              onValueChange={value => handleFilterChange('domainId', value === 'all' ? undefined : Number.parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择域名" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部域名</SelectItem>
-                {domains.map(domain => (
-                  <SelectItem key={domain.id} value={domain.id.toString()}>
-                    {domain.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="completed">成功</SelectItem>
-                <SelectItem value="failed">失败</SelectItem>
-                <SelectItem value="pending">处理中</SelectItem>
-                <SelectItem value="skipped">已跳过</SelectItem>
-              </SelectContent>
-            </Select>
-            <DateRangePicker
-              value={dateRange}
-              onChange={handleDateRangeChange}
-            />
-            <Button variant="outline" onClick={clearFilters}>
-              清除筛选
-            </Button>
+            {/* 状态和日期筛选 */}
+            <div className="flex flex-wrap gap-4">
+              <Select
+                value={filters.status || 'all'}
+                onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="completed">成功</SelectItem>
+                  <SelectItem value="failed">失败</SelectItem>
+                  <SelectItem value="pending">处理中</SelectItem>
+                  <SelectItem value="skipped">已跳过</SelectItem>
+                </SelectContent>
+              </Select>
+              <DateRangePicker
+                value={dateRange}
+                onChange={handleDateRangeChange}
+              />
+              <Button variant="outline" onClick={clearFilters}>
+                清除筛选
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,201 +1,80 @@
 ---
 name: "domain-manager-backend"
-description: "Backend development for Domain Manager Express server. Invoke when working on API routes, Prisma models, DNS providers, or database operations in packages/server."
+description: "Backend development for Domain Manager Express server. Invoke when working on API routes, models, DNS providers, services, or database schema in packages/server."
 ---
 
 # Domain Manager Backend
 
-Backend development skill for the Domain Manager Express application.
+Express + Prisma + SQLite + JWT + Zod
 
-## Project Context
-
-- **Runtime**: Node.js (ES Module)
-- **Framework**: Express
-- **Database**: SQLite + Prisma ORM
-- **Authentication**: JWT
-- **Validation**: Zod
-- **Dev Tool**: tsx for TypeScript execution
-
-## Key Paths
+## 目录结构
 
 ```
-packages/server/
+packages/server/src/
+├── index.ts             # 服务器入口（路由注册、中间件）
+├── db/index.ts          # Prisma Client 初始化
 ├── prisma/
-│   └── dev.db           # SQLite database file
-├── src/
-│   ├── index.ts         # Server entry point
-│   ├── db/
-│   │   └── index.ts     # Prisma client initialization
-│   ├── prisma/
-│   │   ├── schema.prisma     # Database schema
-│   │   ├── seed.ts           # Seed data
-│   │   ├── generated/        # Generated Prisma client
-│   │   └── migrations/       # Migration history
-│   ├── models/
-│   │   ├── user.ts
-│   │   ├── domain.ts
-│   │   ├── provider.ts
-│   │   ├── reminder.ts
-│   │   ├── notificationChannel.ts
-│   │   └── dnsRecord.ts
-│   ├── routes/
-│   │   ├── auth.ts      # Authentication routes
-│   │   ├── domains.ts   # Domain CRUD
-│   │   ├── providers.ts # Provider management + sync
-│   │   ├── notificationChannels.ts
-│   │   └── dnsRecords.ts
-│   └── providers/
-│       ├── base.ts      # Abstract DNS provider
-│       ├── providers.ts # Built-in provider configs
-│       ├── aliyun.ts    # Aliyun implementation
-│       ├── aliyun-syncer.ts
-│       └── index.ts
-├── package.json
-├── prisma.config.ts     # Prisma configuration
-└── tsconfig.json
+│   ├── schema.prisma    # 数据模型（注意路径是 src/prisma/）
+│   ├── seed.ts          # 种子数据
+│   ├── generated/       # Prisma Client 输出
+│   └── migrations/
+├── models/              # 业务模型（含 authMiddleware）
+├── routes/              # API 路由
+│   ├── auth.ts          # /api/auth
+│   ├── domains.ts       # /api/domains
+│   ├── providers.ts     # /api/providers
+│   ├── notificationChannels.ts  # /api/notification-channels
+│   ├── dnsRecords.ts    # /api/dns-records
+│   └── renewalLogs.ts   # /api/renewal-logs
+├── services/
+│   ├── autoRenew.ts     # 自动续期服务
+│   └── notification.ts  # 通知服务
+└── providers/           # DNS 服务商抽象
+    ├── base.ts          # 抽象基类
+    ├── providers.ts     # 内置服务商配置
+    ├── aliyun.ts        # 阿里云实现
+    └── aliyun-syncer.ts # 阿里云域名同步
 ```
 
-## Database Schema
+## 数据模型关系
 
-### Core Models
-
-- **User**: id, username, password, email
-- **Domain**: id, name, providerId, userId, expiryDate, autoRenew, renewalPrice, status, notes
-- **Provider**: id, type, name, config (JSON), supportsAutoRenew, userId
-- **Reminder**: id, domainId, daysBefore, notified, notifyDate
-- **NotificationChannel**: id, userId, type, name, config (JSON), defaultDays, isActive
-- **DNSRecord**: id, domainId, type, name, value, ttl, priority
-
-## API Routes Pattern
-
-All routes use:
-- JWT authentication via middleware
-- Zod for request validation
-- Error handling with appropriate HTTP status codes
-
-### Example Route Structure
-
-```typescript
-import { Router } from 'express'
-import { z } from 'zod'
-import { authenticate } from '@/middleware/auth'
-import { prisma } from '@/db'
-
-const router = Router()
-
-// GET /api/resource - List all
-router.get('/', authenticate, async (req, res) => {
-  const items = await prisma.resource.findMany({
-    where: { userId: req.userId }
-  })
-  res.json(items)
-})
-
-// POST /api/resource - Create
-router.post('/', authenticate, async (req, res) => {
-  const data = someSchema.parse(req.body)
-  const item = await prisma.resource.create({
-    data: { ...data, userId: req.userId }
-  })
-  res.json(item)
-})
-
-export default router
+```
+User ─┬─> Provider ──> Domain
+      ├─> Domain ─┬─> Reminder
+      │           ├─> DNSRecord
+      │           ├─> RenewalLog
+      │           └─> NotificationLog
+      ├─> NotificationChannel
+      └─> NotificationLog
 ```
 
-## Provider System
+关键字段:
+- Domain: `autoRenew`, `autoRenewDays`, `expiryDate`, `status`
+- Provider: `config` (JSON string), `supportsAutoRenew`
+- NotificationChannel: `config` (JSON string), `defaultDays`, `isActive`
 
-### Provider Types
+## 路由开发
 
-Defined in `src/providers/providers.ts`:
-- aliyun: Aliyun DNS
-- tencent: Tencent Cloud
-- cloudflare: Cloudflare
-- dnspod: DNSPod
-- namecheap: Namecheap
-- custom: Custom provider
+1. 在 `routes/` 创建路由文件
+2. 用 Zod 验证输入，`authMiddleware` 保护路由
+3. 在 `index.ts` 注册: `app.use('/api/xxx', xxxRoutes)`
+4. 导入用 `.js` 扩展名: `import { prisma } from '../db/index.js'`
 
-### Provider Interface
+## DNS Provider 系统
 
-```typescript
-interface ProviderField {
-  key: string
-  label: string
-  type: 'text' | 'password' | 'url'
-  required: boolean
-  placeholder?: string
-  description?: string
-}
+服务商类型: aliyun, tencent, cloudflare, dnspod, namecheap, custom
 
-interface ProviderType {
-  id: string
-  name: string
-  description?: string
-  fields: ProviderField[]
-  supportsAutoRenew: boolean
-  features: string[]
-}
-```
+每个 Provider 实现:
+- `getDNSRecords(domain)` / `addDNSRecord(domain, record)`
+- `updateDNSRecord(domain, recordId, record)` / `deleteDNSRecord(domain, recordId)`
 
-### DNS Operations
+添加新 Provider:
+1. 在 `providers/` 创建类，继承抽象基类
+2. 在 `providers.ts` 添加配置
+3. 在工厂/注册表中注册
 
-Each provider implements:
-- `getDNSRecords(domain)`: Fetch DNS records
-- `addDNSRecord(domain, record)`: Add new record
-- `updateDNSRecord(domain, recordId, record)`: Update existing record
-- `deleteDNSRecord(domain, recordId)`: Delete record
+## 认证
 
-## Commands
-
-```bash
-cd packages/server
-
-# Database operations
-pnpm prisma generate        # Generate Prisma client
-pnpm prisma migrate dev     # Create migrations
-pnpm prisma db push         # Push schema changes
-pnpm prisma db seed         # Seed data
-pnpm prisma studio          # Open database GUI
-
-# Development
-pnpm dev                    # Run with tsx
-
-# Type check
-pnpm exec tsc --noEmit
-```
-
-## Common Tasks
-
-### Adding a New API Route
-
-1. Create schema validation with Zod in the route file
-2. Add CRUD handlers
-3. Use `authenticate` middleware for user-specific data
-4. Register route in `src/index.ts`
-
-### Modifying Database Schema
-
-1. Update `src/prisma/schema.prisma`
-2. Run `pnpm prisma migrate dev`
-3. Update TypeScript types if needed
-4. Regenerate Prisma client: `pnpm prisma generate`
-
-### Adding New DNS Provider
-
-1. Create provider class extending base abstract class
-2. Implement all required methods
-3. Add provider config to `src/providers/providers.ts`
-4. Register in the provider factory/registry
-
-## Authentication
-
-- JWT token generated on login/register
-- Token passed via `Authorization: Bearer <token>` header
-- Middleware validates token and attaches userId to request
-- Token expiration: 7 days
-
-## Testing
-
-Test credentials (seed data):
-- Username: `admin`
-- Password: `password123`
+- JWT Bearer token，有效期 7 天
+- `authMiddleware` 验证后挂载 `req.user`
+- 用户只能访问自己的数据（查询必须包含 userId 过滤）

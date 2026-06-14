@@ -38,15 +38,13 @@
 domain/
 ├── packages/
 │   ├── server/                          # 后端项目
-│   │   ├── prisma/
-│   │   │   ├── dev.db                  # SQLite 数据库文件
 │   │   ├── src/
 │   │   │   ├── db/
 │   │   │   │   └── index.ts           # Prisma Client 初始化
 │   │   │   ├── prisma/
 │   │   │   │   ├── schema.prisma           # Prisma 数据模型定义
 │   │   │   │   ├── seed.ts                 # 数据库种子数据
-│   │   │   │   ├── dev.db                  # SQLite 数据库文件
+│   │   │   │   ├── generated/              # Prisma Client 生成输出
 │   │   │   │   └── migrations/             # Prisma 迁移文件
 │   │   │   ├── models/
 │   │   │   │   ├── user.ts            # 用户模型
@@ -56,39 +54,47 @@ domain/
 │   │   │   │   ├── notificationChannel.ts # 通知渠道模型
 │   │   │   │   └── dnsRecord.ts       # DNS记录模型
 │   │   │   ├── routes/
-│   │   │   ├── auth.ts            # 认证路由
-│   │   │   ├── domains.ts         # 域名路由
-│   │   │   ├── providers.ts       # 服务商路由
-│   │   │   ├── notificationChannels.ts # 通知渠道路由
-│   │   │   ├── dnsRecords.ts      # DNS记录路由
-│   │   │   └── renewalLogs.ts     # 续期日志路由
-│   │   ├── providers/            # DNS 提供商抽象实现
-│   │   │   ├── base.ts           # 抽象基类
-│   │   │   ├── providers.ts     # 内置服务商配置列表
-│   │   │   ├── aliyun.ts         # 阿里云 DNS 实现
-│   │   │   ├── aliyun-syncer.ts  # 阿里云域名同步器
-│   │   │   └── index.ts          # 导出
-│   │   └── index.ts               # 服务器入口
+│   │   │   │   ├── auth.ts            # 认证路由
+│   │   │   │   ├── domains.ts         # 域名路由
+│   │   │   │   ├── providers.ts       # 服务商路由
+│   │   │   │   ├── notificationChannels.ts # 通知渠道路由
+│   │   │   │   ├── dnsRecords.ts      # DNS记录路由
+│   │   │   │   └── renewalLogs.ts     # 续期日志路由
+│   │   │   ├── services/
+│   │   │   │   ├── autoRenew.ts       # 自动续期服务
+│   │   │   │   └── notification.ts    # 通知服务
+│   │   │   ├── providers/             # DNS 提供商抽象实现
+│   │   │   │   ├── base.ts            # 抽象基类
+│   │   │   │   ├── providers.ts       # 内置服务商配置列表
+│   │   │   │   ├── aliyun.ts          # 阿里云 DNS 实现
+│   │   │   │   ├── aliyun-syncer.ts   # 阿里云域名同步器
+│   │   │   │   └── index.ts           # 导出
+│   │   │   └── index.ts               # 服务器入口
 │   │   └── package.json
 │   │
 │   └── client/                         # 前端项目
 │       ├── src/
 │       │   ├── components/
-│       │       │   └── ui/                # shadcn UI 组件
-│       │   │       ├── badge.tsx
-│       │   │       ├── button.tsx
-│       │   │       ├── calendar.tsx   # 日历组件
-│       │   │       ├── card.tsx
-│       │   │       ├── date-picker.tsx # 日期选择组件
-│       │   │       ├── dialog.tsx
-│       │   │       ├── input.tsx
-│       │   │       ├── label.tsx
-│       │   │       ├── pagination.tsx # 分页组件
-│       │   │       ├── popover.tsx   # 弹出层组件
-│       │   │       ├── select.tsx
-│       │   │       ├── switch.tsx
-│       │   │       ├── table.tsx      # 表格组件
-│       │   │       └── textarea.tsx
+│       │   │   ├── ui/                 # shadcn UI 组件
+│       │   │   │   ├── alert-dialog.tsx
+│       │   │   │   ├── badge.tsx
+│       │   │   │   ├── button.tsx
+│       │   │   │   ├── calendar.tsx    # 日历组件
+│       │   │   │   ├── card.tsx
+│       │   │   │   ├── date-picker.tsx # 日期选择组件
+│       │   │   │   ├── dialog.tsx
+│       │   │   │   ├── dropdown-menu.tsx
+│       │   │   │   ├── input.tsx
+│       │   │   │   ├── label.tsx
+│       │   │   │   ├── pagination.tsx  # 分页组件
+│       │   │   │   ├── popover.tsx     # 弹出层组件
+│       │   │   │   ├── select.tsx
+│       │   │   │   ├── switch.tsx
+│       │   │   │   ├── table.tsx       # 表格组件
+│       │   │   │   └── textarea.tsx
+│       │   │   └── DomainFilter.tsx    # 域名过滤组件
+│       │   ├── hooks/
+│       │   │   └── useConfirm.tsx      # 确认对话框 Hook
 │       │   ├── lib/
 │       │   │   ├── api.ts             # API 客户端
 │       │   │   └── utils.ts           # 工具函数
@@ -97,25 +103,33 @@ domain/
 │       │   │   ├── Domains.tsx        # 域名管理页（含DNS记录、域名过滤）
 │       │   │   ├── Providers.tsx      # 服务商管理页
 │       │   │   ├── RenewalLogs.tsx    # 续期日志页（含过滤）
+│       │   │   ├── AutoRenewConfig.tsx # 自动续期配置页
 │       │   │   ├── NotificationChannels.tsx # 通知渠道管理页
 │       │   │   └── Profile.tsx        # 用户信息页
 │       │   ├── stores/
 │       │   │   ├── auth.ts           # 认证状态
-│       │   │   ├── domains.ts         # 域名状态
+│       │   │   ├── domains.ts        # 域名状态
 │       │   │   ├── providers.ts      # 服务商状态
 │       │   │   ├── notificationChannels.ts # 通知渠道状态
-│       │   │   └── dnsRecords.ts      # DNS记录状态
-│       │   ├── api/                  # API 函数
+│       │   │   ├── dnsRecords.ts     # DNS记录状态
+│       │   │   └── theme.ts          # 主题状态（亮色/暗色/跟随系统）
+│       │   ├── api/
 │       │   │   └── renewalLogs.ts    # 续期日志API
-│       │   ├── App.tsx               # 应用入口
+│       │   ├── App.tsx               # 应用入口（含路由、布局、主题切换）
 │       │   ├── main.tsx              # React 入口
 │       │   └── index.css             # 全局样式
 │       └── package.json
 │
-├── package.json                        # 根 package.json
-├── pnpm-workspace.yaml                # pnpm 工作区配置
-├── eslint.config.js                   # ESLint 配置
-├── tsconfig.json                      # TypeScript 配置
+├── .trae/
+│   ├── rules/
+│   │   ├── build.md                  # 构建规则
+│   │   └── project_context.md        # 项目上下文规则
+│   └── skills/                       # 自定义 Skills
+│       └── domain-manager-*.md       # 以 domain-manager- 开头的 skill 文件
+├── package.json                      # 根 package.json
+├── pnpm-workspace.yaml              # pnpm 工作区配置
+├── eslint.config.js                 # ESLint 配置
+├── tsconfig.json                    # TypeScript 配置
 └── .gitignore
 ```
 
@@ -133,6 +147,7 @@ model User {
   domains            Domain[]
   providers          Provider[]
   notificationChannels NotificationChannel[]
+  notificationLogs   NotificationLog[]
 }
 ```
 
@@ -165,6 +180,7 @@ model Domain {
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiryDate   DateTime
   autoRenew    Boolean    @default(false)
+  autoRenewDays Int?      // 自动续期触发阈值（过期前多少天）
   renewalPrice Float?
   status       String     @default("active")
   notes        String?
@@ -172,6 +188,12 @@ model Domain {
   updatedAt    DateTime   @updatedAt
   reminders    Reminder[]
   dnsRecords   DNSRecord[]
+  renewalLogs  RenewalLog[]
+  notificationLogs NotificationLog[]
+
+  @@index([userId])
+  @@index([providerId])
+  @@index([expiryDate])
 }
 ```
 
@@ -185,6 +207,8 @@ model Reminder {
   notified   Boolean   @default(false)
   notifyDate DateTime?
   createdAt  DateTime  @default(now())
+
+  @@index([domainId])
 }
 ```
 
@@ -201,6 +225,8 @@ model NotificationChannel {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }
 ```
 
@@ -210,13 +236,52 @@ model DNSRecord {
   id          Int      @id @default(autoincrement())
   domainId    Int
   domain      Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  type        String   // A, AAAA, CNAME, MX, TXT, NS, SRV, CAA, PTR, SOA
+  type        String   // A, AAAA, CNAME, MX, TXT, NS, SRV, etc.
   name        String   // 主机名，如 www, @, mail
   value       String   // 记录值
   ttl         Int      @default(3600) // 生存时间（秒）
   priority    Int?     // MX记录的优先级
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([domainId])
+}
+```
+
+### RenewalLog (续期日志)
+```prisma
+model RenewalLog {
+  id         Int       @id @default(autoincrement())
+  domainId   Int
+  domain     Domain    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  status     String    // pending, processing, completed, failed, skipped
+  message    String?   // 成功/跳过时的消息
+  error      String?   // 失败时的错误信息
+  renewedAt  DateTime? // 实际续期时间（如果成功）
+  createdAt  DateTime  @default(now())
+
+  @@index([domainId])
+  @@index([status])
+  @@index([createdAt])
+}
+```
+
+### NotificationLog (通知日志)
+```prisma
+model NotificationLog {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domainId   Int?
+  domain     Domain?   @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  type       String    // expiry_reminder, renewal_success, renewal_failed, sync_completed
+  content    String    // 通知内容
+  channel    String    // 发送渠道
+  sentAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([sentAt])
 }
 ```
 
@@ -488,6 +553,31 @@ model DNSRecord {
 }
 ```
 
+#### GET /api/renewal-logs/config
+获取自动续期配置
+```
+响应:
+{
+  enabled: boolean,
+  triggerMode: "manual" | "scheduled",
+  cronExpression: string
+}
+```
+
+#### PUT /api/renewal-logs/config
+更新自动续期配置
+```json
+请求体:
+{
+  "enabled": true,
+  "triggerMode": "scheduled",
+  "cronExpression": "0 2 * * *"
+}
+```
+
+#### POST /api/renewal-logs/trigger
+手动触发续期检查
+
 ## 前端状态管理
 
 ### useAuthStore
@@ -614,6 +704,33 @@ interface CreateDNSRecordInput {
 }
 ```
 
+### useThemeStore
+```typescript
+type ThemeMode = 'system' | 'light' | 'dark'
+
+interface ThemeState {
+  mode: ThemeMode
+  setMode: (mode: ThemeMode) => void
+  initTheme: () => void
+}
+```
+
+### useConfirm Hook
+```typescript
+interface ConfirmOptions {
+  title: string
+  description?: string
+  confirmText?: string
+  cancelText?: string
+  destructive?: boolean
+}
+
+// 使用方式
+const { confirm } = useConfirm()
+const result = await confirm({ title: '确认删除？', destructive: true })
+// result: boolean
+```
+
 ## 运行命令
 
 ```bash
@@ -647,6 +764,7 @@ cd packages/client && pnpm exec tsc --noEmit
 后端支持以下环境变量（可选）:
 - `PORT`: 服务器端口，默认 3001
 - `JWT_SECRET`: JWT 密钥，生产环境必须设置
+- `RENEWAL_CRON_EXPRESSION`: 自动续期 cron 表达式，默认 `0 2 * * *`（每天凌晨2点）
 
 ## 重要约定
 
@@ -658,7 +776,8 @@ cd packages/client && pnpm exec tsc --noEmit
 - 使用 `pnpm` 作为包管理器
 
 ### 数据库
-- Prisma Schema: `packages/server/prisma/schema.prisma`
+- Prisma Schema: `packages/server/src/prisma/schema.prisma`
+- Prisma Client 输出: `packages/server/src/prisma/generated/`
 - 数据库文件: `packages/server/prisma/dev.db`
 - 使用 Prisma Client 进行数据库操作
 
@@ -672,8 +791,9 @@ cd packages/client && pnpm exec tsc --noEmit
 - `/login` - 登录/注册页
 - `/` - 域名管理页（需要认证）
 - `/providers` - 服务商管理页（需要认证）
-- `/renewal-logs` - 续期日志页（需要认证）
 - `/notification-channels` - 通知渠道管理页（需要认证）
+- `/renewal-logs` - 续期日志页（需要认证）
+- `/auto-renew-config` - 自动续期配置页（需要认证）
 - `/profile` - 用户信息页（需要认证）
 
 ## 功能说明
@@ -717,6 +837,20 @@ cd packages/client && pnpm exec tsc --noEmit
 - 修改邮箱地址
 - 修改密码（需验证当前密码）
 - 入口：顶部导航栏用户名可点击
+
+### 自动续期配置
+- 支持启用/禁用自动续期功能
+- 支持两种触发方式：手动触发和定时任务
+- 定时任务支持自定义 cron 表达式（5位格式：分 时 日 月 周）
+- 提供常用 cron 表达式快捷选择
+- 实时显示 cron 表达式的预计运行时间
+- 支持手动触发续期检查
+
+### 主题切换
+- 支持三种模式：亮色、暗色、跟随系统
+- 主题偏好保存在 localStorage
+- 自动监听系统主题变化（跟随系统模式下）
+- 入口：顶部导航栏主题图标
 
 ## 测试账号
 

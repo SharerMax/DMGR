@@ -41,9 +41,9 @@ async function start() {
     // 初始化数据库
     await initDatabase()
 
-    // 启动自动续期定时任务
-    const renewalIntervalHours = Number(process.env.RENEWAL_INTERVAL_HOURS) || 24
-    startAutoRenewalScheduler(renewalIntervalHours)
+    // 启动自动续期定时任务（默认每天凌晨2点）
+    const cronExpression = process.env.RENEWAL_CRON_EXPRESSION || '0 2 * * *'
+    startAutoRenewalScheduler(cronExpression)
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`)

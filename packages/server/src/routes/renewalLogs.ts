@@ -4,8 +4,10 @@
 
 import { Router } from 'express'
 import jwt from 'jsonwebtoken'
+import cron from 'node-cron'
 import { z } from 'zod'
 import { prisma } from '../db/index.js'
+import { executeAutoRenewal, getCurrentCronExpression, stopAutoRenewalScheduler, updateAutoRenewalSchedule } from '../services/autoRenew.js'
 
 const router = Router()
 
@@ -222,6 +224,90 @@ router.get('/stats/summary', authMiddleware, async (req: any, res) => {
   catch (error) {
     console.error('Get renewal stats error:', error)
     res.status(500).json({ error: '获取续期统计失败' })
+  }
+})
+
+// 自动续期配置 schema
+const autoRenewConfigSchema = z.object({
+  enabled: z.boolean(),
+  triggerMode: z.enum(['manual', 'scheduled']),
+  cronExpression: z.string().optional(),
+})
+
+// 获取自动续期配置
+router.get('/config', authMiddleware, async (_req: any, res: any) => {
+  try {
+    // 从数据库或缓存获取配置，这里使用内存中的状态
+    const cronExpression = getCurrentCronExpression()
+
+    res.json({
+      enabled: cronExpression !== '',
+      triggerMode: cronExpression ? 'scheduled' : 'manual',
+      cronExpression: cronExpression || '0 0 2 * * ?',
+    })
+  }
+  catch (error) {
+    console.error('Get auto-renew config error:', error)
+    res.status(500).json({ error: '获取自动续期配置失败' })
+  }
+})
+
+// 更新自动续期配置
+router.put('/config', authMiddleware, async (req: any, res: any) => {
+  try {
+    const config = autoRenewConfigSchema.parse(req.body)
+
+    if (!config.enabled) {
+      // 禁用自动续期
+      stopAutoRenewalScheduler()
+    }
+    else if (config.triggerMode === 'manual') {
+      // 手动模式，停止定时任务
+      stopAutoRenewalScheduler()
+    }
+    else if (config.triggerMode === 'scheduled' && config.cronExpression) {
+      // 验证 cron 表达式
+      if (!cron.validate(config.cronExpression)) {
+        return res.status(400).json({ error: '无效的 cron 表达式' })
+      }
+
+      // 更新定时任务
+      updateAutoRenewalSchedule(config.cronExpression)
+    }
+
+    res.json({
+      message: '配置已更新',
+      config,
+    })
+  }
+  catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.issues })
+    }
+    console.error('Update auto-renew config error:', error)
+    res.status(500).json({ error: '更新自动续期配置失败' })
+  }
+})
+
+// 手动触发续期任务
+router.post('/trigger', authMiddleware, async (_req: any, res: any) => {
+  try {
+    // 异步执行，不等待完成
+    executeAutoRenewal()
+      .then((result) => {
+        console.log('[AutoRenew] 手动触发续期完成:', result)
+      })
+      .catch((error) => {
+        console.error('[AutoRenew] 手动触发续期失败:', error)
+      })
+
+    res.json({
+      message: '续期任务已触发',
+    })
+  }
+  catch (error) {
+    console.error('Trigger renewal error:', error)
+    res.status(500).json({ error: '触发续期任务失败' })
   }
 })
 

@@ -4,6 +4,7 @@ import { differenceInDays, format, parseISO } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { DomainFilter } from '@/components/DomainFilter'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -336,36 +337,14 @@ export default function Domains() {
       {/* 过滤器 */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="domain_search">搜索域名</Label>
-              <Input
-                id="domain_search"
-                placeholder="输入域名进行搜索..."
-                value={filters.search}
-                onChange={e => setFilters({ ...filters, search: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="provider_filter">服务商筛选</Label>
-              <Select
-                value={filters.providerId}
-                onValueChange={value => setFilters({ ...filters, providerId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="全部服务商" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部服务商</SelectItem>
-                  {providers.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <DomainFilter
+            domains={domains}
+            search={filters.search}
+            providerId={filters.providerId}
+            onSearchChange={value => setFilters({ ...filters, search: value })}
+            onProviderChange={value => setFilters({ ...filters, providerId: value })}
+            showProviderFilter={true}
+          />
           {(filters.search || filters.providerId !== 'all') && (
             <div className="mt-4 flex items-center gap-2">
               <span className="text-sm text-gray-500">
