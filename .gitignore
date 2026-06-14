@@ -17,6 +17,8 @@ out
 # Trae AI
 .trae/agents
 .agents
+.trae/skills
+!.trae/skills/domain-manager-*
 
 # Logs
 *.log*

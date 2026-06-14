@@ -39,7 +39,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isLogin ? '登录' : '注册'}</CardTitle>
