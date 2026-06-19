@@ -5,6 +5,7 @@ import { zhCN } from 'date-fns/locale'
 import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { DomainFilter } from '@/components/DomainFilter'
+import { Pagination } from '@/components/Pagination'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -16,7 +17,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Pagination } from '@/components/ui/pagination'
 import {
   Select,
   SelectContent,

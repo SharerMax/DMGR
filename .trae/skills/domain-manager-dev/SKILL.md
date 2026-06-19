@@ -15,8 +15,7 @@ pnpm dev:server                 # 后端 http://localhost:3001
 pnpm dev:client                 # 前端 http://localhost:3000
 pnpm build                      # 构建
 pnpm lint / pnpm lint:fix       # 检查/修复
-pnpm --filter server exec tsc --noEmit  # 后端类型检查
-pnpm --filter client exec tsc --noEmit  # 前端类型检查
+pnpm typecheck                  # 类型检查（前后端）
 ```
 
 ## Prisma Commands
@@ -104,3 +103,4 @@ await prisma.domain.findMany({
 ## 测试账号
 
 - 用户名: `admin` / 密码: `password123`
+- 邮箱: `admin@example.com` / 密码: `password123`（也支持邮箱登录）

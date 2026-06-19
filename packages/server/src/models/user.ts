@@ -31,6 +31,12 @@ export async function getUserByUsername(username: string): Promise<User | null> 
   })
 }
 
+export async function getUserByEmail(email: string): Promise<User | null> {
+  return prisma.user.findFirst({
+    where: { email },
+  })
+}
+
 export async function updateUser(
   id: number,
   input: Partial<Pick<User, 'email' | 'password'>>,

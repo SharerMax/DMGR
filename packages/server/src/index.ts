@@ -16,6 +16,15 @@ const PORT = process.env.PORT || 3001
 app.use(cors())
 app.use(express.json())
 
+// 请求日志中间件
+app.use((req, _res, next) => {
+  const timestamp = new Date().toISOString()
+  const method = req.method
+  const url = req.url
+  console.log(`[${timestamp}] ${method} ${url}`)
+  next()
+})
+
 // 路由
 app.use('/api/auth', authRoutes)
 app.use('/api/providers', providerRoutes)

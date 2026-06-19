@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { createUser, getUserById, getUserByUsername, updateUser } from '../models/user.js'
+import { createUser, getUserByEmail, getUserById, getUserByUsername, updateUser } from '../models/user.js'
 
 const router = Router()
 
@@ -15,8 +15,8 @@ const registerSchema = z.object({
 })
 
 const loginSchema = z.object({
-  username: z.string(),
-  password: z.string(),
+  username: z.string().min(1),
+  password: z.string().min(1),
 })
 
 // 注册
@@ -66,8 +66,9 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password } = loginSchema.parse(req.body)
 
-    // 查找用户
-    const user = await getUserByUsername(username)
+    // 查找用户，支持用户名或邮箱登录
+    const isEmail = username.includes('@')
+    const user = isEmail ? await getUserByEmail(username) : await getUserByUsername(username)
     if (!user) {
       return res.status(401).json({ error: '用户名或密码错误' })
     }

@@ -50,14 +50,14 @@ export default function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">用户名</Label>
+              <Label htmlFor="username">{isLogin ? '用户名 / 邮箱' : '用户名'}</Label>
               <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
-                placeholder="请输入用户名"
+                placeholder={isLogin ? '请输入用户名或邮箱' : '请输入用户名'}
               />
             </div>
             {!isLogin && (

@@ -78,3 +78,4 @@ User ─┬─> Provider ──> Domain
 - JWT Bearer token，有效期 7 天
 - `authMiddleware` 验证后挂载 `req.user`
 - 用户只能访问自己的数据（查询必须包含 userId 过滤）
+- 登录支持用户名或邮箱（自动识别 `@` 符号）

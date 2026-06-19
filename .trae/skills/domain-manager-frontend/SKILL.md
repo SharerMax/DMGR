@@ -13,6 +13,8 @@ React 18 + TypeScript + Vite + shadcn/ui + Zustand + Tailwind CSS
 packages/client/src/
 ├── components/
 │   ├── ui/              # shadcn/ui 组件（不要手动修改，用 CLI 添加）
+│   ├── DatePicker.tsx  # 日期选择器（基于 shadcn/ui 封装）
+│   ├── Pagination.tsx  # 分页组件
 │   └── DomainFilter.tsx # 域名过滤组件
 ├── hooks/
 │   └── useConfirm.tsx   # 确认对话框 Hook
@@ -27,6 +29,14 @@ packages/client/src/
 ```
 
 ## 核心模式
+
+### 自定义组件
+
+**重要**: `components/ui/` 目录只允许 shadcn/ui CLI 添加的标准组件。自定义组件放在 `components/` 根目录：
+
+- `DatePicker.tsx` - 日期/日期范围选择器（导出 `DatePicker`, `DateRangePicker`）
+- `Pagination.tsx` - 分页组件（导出 `Pagination`）
+- `DomainFilter.tsx` - 域名过滤组件
 
 ### Zustand Store
 
