@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "catalog:",
+    "@fontsource-variable/inter": "catalog:",
     "@radix-ui/react-alert-dialog": "catalog:",
     "@radix-ui/react-avatar": "catalog:",
     "@radix-ui/react-checkbox": "catalog:",
