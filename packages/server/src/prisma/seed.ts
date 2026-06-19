@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { PrismaClient } from './generated/client'
 
 const dbPath = path.join(process.cwd(), 'prisma', 'dev.db')
+console.log('dbPath:', dbPath)
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` })
 
 const prisma = new PrismaClient({ adapter })
@@ -51,6 +52,7 @@ async function main() {
       userId: user.id,
       expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       autoRenew: true,
+      autoRenewDays: 7,
       renewalPrice: 59.0,
       status: 'active',
       notes: '测试域名',
@@ -71,6 +73,68 @@ async function main() {
   })
 
   console.log('Created reminder for domain:', domain.name)
+
+  // Create notification channel
+  const notificationChannel = await prisma.notificationChannel.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      userId: user.id,
+      type: 'email',
+      name: '管理员邮箱',
+      config: JSON.stringify({
+        email: 'admin@example.com',
+      }),
+      defaultDays: 90,
+      isActive: true,
+    },
+  })
+
+  console.log('Created notification channel:', notificationChannel.name)
+
+  // Create DNS record
+  await prisma.dNSRecord.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      domainId: domain.id,
+      type: 'A',
+      name: '@',
+      value: '1.2.3.4',
+      ttl: 3600,
+    },
+  })
+
+  console.log('Created DNS record for domain:', domain.name)
+
+  // Create renewal log
+  await prisma.renewalLog.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      domainId: domain.id,
+      status: 'completed',
+      message: '续期成功',
+      renewedAt: new Date(),
+    },
+  })
+
+  console.log('Created renewal log for domain:', domain.name)
+
+  // Create notification log
+  await prisma.notificationLog.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      userId: user.id,
+      domainId: domain.id,
+      type: 'expiry_reminder',
+      content: '域名即将过期，请及时续期',
+      channel: 'email',
+    },
+  })
+
+  console.log('Created notification log for domain:', domain.name)
 }
 
 main()

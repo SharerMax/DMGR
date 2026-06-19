@@ -29,6 +29,7 @@ CREATE TABLE "Domain" (
     "userId" INTEGER NOT NULL,
     "expiryDate" DATETIME NOT NULL,
     "autoRenew" BOOLEAN NOT NULL DEFAULT false,
+    "autoRenewDays" INTEGER,
     "renewalPrice" REAL,
     "status" TEXT NOT NULL DEFAULT 'active',
     "notes" TEXT,
@@ -77,6 +78,31 @@ CREATE TABLE "DNSRecord" (
     CONSTRAINT "DNSRecord_domainId_fkey" FOREIGN KEY ("domainId") REFERENCES "Domain" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE "RenewalLog" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "domainId" INTEGER NOT NULL,
+    "status" TEXT NOT NULL,
+    "message" TEXT,
+    "error" TEXT,
+    "renewedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "RenewalLog_domainId_fkey" FOREIGN KEY ("domainId") REFERENCES "Domain" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "NotificationLog" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "domainId" INTEGER,
+    "type" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "sentAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "NotificationLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "NotificationLog_domainId_fkey" FOREIGN KEY ("domainId") REFERENCES "Domain" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
@@ -100,3 +126,21 @@ CREATE INDEX "NotificationChannel_userId_idx" ON "NotificationChannel"("userId")
 
 -- CreateIndex
 CREATE INDEX "DNSRecord_domainId_idx" ON "DNSRecord"("domainId");
+
+-- CreateIndex
+CREATE INDEX "RenewalLog_domainId_idx" ON "RenewalLog"("domainId");
+
+-- CreateIndex
+CREATE INDEX "RenewalLog_status_idx" ON "RenewalLog"("status");
+
+-- CreateIndex
+CREATE INDEX "RenewalLog_createdAt_idx" ON "RenewalLog"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "NotificationLog_userId_idx" ON "NotificationLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "NotificationLog_type_idx" ON "NotificationLog"("type");
+
+-- CreateIndex
+CREATE INDEX "NotificationLog_sentAt_idx" ON "NotificationLog"("sentAt");
