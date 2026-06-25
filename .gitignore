@@ -15,6 +15,7 @@ out
 *.local
 
 # Trae AI
+.trae/rules/local.md
 .trae/agents
 .agents
 .trae/skills/*
