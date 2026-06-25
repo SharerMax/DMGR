@@ -6,11 +6,11 @@ import type {
   DNSOperationResult,
   DNSRecordInput,
   DNSRecordOutput,
-} from './base'
+} from '../base'
 import {
   DNSProvider,
   DNSProviderFactory,
-} from './base'
+} from '../base'
 
 // 阿里云 API 地址（预留）
 const _ALIYUN_API_URL = ''

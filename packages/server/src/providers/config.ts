@@ -170,3 +170,13 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
     features: ['域名同步'],
   },
 ]
+
+// 根据 ID 获取服务商配置
+export function getProviderConfig(id: string): ProviderConfig | undefined {
+  return BUILT_IN_PROVIDERS.find(p => p.id === id)
+}
+
+// 获取所有支持的服务商列表
+export function getAllProviderConfigs(): ProviderConfig[] {
+  return [...BUILT_IN_PROVIDERS]
+}

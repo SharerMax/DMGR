@@ -6,7 +6,7 @@
 import { differenceInDays } from 'date-fns'
 import cron from 'node-cron'
 import { prisma } from '../db/index.js'
-import { getProviderConfig } from '../providers/base.js'
+import { getProviderConfig } from '../providers/index.js'
 import { sendNotification } from './notification.js'
 
 // 续期状态

@@ -4,7 +4,11 @@
  * 提供抽象基类和具体实现
  */
 
+// 阿里云
 export * from './aliyun'
-export * from './aliyun-syncer'
+
+// 基础抽象类
 export * from './base'
-export * from './providers' // 内置服务商配置
+
+// 服务商配置
+export * from './config'

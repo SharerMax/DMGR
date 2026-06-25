@@ -4,8 +4,6 @@
  * 后续可以继承此类实现具体的 DNS 服务商
  */
 
-import { BUILT_IN_PROVIDERS } from './providers'
-
 export interface DNSRecordInput {
   type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SRV' | 'CAA' | 'PTR' | 'SOA'
   name: string
@@ -73,23 +71,6 @@ export interface ProviderConfig {
   supportsAutoRenew: boolean
   maxRenewalDays?: number // 过期前最大可续期天数（仅 supportsAutoRenew=true 时有效）
   features: string[]
-}
-
-// 导出内置服务商配置
-export { BUILT_IN_PROVIDERS } from './providers'
-
-/**
- * 根据 ID 获取服务商配置
- */
-export function getProviderConfig(id: string): ProviderConfig | undefined {
-  return BUILT_IN_PROVIDERS.find(p => p.id === id)
-}
-
-/**
- * 获取所有支持的服务商列表
- */
-export function getAllProviderConfigs(): ProviderConfig[] {
-  return [...BUILT_IN_PROVIDERS]
 }
 
 /**

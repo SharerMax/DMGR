@@ -4,7 +4,7 @@
  * 使用示例：
  *
  * ```typescript
- * import { AliyunSyncer } from './aliyun-syncer'
+ * import { AliyunSyncer } from './syncer'
  *
  * const syncer = new AliyunSyncer({
  *   apiKey: 'your-access-key-id',
@@ -24,11 +24,11 @@ import type {
   DNSRecordOutput,
   DomainInfo,
   SyncResult,
-} from './base'
+} from '../base'
 import {
   DNSProviderFactory,
   DomainSyncer,
-} from './base'
+} from '../base'
 
 // 阿里云 API 地址（预留）
 const _ALIYUN_API_URL = ''
