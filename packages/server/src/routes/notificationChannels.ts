@@ -3,13 +3,12 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { authMiddleware } from '../middleware/index.js'
 import {
-  createNotificationChannel,
-  deleteNotificationChannel,
-  getNotificationChannelById,
-  getNotificationChannelsByUserId,
-  parseConfig,
-  updateNotificationChannel,
-} from '../models/notificationChannel.js'
+  createUserChannel,
+  deleteUserChannel,
+  getUserChannel,
+  getUserChannels,
+  updateUserChannel,
+} from '../services/notificationChannelService.js'
 import { logger } from '../utils/index.js'
 import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
@@ -25,12 +24,8 @@ const channelSchema = z.object({
 
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const channels = await getNotificationChannelsByUserId(req.userId!)
-    const channelsWithConfig = channels.map(channel => ({
-      ...channel,
-      config: parseConfig(channel.config),
-    }))
-    return sendSuccess(res, channelsWithConfig)
+    const channels = await getUserChannels(req.userId!)
+    return sendSuccess(res, channels)
   }
   catch (error) {
     logger.error({ error }, 'Get channels error')
@@ -40,11 +35,11 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 
 router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const channel = await getNotificationChannelById(Number(req.params.id))
-    if (!channel || channel.userId !== req.userId) {
+    const channel = await getUserChannel(req.userId!, Number(req.params.id))
+    if (!channel) {
       return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
-    return sendSuccess(res, { ...channel, config: parseConfig(channel.config) })
+    return sendSuccess(res, channel)
   }
   catch (error) {
     logger.error({ error }, 'Get channel error')
@@ -55,14 +50,9 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const data = channelSchema.parse(req.body)
-    const channel = await createNotificationChannel({
-      ...data,
-      userId: req.userId!,
-    })
-
+    const channel = await createUserChannel(req.userId!, data)
     logger.info({ channelId: channel.id, type: channel.type }, 'Notification channel created')
-
-    return sendSuccess(res, { ...channel, config: data.config }, '创建成功', HTTP_STATUS.CREATED)
+    return sendSuccess(res, channel, '创建成功', HTTP_STATUS.CREATED)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
@@ -75,17 +65,13 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
 
 router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const channel = await getNotificationChannelById(Number(req.params.id))
-    if (!channel || channel.userId !== req.userId) {
+    const data = channelSchema.partial().parse(req.body)
+    const updated = await updateUserChannel(req.userId!, Number(req.params.id), data)
+    if (!updated) {
       return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
-
-    const data = channelSchema.partial().parse(req.body)
-    const updated = await updateNotificationChannel(Number(req.params.id), data)
-
-    logger.info({ channelId: updated!.id }, 'Notification channel updated')
-
-    return sendSuccess(res, { ...updated, config: parseConfig(updated!.config) }, '更新成功')
+    logger.info({ channelId: updated.id }, 'Notification channel updated')
+    return sendSuccess(res, updated, '更新成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
@@ -98,15 +84,11 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const channel = await getNotificationChannelById(Number(req.params.id))
-    if (!channel || channel.userId !== req.userId) {
+    const success = await deleteUserChannel(req.userId!, Number(req.params.id))
+    if (!success) {
       return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
-
-    await deleteNotificationChannel(Number(req.params.id))
-
-    logger.info({ channelId: channel.id }, 'Notification channel deleted')
-
+    logger.info({ channelId: Number(req.params.id) }, 'Notification channel deleted')
     return res.status(HTTP_STATUS.NO_CONTENT).send()
   }
   catch (error) {
