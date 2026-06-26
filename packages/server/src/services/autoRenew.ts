@@ -6,7 +6,7 @@
 import { differenceInDays } from 'date-fns'
 import cron from 'node-cron'
 import { prisma } from '../db/index.js'
-import { getProviderConfig } from '../providers/index.js'
+import { DNSProviderFactory, getProviderConfig } from '../providers/index.js'
 import { logger } from '../utils/index.js'
 import { sendNotification } from './notification.js'
 
@@ -19,10 +19,6 @@ export interface RenewalResult {
   message?: string
   error?: string
   renewedAt?: Date
-}
-
-export interface RenewalExecutor {
-  renew: (domainName: string, config: Record<string, string>) => Promise<{ success: boolean, error?: string }>
 }
 
 export async function createRenewalLog(
@@ -141,8 +137,8 @@ export async function renewDomain(
     }
   }
 
-  const executor = getRenewalExecutor(providerType)
-  if (!executor) {
+  const renewer = DNSProviderFactory.createRenewer(providerType, config)
+  if (!renewer) {
     const error = `不支持的服务商类型: ${providerType}`
     await createRenewalLog(domainId, 'failed', undefined, error)
     return {
@@ -153,8 +149,19 @@ export async function renewDomain(
     }
   }
 
+  if (!renewer.validateConfig()) {
+    const error = `${providerType} 服务商配置不完整`
+    await createRenewalLog(domainId, 'failed', undefined, error)
+    return {
+      domainId,
+      domainName,
+      status: 'failed',
+      error,
+    }
+  }
+
   try {
-    const result = await executor.renew(domainName, config)
+    const result = await renewer.renewDomain(domainName)
 
     if (result.success) {
       await createRenewalLog(domainId, 'completed', '续期成功')
@@ -185,49 +192,6 @@ export async function renewDomain(
       status: 'failed',
       error: errorMessage,
     }
-  }
-}
-
-function getRenewalExecutor(providerType: string): RenewalExecutor | null {
-  const executors: Record<string, RenewalExecutor> = {
-    aliyun: createAliyunRenewalExecutor(),
-    tencent: createTencentRenewalExecutor(),
-  }
-
-  return executors[providerType] || null
-}
-
-function createAliyunRenewalExecutor(): RenewalExecutor {
-  return {
-    async renew(domainName: string, config: Record<string, string>): Promise<{ success: boolean, error?: string }> {
-      const accessKeyId = config.accessKeyId
-      const accessKeySecret = config.accessKeySecret
-
-      if (!accessKeyId || !accessKeySecret) {
-        return { success: false, error: '缺少阿里云 API 凭证' }
-      }
-
-      logger.warn({ domainName }, 'Aliyun renewal API not implemented, simulating success')
-
-      return { success: true }
-    },
-  }
-}
-
-function createTencentRenewalExecutor(): RenewalExecutor {
-  return {
-    async renew(domainName: string, config: Record<string, string>): Promise<{ success: boolean, error?: string }> {
-      const secretId = config.secretId
-      const secretKey = config.secretKey
-
-      if (!secretId || !secretKey) {
-        return { success: false, error: '缺少腾讯云 API 凭证' }
-      }
-
-      logger.warn({ domainName }, 'Tencent renewal API not implemented, simulating success')
-
-      return { success: true }
-    },
   }
 }
 

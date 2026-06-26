@@ -47,12 +47,13 @@ packages/server/src/
 │   └── renewalLog.ts
 ├── providers/           # DNS 服务商适配层（按服务商拆分目录）
 │   ├── index.ts         # 统一导出
-│   ├── base.ts          # 抽象基类
+│   ├── base.ts          # 抽象基类（DNSProvider / DomainSyncer / DomainRenewer / DNSProviderFactory）
 │   ├── config.ts        # 内置服务商配置
 │   └── aliyun/          # 阿里云目录
 │       ├── index.ts
 │       ├── provider.ts  # DNS Provider 实现
-│       └── syncer.ts    # 域名同步实现
+│       ├── syncer.ts    # 域名同步实现
+│       └── renewer.ts   # 域名续期实现
 └── utils/               # 工具函数
     ├── index.ts
     ├── logger.ts        # Pino logger 配置
@@ -201,15 +202,46 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 
 服务商类型: aliyun, tencent, cloudflare, dnspod, namecheap, custom
 
-每个 Provider 实现:
-- `getDNSRecords(domain)` / `addDNSRecord(domain, record)`
-- `updateDNSRecord(domain, recordId, record)` / `deleteDNSRecord(domain, recordId)`
-- 域名同步器 `Syncer` 类
+每个 Provider 实现三类组件:
+- **DNSProvider**: DNS 记录管理（增删改查）
+- **DomainSyncer**: 域名同步（从服务商拉取域名列表）
+- **DomainRenewer**: 域名续期（自动续期执行）
+
+使用 `DNSProviderFactory` 统一创建各类实例：
+
+```typescript
+import { DNSProviderFactory } from '../providers/index.js'
+
+// 创建 DNS Provider
+const dns = DNSProviderFactory.createProvider('aliyun', { apiKey, apiSecret })
+
+// 创建域名同步器
+const syncer = DNSProviderFactory.createSyncer('aliyun', { apiKey, apiSecret })
+
+// 创建域名续期器
+const renewer = DNSProviderFactory.createRenewer('aliyun', { apiKey, apiSecret })
+```
 
 添加新 Provider:
 1. 在 `providers/<name>/` 创建目录
-2. 实现 `provider.ts`（继承 `BaseDNSProvider`）
-3. 实现 `syncer.ts`（实现 `DomainSyncer` 接口）
-4. 创建 `index.ts` 导出
-5. 在 `providers/config.ts` 添加配置
-6. 在 `providers/index.ts` 统一导出
+2. 实现 `provider.ts`（继承 `DNSProvider`）
+3. 实现 `syncer.ts`（继承 `DomainSyncer`）
+4. 实现 `renewer.ts`（继承 `DomainRenewer`，可选，仅 supportsAutoRenew=true 时）
+5. 创建 `index.ts` 导出并注册到 DNSProviderFactory
+6. 在 `providers/config.ts` 添加配置
+7. 在 `providers/index.ts` 统一导出
+
+## 三方服务集成
+
+域名和 DNS 记录操作会同步到三方服务商（service 层协调）：
+
+| 操作 | 策略 | 失败处理 |
+|------|------|---------|
+| DNS 记录创建 | 先调三方 API，再写本地 DB | 仅记录 warn，本地操作继续 |
+| DNS 记录更新 | 先调三方 API，再更新本地 DB | 仅记录 warn，本地操作继续 |
+| DNS 记录删除 | 先调三方 API，再删本地 DB | 仅记录 warn，本地操作继续 |
+| 域名创建 | 先写本地 DB，再同步三方信息 | 仅记录 warn，不回滚本地 |
+| 域名更新 | 先更新本地 DB，再同步三方信息 | 仅记录 warn，不回滚本地 |
+| 域名删除 | 只删本地，不删三方（防误删） | - |
+
+自动续期: `services/autoRenew.ts` 只做调度编排，具体续期逻辑由 `providers/<name>/renewer.ts` 提供。

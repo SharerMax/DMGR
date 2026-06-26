@@ -123,16 +123,10 @@ function parseProviderConfig(provider: Provider): Record<string, string> {
 
 function getSyncer(provider: Provider): DomainSyncer | null {
   const config = parseProviderConfig(provider)
-
-  switch (provider.type) {
-    case 'aliyun':
-      return DNSProviderFactory.createSyncer('aliyun', {
-        apiKey: config.accessKeyId,
-        apiSecret: config.accessKeySecret,
-      })
-    default:
-      return null
-  }
+  return DNSProviderFactory.createSyncer(provider.type, {
+    apiKey: config.accessKeyId || config.secretId || config.apiKey || config.apiToken,
+    apiSecret: config.accessKeySecret || config.secretKey || config.apiSecret,
+  })
 }
 
 function generateMockDomains(provider: Provider) {

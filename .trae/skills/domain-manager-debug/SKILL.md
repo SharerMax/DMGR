@@ -79,3 +79,24 @@ rm -rf packages/client/node_modules/.vite
 1. 后端返回的响应体是否符合格式
 2. 前端拦截器是否正确提取
 3. 错误是否被正确抛出和捕获
+
+## 三方集成调试
+
+### DNS 记录不同步
+1. 检查 Pino 日志中是否有 `DNS provider error` 或 `warn` 级日志
+2. 确认 Provider 配置（config JSON 字段）是否完整（accessKeyId/secretId 等）
+3. 检查 `providers/<name>/provider.ts` 中方法实现是否正确映射
+4. 本地操作成功但三方失败时，service 层只记 warn 不报错，需查日志
+
+### 自动续期不执行
+1. 检查 `autoRenew.ts` 调度器是否启动（看启动日志 `Auto renewal scheduler started`）
+2. 检查域名的 `autoRenew` 是否为 true，`expiryDate` 是否在续期窗口内
+3. 检查 Provider 的 `supportsAutoRenew` 是否为 true
+4. 检查 `providers/<name>/renewer.ts` 是否正确注册到 `DNSProviderFactory`
+5. 续期结果写入 `renewalLogs` 表，可查记录看状态和错误信息
+
+### Provider 工厂找不到实现
+1. 检查 `providers/config.ts` 是否注册了该服务商
+2. 检查对应服务商目录的 `index.ts` 是否调用了 `DNSProviderFactory.registerXxx`
+3. 检查 `providers/index.ts` 是否导入了该服务商模块（触发注册）
+4. 类型名拼写是否一致（aliyun / tencent / cloudflare 等）

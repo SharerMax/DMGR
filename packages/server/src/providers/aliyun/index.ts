@@ -3,4 +3,5 @@
  */
 
 export { AliyunDNSProvider } from './provider'
+export { AliyunDomainRenewer } from './renewer'
 export { AliyunSyncer } from './syncer'

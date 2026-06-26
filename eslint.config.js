@@ -12,6 +12,7 @@ export default antfu(
       '*.db',
       'PROJECT_CONTEXT.md',
       '**/prisma/generated/**',
+      '.trae/**',
     ],
     rules: {
       'no-alert': 'off',

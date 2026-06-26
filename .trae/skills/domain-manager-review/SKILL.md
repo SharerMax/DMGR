@@ -37,6 +37,9 @@ description: "Reviews Domain Manager code for quality and best practices. Invoke
 - **分层架构**: routes → services → models → db/prisma
 - **禁止跨层调用**: 路由层禁止直接导入 models/ 或 prisma
 - **禁止在 service 层直接处理 HTTP 响应**: service 抛 Error，路由层 catch 转换
+- **三方集成**: 域名/DNS 记录操作需同步服务商 API，service 层协调
+- **Renew 下沉**: 续期逻辑必须在 providers/ 层实现，autoRenew.ts 只做调度
+- **DNSProviderFactory**: 统一创建实例，禁止手动 switch/case 判断服务商类型
 
 ### 安全
 - 无硬编码密钥/凭证

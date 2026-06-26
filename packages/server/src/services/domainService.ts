@@ -2,26 +2,42 @@ import type { CreateDomainInput, Domain, UpdateDomainInput } from '../models/dom
 import type { Reminder } from '../models/reminder.js'
 import {
   createDomain,
-
   deleteDomain,
-
   getDomainById,
   getDomainsByUserId,
   getExpiringDomains,
   updateDomain,
-
 } from '../models/domain.js'
+import { getProviderById } from '../models/provider.js'
 import {
   createReminder,
   deleteRemindersByDomainId,
   getRemindersByDomainId,
-
 } from '../models/reminder.js'
+import { DNSProviderFactory } from '../providers/index.js'
+import { logger } from '../utils/index.js'
 
 export interface DomainWithReminders extends Domain {
   provider: { name: string } | null
   provider_name?: string | null
   reminders: Reminder[]
+}
+
+function parseConfig(config: string): Record<string, string> {
+  try {
+    return JSON.parse(config)
+  }
+  catch {
+    return {}
+  }
+}
+
+function getSyncer(provider: { type: string, config: string }) {
+  const config = parseConfig(provider.config)
+  return DNSProviderFactory.createSyncer(provider.type, {
+    apiKey: config.accessKeyId || config.secretId || config.apiKey || config.apiToken,
+    apiSecret: config.accessKeySecret || config.secretKey || config.apiSecret,
+  })
 }
 
 export async function getUserDomains(
@@ -68,7 +84,27 @@ export async function getDomainWithReminders(userId: number, domainId: number) {
 }
 
 export async function createUserDomain(userId: number, input: Omit<CreateDomainInput, 'userId'>) {
-  return createDomain({ ...input, userId })
+  const domain = await createDomain({ ...input, userId })
+
+  if (input.providerId) {
+    const provider = await getProviderById(input.providerId)
+    if (provider && provider.userId === userId) {
+      const syncer = getSyncer(provider)
+      if (syncer && syncer.validateConfig()) {
+        try {
+          const info = await syncer.getDomainInfo(domain.name)
+          if (info.success && info.data) {
+            logger.info({ domainId: domain.id, name: domain.name }, 'Third-party domain info synced on create')
+          }
+        }
+        catch (error: any) {
+          logger.warn({ domainId: domain.id, name: domain.name, error: error.message }, 'Third-party domain sync failed on create')
+        }
+      }
+    }
+  }
+
+  return domain
 }
 
 export async function updateUserDomain(userId: number, domainId: number, input: UpdateDomainInput) {
@@ -76,7 +112,28 @@ export async function updateUserDomain(userId: number, domainId: number, input: 
   if (!domain || domain.userId !== userId) {
     return null
   }
-  return updateDomain(domainId, input)
+
+  const updated = await updateDomain(domainId, input)
+
+  if (updated && updated.providerId) {
+    const provider = await getProviderById(updated.providerId)
+    if (provider && provider.userId === userId) {
+      const syncer = getSyncer(provider)
+      if (syncer && syncer.validateConfig()) {
+        try {
+          const info = await syncer.getDomainInfo(updated.name)
+          if (info.success && info.data) {
+            logger.info({ domainId, name: updated.name }, 'Third-party domain info synced on update')
+          }
+        }
+        catch (error: any) {
+          logger.warn({ domainId, name: updated.name, error: error.message }, 'Third-party domain sync failed on update')
+        }
+      }
+    }
+  }
+
+  return updated
 }
 
 export async function deleteUserDomain(userId: number, domainId: number): Promise<boolean> {
@@ -84,6 +141,17 @@ export async function deleteUserDomain(userId: number, domainId: number): Promis
   if (!domain || domain.userId !== userId) {
     return false
   }
+
+  if (domain.providerId) {
+    const provider = await getProviderById(domain.providerId)
+    if (provider && provider.userId === userId) {
+      const syncer = getSyncer(provider)
+      if (syncer && syncer.validateConfig()) {
+        logger.info({ domainId, name: domain.name }, 'Domain removed from local, third-party data preserved')
+      }
+    }
+  }
+
   await deleteRemindersByDomainId(domainId)
   return deleteDomain(domainId)
 }

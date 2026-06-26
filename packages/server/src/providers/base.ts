@@ -194,12 +194,63 @@ export abstract class DomainSyncer {
 }
 
 /**
+ * 域名续期结果
+ */
+export interface RenewalResult {
+  success: boolean
+  error?: string
+  newExpiryDate?: string
+  orderId?: string
+}
+
+/**
+ * 域名续期器抽象基类
+ * 提供域名续期的标准接口
+ */
+export abstract class DomainRenewer {
+  abstract readonly id: string
+  abstract readonly name: string
+
+  protected apiKey?: string
+  protected apiSecret?: string
+
+  constructor(config: { apiKey?: string, apiSecret?: string }) {
+    this.apiKey = config.apiKey
+    this.apiSecret = config.apiSecret
+  }
+
+  /**
+   * 验证配置是否完整
+   */
+  abstract validateConfig(): boolean
+
+  /**
+   * 执行域名续期
+   * @param domain 域名
+   * @param years 续期年数（默认1年）
+   */
+  abstract renewDomain(domain: string, years?: number): Promise<RenewalResult>
+
+  /**
+   * 查询域名可续期状态
+   * @param domain 域名
+   */
+  abstract checkRenewalEligibility(domain: string): Promise<{
+    eligible: boolean
+    reason?: string
+    currentExpiryDate?: string
+    maxRenewalYears?: number
+  }>
+}
+
+/**
  * DNS 提供商工厂
  * 根据类型创建对应的 DNS 提供商实例
  */
 export class DNSProviderFactory {
   private static providers: Map<string, new (config: any) => DNSProvider> = new Map()
   private static syncers: Map<string, new (config: any) => DomainSyncer> = new Map()
+  private static renewers: Map<string, new (config: any) => DomainRenewer> = new Map()
 
   /**
    * 注册 DNS 提供商
@@ -213,6 +264,13 @@ export class DNSProviderFactory {
    */
   static registerSyncer(id: string, syncer: new (config: any) => DomainSyncer) {
     this.syncers.set(id, syncer)
+  }
+
+  /**
+   * 注册域名续期器
+   */
+  static registerRenewer(id: string, renewer: new (config: any) => DomainRenewer) {
+    this.renewers.set(id, renewer)
   }
 
   /**
@@ -238,6 +296,17 @@ export class DNSProviderFactory {
   }
 
   /**
+   * 创建域名续期器实例
+   */
+  static createRenewer(id: string, config: any): DomainRenewer | null {
+    const Renewer = this.renewers.get(id)
+    if (!Renewer) {
+      return null
+    }
+    return new Renewer(config)
+  }
+
+  /**
    * 获取所有已注册的提供商 ID
    */
   static getRegisteredProviders(): string[] {
@@ -249,5 +318,12 @@ export class DNSProviderFactory {
    */
   static getRegisteredSyncers(): string[] {
     return Array.from(this.syncers.keys())
+  }
+
+  /**
+   * 获取所有已注册的续期器 ID
+   */
+  static getRegisteredRenewers(): string[] {
+    return Array.from(this.renewers.keys())
   }
 }
