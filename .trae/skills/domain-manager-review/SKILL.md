@@ -34,6 +34,9 @@ description: "Reviews Domain Manager code for quality and best practices. Invoke
 - **统一日志**: 使用 `logger` (Pino)，禁止 `console.log/error/warn`
 - 导入使用 `.js` 扩展名
 - `providers/` 按服务商拆分目录，每个服务商一个子目录
+- **分层架构**: routes → services → models → db/prisma
+- **禁止跨层调用**: 路由层禁止直接导入 models/ 或 prisma
+- **禁止在 service 层直接处理 HTTP 响应**: service 抛 Error，路由层 catch 转换
 
 ### 安全
 - 无硬编码密钥/凭证
@@ -94,6 +97,36 @@ catch (error: any) {
 catch (error: any) {
   alert(error.message || '操作失败')
 }
+
+// Bad: 路由层直接调用 prisma
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
+  const domains = await prisma.domain.findMany({ where: { userId: req.userId! } })
+  sendSuccess(res, domains)
+})
+
+// Good: 路由层调用 service
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
+  const domains = await getUserDomains(req.userId!)
+  sendSuccess(res, domains)
+})
+
+// Bad: 路由层直接导入 models
+import { getDomainsByUserId } from '../models/domain.js'
+
+// Good: 路由层导入 services
+import { getUserDomains } from '../services/domainService.js'
+
+// Bad: service 层直接处理 HTTP 响应
+export async function getDomains(res, userId) {
+  const domains = await getDomainsByUserId(userId)
+  res.json(domains)
+}
+
+// Good: service 层返回数据，抛错误
+export async function getUserDomains(userId) {
+  const domains = await getDomainsByUserId(userId)
+  return domains
+}
 ```
 
 ## 目录规范检查
@@ -103,6 +136,9 @@ catch (error: any) {
 - `providers/` 按服务商拆分目录
 - `middleware/` 存放中间件
 - `utils/` 存放工具函数
+- `services/` 存放业务服务（每个领域一个 `xxxService.ts`）
+- `models/` 存放数据访问层（纯 CRUD，无业务逻辑）
+- `routes/` 只调用 `services/`，不直接调用 `models/` 或 prisma
 
 ## 反馈格式
 

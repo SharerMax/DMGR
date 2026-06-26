@@ -21,17 +21,30 @@ packages/server/src/
 ├── middleware/
 │   ├── auth.ts          # JWT_SECRET + authMiddleware + verifyToken
 │   └── index.ts
-├── models/              # 数据访问层（CRUD 封装）
-├── routes/              # API 路由（控制器层）
+├── routes/              # API 路由（控制器层，只调用 services）
 │   ├── auth.ts          # /api/auth
 │   ├── domains.ts       # /api/domains
 │   ├── providers.ts     # /api/providers
 │   ├── notificationChannels.ts  # /api/notification-channels
 │   ├── dnsRecords.ts    # /api/dns-records
 │   └── renewalLogs.ts   # /api/renewal-logs
-├── services/            # 业务服务层
-│   ├── autoRenew.ts     # 自动续期服务
-│   └── notification.ts  # 通知服务
+├── services/            # 业务服务层（控制器只调用这一层）
+│   ├── userService.ts   # 用户业务（注册/登录/资料/密码）
+│   ├── domainService.ts # 域名业务（CRUD/过滤/提醒/级联删除）
+│   ├── providerService.ts  # 服务商业务（CRUD/配置校验/域名同步）
+│   ├── dnsRecordService.ts # DNS 记录业务（CRUD/权限校验）
+│   ├── notificationChannelService.ts # 通知渠道业务
+│   ├── renewalLogService.ts  # 续期日志业务（查询/统计/自动续期配置）
+│   ├── autoRenew.ts     # 自动续期调度服务
+│   └── notification.ts  # 通知发送服务
+├── models/              # 数据访问层（纯 CRUD，不包含业务逻辑）
+│   ├── user.ts
+│   ├── domain.ts
+│   ├── provider.ts
+│   ├── dnsRecord.ts
+│   ├── reminder.ts
+│   ├── notificationChannel.ts
+│   └── renewalLog.ts
 ├── providers/           # DNS 服务商适配层（按服务商拆分目录）
 │   ├── index.ts         # 统一导出
 │   ├── base.ts          # 抽象基类
@@ -49,12 +62,14 @@ packages/server/src/
 
 ## 分层架构
 
-| 层 | 目录 | 职责 |
-|----|------|------|
-| 控制器层 | `routes/` | 接收请求、参数校验、调用服务/模型、返回响应 |
-| 业务层 | `services/` | 业务逻辑，调用数据访问层和适配层 |
-| 适配/集成层 | `providers/` | 与第三方 DNS 服务商交互 |
-| 数据访问层 | `models/` | 数据库 CRUD 封装 |
+| 层 | 目录 | 职责 | 禁止 |
+|----|------|------|------|
+| 控制器层 | `routes/` | 接收请求、参数校验（Zod）、调用 service、返回统一响应、记录日志 | 直接调用 models/ 或 prisma |
+| 业务层 | `services/` | 业务逻辑、权限校验、多表协调、调用 models/ 和 providers/ | 直接处理 HTTP 响应 |
+| 适配/集成层 | `providers/` | 与第三方 DNS 服务商交互 | 访问数据库 |
+| 数据访问层 | `models/` | 纯 CRUD 封装，无业务逻辑 | 包含业务逻辑 |
+
+调用链: `routes → services → models → db/prisma`
 
 ## 数据模型关系
 
@@ -107,12 +122,60 @@ logger.warn({ domain }, 'Domain expiring soon')
 
 ## 路由开发
 
+**重要：路由层只能调用 services/，禁止直接导入 models/ 或 prisma。**
+
 1. 在 `routes/` 创建路由文件
 2. 用 Zod 验证输入，`authMiddleware` 保护路由
-3. 使用 `sendSuccess/sendError` 统一响应
-4. 使用 `logger` 记录日志（禁止 console.*）
-5. 在 `index.ts` 注册: `app.use('/api/xxx', xxxRoutes)`
-6. 导入用 `.js` 扩展名: `import { prisma } from '../db/index.js'`
+3. 调用对应的 `xxxService` 方法执行业务逻辑
+4. 使用 `sendSuccess/sendError` 统一响应
+5. 使用 `logger` 记录日志（禁止 console.*）
+6. 在 `index.ts` 注册: `app.use('/api/xxx', xxxRoutes)`
+7. 导入用 `.js` 扩展名
+
+```typescript
+import { Router } from 'express'
+import { z } from 'zod'
+import { authMiddleware, type AuthRequest } from '../middleware/index.js'
+import { getUserDomains, createUserDomain } from '../services/domainService.js'
+import { sendSuccess, sendError, HTTP_STATUS } from '../utils/response.js'
+import { logger } from '../utils/index.js'
+
+const router = Router()
+
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const domains = await getUserDomains(req.userId!)
+    return sendSuccess(res, domains)
+  }
+  catch (error) {
+    if (error instanceof z.ZodError) {
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
+    }
+    logger.error({ error }, 'Get domains error')
+    return sendError(res, '获取失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+  }
+})
+
+export default router
+```
+
+## 业务服务层开发
+
+每个领域实体对应一个 `xxxService.ts`，方法命名体现业务语义：
+
+```typescript
+// services/domainService.ts
+export async function getUserDomains(userId, filters?) { ... }
+export async function getDomainWithReminders(userId, domainId) { ... }
+export async function createUserDomain(userId, input) { ... }
+export async function updateUserDomain(userId, domainId, input) { ... }
+export async function deleteUserDomain(userId, domainId) { ... }
+```
+
+约定:
+- 涉及用户数据的方法以 `getUserXxx`/`createUserXxx` 等命名
+- service 层抛出 Error，由路由层 catch 后转换为 HTTP 响应
+- service 层调用 models/ 做数据访问，调用 providers/ 做第三方集成
 
 ## 认证中间件
 

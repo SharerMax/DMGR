@@ -35,39 +35,64 @@ Client 输出: `./generated`
 
 路由文件在 `packages/server/src/routes/`，在 `src/index.ts` 中注册。
 
+**重要：路由层只能调用 services/，禁止直接导入 models/ 或 prisma。**
+
 ```typescript
 import { Router } from 'express'
 import { z } from 'zod'
-import { authMiddleware, AuthRequest } from '../middleware/index.js'
-import { prisma } from '../db/index.js'
+import { authMiddleware, type AuthRequest } from '../middleware/index.js'
+import { getUserDomains, createUserDomain } from '../services/domainService.js'
 import { sendSuccess, sendError, HTTP_STATUS } from '../utils/response.js'
 import { logger } from '../utils/index.js'
 
 const router = Router()
 
-// 受保护路由
+// 列表查询
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
-  const items = await prisma.domain.findMany({ where: { userId: req.userId! } })
-  sendSuccess(res, items)
+  try {
+    const items = await getUserDomains(req.userId!)
+    return sendSuccess(res, items)
+  }
+  catch (error) {
+    if (error instanceof z.ZodError) {
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
+    }
+    logger.error({ error }, 'Get domains error')
+    return sendError(res, '获取失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+  }
 })
 
-// 带验证的创建
+// 创建
 const createSchema = z.object({ name: z.string(), expiryDate: z.string() })
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
-  const data = createSchema.parse(req.body)
-  const item = await prisma.domain.create({ data: { ...data, userId: req.userId! } })
-  logger.info({ id: item.id }, 'Domain created')
-  sendSuccess(res, item, '创建成功', HTTP_STATUS.CREATED)
+  try {
+    const data = createSchema.parse(req.body)
+    const item = await createUserDomain(req.userId!, data)
+    logger.info({ id: item.id }, 'Domain created')
+    return sendSuccess(res, item, '创建成功', HTTP_STATUS.CREATED)
+  }
+  catch (error) {
+    if (error instanceof z.ZodError) {
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
+    }
+    logger.error({ error }, 'Create domain error')
+    return sendError(res, '创建失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+  }
 })
 
-// 错误处理
+// 删除
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
-  const item = await prisma.domain.findUnique({ where: { id: +req.params.id } })
-  if (!item || item.userId !== req.userId) {
-    return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
+  try {
+    const success = await deleteUserDomain(req.userId!, +req.params.id)
+    if (!success) {
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
+    }
+    return res.status(HTTP_STATUS.NO_CONTENT).send()
   }
-  await prisma.domain.delete({ where: { id: +req.params.id } })
-  return res.status(HTTP_STATUS.NO_CONTENT).send()
+  catch (error) {
+    logger.error({ error }, 'Delete domain error')
+    return sendError(res, '删除失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+  }
 })
 
 export default router
@@ -129,8 +154,10 @@ try {
 6. **后端统一响应格式**: `{ code, message, data }`，用 `sendSuccess/sendError`
 7. **后端统一日志**: 用 `logger` (Pino)，禁止 `console.*`
 8. **后端认证**: 用 `middleware/auth.ts` 的 `authMiddleware`，挂载 `req.userId`
-9. **providers 目录按服务商拆分**: 每个服务商一个子目录
-10. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
+9. **分层架构**: routes → services → models → db/prisma，禁止跨层调用
+10. **路由层禁止直接导入 models/ 或 prisma**：必须通过 services/ 访问数据
+11. **providers 目录按服务商拆分**: 每个服务商一个子目录
+12. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
 
 ## 环境变量
 

@@ -30,6 +30,8 @@ description: "Debugs Domain Manager application issues. Invoke when user reports
 | 401 未授权 | JWT token 是否发送？是否过期？`middleware/auth.ts` 的 `authMiddleware` 是否应用？ |
 | Provider 同步失败 | 凭证是否正确？API 是否可达？查看 Pino 日志 |
 | 接口返回格式不对 | 是否使用 `sendSuccess/sendError`？返回是否为 `{ code, message, data }` 格式？ |
+| 数据查询问题 | 从 routes → services → models 逐层排查，先确认 service 层返回是否正确 |
+| 权限问题 | service 层是否做了 userId 校验？`getUserXxx` 方法是否验证所有权？ |
 
 ## 日志查看
 
