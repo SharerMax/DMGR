@@ -21,7 +21,7 @@ export default antfu(
       'unicorn/prefer-node-protocol': 'off',
       'antfu/top-level-function': 'off',
     },
-  }, 
+  },
   {
     files: ['**/components/ui/*.tsx'],
     rules: {

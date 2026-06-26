@@ -1,6 +1,7 @@
+import type { AuthRequest } from '../middleware/index.js'
 import { Router } from 'express'
-import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import { authMiddleware } from '../middleware/index.js'
 import {
   createNotificationChannel,
   deleteNotificationChannel,
@@ -9,27 +10,10 @@ import {
   parseConfig,
   updateNotificationChannel,
 } from '../models/notificationChannel.js'
+import { logger } from '../utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-
-function authMiddleware(req: any, res: any, next: any) {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-    req.userId = decoded.userId
-    next()
-  }
-  catch {
-    res.status(401).json({ error: '未授权' })
-  }
-}
 
 const channelSchema = z.object({
   type: z.enum(['email', 'sms', 'webhook']),
@@ -39,86 +23,95 @@ const channelSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-router.get('/', authMiddleware, async (req: any, res) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const channels = await getNotificationChannelsByUserId(req.userId)
+    const channels = await getNotificationChannelsByUserId(req.userId!)
     const channelsWithConfig = channels.map(channel => ({
       ...channel,
       config: parseConfig(channel.config),
     }))
-    res.json(channelsWithConfig)
+    return sendSuccess(res, channelsWithConfig)
   }
   catch (error) {
-    console.error('Get channels error:', error)
-    res.status(500).json({ error: '获取通知渠道失败' })
+    logger.error({ error }, 'Get channels error')
+    return sendError(res, '获取通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.get('/:id', authMiddleware, async (req: any, res) => {
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const channel = await getNotificationChannelById(Number(req.params.id))
     if (!channel || channel.userId !== req.userId) {
-      return res.status(404).json({ error: '通知渠道不存在' })
+      return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
-    res.json({ ...channel, config: parseConfig(channel.config) })
+    return sendSuccess(res, { ...channel, config: parseConfig(channel.config) })
   }
   catch (error) {
-    console.error('Get channel error:', error)
-    res.status(500).json({ error: '获取通知渠道失败' })
+    logger.error({ error }, 'Get channel error')
+    return sendError(res, '获取通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.post('/', authMiddleware, async (req: any, res) => {
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const data = channelSchema.parse(req.body)
     const channel = await createNotificationChannel({
       ...data,
-      userId: req.userId,
+      userId: req.userId!,
     })
-    res.status(201).json({ ...channel, config: data.config })
+
+    logger.info({ channelId: channel.id, type: channel.type }, 'Notification channel created')
+
+    return sendSuccess(res, { ...channel, config: data.config }, '创建成功', HTTP_STATUS.CREATED)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Create channel error:', error)
-    res.status(500).json({ error: '创建通知渠道失败' })
+    logger.error({ error }, 'Create channel error')
+    return sendError(res, '创建通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.put('/:id', authMiddleware, async (req: any, res) => {
+router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const channel = await getNotificationChannelById(Number(req.params.id))
     if (!channel || channel.userId !== req.userId) {
-      return res.status(404).json({ error: '通知渠道不存在' })
+      return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const data = channelSchema.partial().parse(req.body)
     const updated = await updateNotificationChannel(Number(req.params.id), data)
-    res.json({ ...updated, config: parseConfig(updated!.config) })
+
+    logger.info({ channelId: updated!.id }, 'Notification channel updated')
+
+    return sendSuccess(res, { ...updated, config: parseConfig(updated!.config) }, '更新成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Update channel error:', error)
-    res.status(500).json({ error: '更新通知渠道失败' })
+    logger.error({ error }, 'Update channel error')
+    return sendError(res, '更新通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.delete('/:id', authMiddleware, async (req: any, res) => {
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const channel = await getNotificationChannelById(Number(req.params.id))
     if (!channel || channel.userId !== req.userId) {
-      return res.status(404).json({ error: '通知渠道不存在' })
+      return sendError(res, '通知渠道不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     await deleteNotificationChannel(Number(req.params.id))
-    res.status(204).send()
+
+    logger.info({ channelId: channel.id }, 'Notification channel deleted')
+
+    return res.status(HTTP_STATUS.NO_CONTENT).send()
   }
   catch (error) {
-    console.error('Delete channel error:', error)
-    res.status(500).json({ error: '删除通知渠道失败' })
+    logger.error({ error }, 'Delete channel error')
+    return sendError(res, '删除通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

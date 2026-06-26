@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '../db/index.js'
+import { logger } from '../utils/index.js'
 
 export type NotificationType
   = | 'expiry_reminder' // 域名即将过期提醒
@@ -36,7 +37,7 @@ export async function sendNotification(
   })
 
   if (channels.length === 0) {
-    console.warn(`[Notification] 用户 ${userId} 没有配置通知渠道`)
+    logger.warn({ userId }, 'User has no notification channels configured')
     return
   }
 
@@ -49,7 +50,7 @@ export async function sendNotification(
       await sendViaChannel(channel, content)
     }
     catch (error) {
-      console.error(`[Notification] 通知发送失败 (${channel.type}):`, error)
+      logger.error({ error, channelType: channel.type }, 'Notification send failed')
     }
   }
 
@@ -107,17 +108,17 @@ async function sendViaChannel(
       await sendSMS(config, content)
       break
     default:
-      console.warn(`[Notification] 未知的通知渠道类型: ${channel.type}`)
+      logger.warn({ channelType: channel.type }, 'Unknown notification channel type')
   }
 }
 
 /**
  * 发送邮件通知
  */
-async function sendEmail(config: Record<string, any>, content: string): Promise<void> {
+async function sendEmail(config: Record<string, any>, _content: string): Promise<void> {
   // 实际实现需要接入邮件服务
   // 例如：使用 nodemailer、SendGrid、阿里云邮件推送等
-  console.log(`[Notification] 邮件通知: ${config.email || config.to} - ${content}`)
+  logger.info({ email: config.email || config.to }, 'Email notification sent')
 }
 
 /**
@@ -142,16 +143,16 @@ async function sendWebhook(config: Record<string, any>, content: string): Promis
   //   body: JSON.stringify(_payload),
   // })
 
-  console.log(`[Notification] Webhook 通知: ${url} - ${content}`)
+  logger.info({ url }, 'Webhook notification sent')
 }
 
 /**
  * 发送短信通知
  */
-async function sendSMS(config: Record<string, any>, content: string): Promise<void> {
+async function sendSMS(config: Record<string, any>, _content: string): Promise<void> {
   // 实际实现需要接入短信服务
   // 例如：使用阿里云短信、腾讯云短信等
-  console.log(`[Notification] 短信通知: ${config.phone} - ${content}`)
+  logger.info({ phone: config.phone }, 'SMS notification sent')
 }
 
 /**

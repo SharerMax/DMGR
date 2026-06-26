@@ -81,7 +81,7 @@ export default function AutoRenewConfig() {
   useEffect(() => {
     async function loadConfig() {
       try {
-        const response = await api.get('/api/renewal-logs/config')
+        const response = await api.get('/renewal-logs/config')
         setConfig({
           enabled: response.data.enabled,
           triggerMode: response.data.triggerMode,
@@ -131,7 +131,7 @@ export default function AutoRenewConfig() {
 
     setSaving(true)
     try {
-      await api.put('/api/renewal-logs/config', {
+      await api.put('/renewal-logs/config', {
         enabled: config.enabled,
         triggerMode: config.triggerMode,
         cronExpression: config.cronExpression,
@@ -151,7 +151,7 @@ export default function AutoRenewConfig() {
   const handleTriggerNow = async () => {
     setTriggering(true)
     try {
-      await api.post('/api/renewal-logs/trigger')
+      await api.post('/renewal-logs/trigger')
       // 可以添加成功提示
     }
     catch (error) {

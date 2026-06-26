@@ -2,36 +2,18 @@
  * 续期日志路由
  */
 
+import type { AuthRequest } from '../middleware/index.js'
 import { Router } from 'express'
-import jwt from 'jsonwebtoken'
 import cron from 'node-cron'
 import { z } from 'zod'
 import { prisma } from '../db/index.js'
+import { authMiddleware } from '../middleware/index.js'
 import { executeAutoRenewal, getCurrentCronExpression, stopAutoRenewalScheduler, updateAutoRenewalSchedule } from '../services/autoRenew.js'
+import { logger } from '../utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-
-// 验证中间件
-function authMiddleware(req: any, res: any, next: any) {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-    req.userId = decoded.userId
-    next()
-  }
-  catch {
-    res.status(401).json({ error: '未授权' })
-  }
-}
-
-// 查询参数 schema
 const querySchema = z.object({
   domainId: z.string().optional(),
   domainName: z.string().optional(),
@@ -43,15 +25,13 @@ const querySchema = z.object({
 })
 
 // 获取续期日志列表
-router.get('/', authMiddleware, async (req: any, res) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const query = querySchema.parse(req.query)
     const { domainId, domainName, status, startDate, endDate, page, pageSize } = query
 
-    // 构建查询条件
     const where: any = {}
 
-    // 域名过滤：需要关联查询
     if (domainId) {
       where.domainId = Number.parseInt(domainId, 10)
     }
@@ -64,7 +44,6 @@ router.get('/', authMiddleware, async (req: any, res) => {
     if (status) {
       where.status = status
     }
-    // 时间范围过滤
     if (startDate) {
       where.createdAt = {
         ...where.createdAt,
@@ -78,12 +57,10 @@ router.get('/', authMiddleware, async (req: any, res) => {
       }
     }
 
-    // 查询总数
     const total = await prisma.renewalLog.count({
       where,
     })
 
-    // 分页查询
     const logs = await prisma.renewalLog.findMany({
       where,
       include: {
@@ -109,10 +86,9 @@ router.get('/', authMiddleware, async (req: any, res) => {
       take: pageSize,
     })
 
-    // 过滤用户自己的域名日志
     const filteredLogs = logs.filter(log => log.domain.userId === req.userId)
 
-    res.json({
+    return sendSuccess(res, {
       data: filteredLogs,
       pagination: {
         page,
@@ -124,18 +100,19 @@ router.get('/', authMiddleware, async (req: any, res) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Get renewal logs error:', error)
-    res.status(500).json({ error: '获取续期日志失败' })
+    logger.error({ error }, 'Get renewal logs error')
+    return sendError(res, '获取续期日志失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 获取单个续期日志详情
-router.get('/:id', authMiddleware, async (req: any, res) => {
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
     const log = await prisma.renewalLog.findUnique({
-      where: { id: Number.parseInt(req.params.id, 10) },
+      where: { id: Number.parseInt(id, 10) },
       include: {
         domain: {
           include: {
@@ -146,33 +123,30 @@ router.get('/:id', authMiddleware, async (req: any, res) => {
     })
 
     if (!log) {
-      return res.status(404).json({ error: '续期日志不存在' })
+      return sendError(res, '续期日志不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
-    // 检查权限
     if (log.domain.userId !== req.userId) {
-      return res.status(403).json({ error: '无权限访问此日志' })
+      return sendError(res, '无权限访问此日志', 1, HTTP_STATUS.FORBIDDEN)
     }
 
-    res.json(log)
+    return sendSuccess(res, log)
   }
   catch (error) {
-    console.error('Get renewal log error:', error)
-    res.status(500).json({ error: '获取续期日志详情失败' })
+    logger.error({ error }, 'Get renewal log error')
+    return sendError(res, '获取续期日志详情失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 获取续期统计
-router.get('/stats/summary', authMiddleware, async (req: any, res) => {
+router.get('/stats/summary', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    // 获取用户的所有域名
     const userDomains = await prisma.domain.findMany({
-      where: { userId: req.userId },
+      where: { userId: req.userId! },
       select: { id: true },
     })
     const domainIds = userDomains.map(d => d.id)
 
-    // 统计各状态的日志数量
     const [total, completed, failed, pending, skipped] = await Promise.all([
       prisma.renewalLog.count({
         where: { domainId: { in: domainIds } },
@@ -191,7 +165,6 @@ router.get('/stats/summary', authMiddleware, async (req: any, res) => {
       }),
     ])
 
-    // 获取最近7天的日志
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
@@ -209,7 +182,7 @@ router.get('/stats/summary', authMiddleware, async (req: any, res) => {
       take: 10,
     })
 
-    res.json({
+    return sendSuccess(res, {
       summary: {
         total,
         completed,
@@ -222,12 +195,11 @@ router.get('/stats/summary', authMiddleware, async (req: any, res) => {
     })
   }
   catch (error) {
-    console.error('Get renewal stats error:', error)
-    res.status(500).json({ error: '获取续期统计失败' })
+    logger.error({ error }, 'Get renewal stats error')
+    return sendError(res, '获取续期统计失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-// 自动续期配置 schema
 const autoRenewConfigSchema = z.object({
   enabled: z.boolean(),
   triggerMode: z.enum(['manual', 'scheduled']),
@@ -235,79 +207,70 @@ const autoRenewConfigSchema = z.object({
 })
 
 // 获取自动续期配置
-router.get('/config', authMiddleware, async (_req: any, res: any) => {
+router.get('/config', authMiddleware, async (_req: AuthRequest, res) => {
   try {
-    // 从数据库或缓存获取配置，这里使用内存中的状态
     const cronExpression = getCurrentCronExpression()
 
-    res.json({
+    return sendSuccess(res, {
       enabled: cronExpression !== '',
       triggerMode: cronExpression ? 'scheduled' : 'manual',
       cronExpression: cronExpression || '0 0 2 * * ?',
     })
   }
   catch (error) {
-    console.error('Get auto-renew config error:', error)
-    res.status(500).json({ error: '获取自动续期配置失败' })
+    logger.error({ error }, 'Get auto-renew config error')
+    return sendError(res, '获取自动续期配置失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 更新自动续期配置
-router.put('/config', authMiddleware, async (req: any, res: any) => {
+router.put('/config', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const config = autoRenewConfigSchema.parse(req.body)
 
     if (!config.enabled) {
-      // 禁用自动续期
       stopAutoRenewalScheduler()
     }
     else if (config.triggerMode === 'manual') {
-      // 手动模式，停止定时任务
       stopAutoRenewalScheduler()
     }
     else if (config.triggerMode === 'scheduled' && config.cronExpression) {
-      // 验证 cron 表达式
       if (!cron.validate(config.cronExpression)) {
-        return res.status(400).json({ error: '无效的 cron 表达式' })
+        return sendError(res, '无效的 cron 表达式', 1, HTTP_STATUS.BAD_REQUEST)
       }
 
-      // 更新定时任务
       updateAutoRenewalSchedule(config.cronExpression)
     }
 
-    res.json({
-      message: '配置已更新',
-      config,
-    })
+    logger.info({ config }, 'Auto-renew config updated')
+
+    return sendSuccess(res, { config }, '配置已更新')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Update auto-renew config error:', error)
-    res.status(500).json({ error: '更新自动续期配置失败' })
+    logger.error({ error }, 'Update auto-renew config error')
+    return sendError(res, '更新自动续期配置失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 手动触发续期任务
-router.post('/trigger', authMiddleware, async (_req: any, res: any) => {
+router.post('/trigger', authMiddleware, async (_req: AuthRequest, res) => {
   try {
-    // 异步执行，不等待完成
     executeAutoRenewal()
       .then((result) => {
-        console.log('[AutoRenew] 手动触发续期完成:', result)
+        logger.info({ result }, 'Manual renewal triggered')
       })
       .catch((error) => {
-        console.error('[AutoRenew] 手动触发续期失败:', error)
+        logger.error({ error }, 'Manual renewal failed')
       })
 
-    res.json({
-      message: '续期任务已触发',
-    })
+    return sendSuccess(res, undefined, '续期任务已触发')
   }
   catch (error) {
-    console.error('Trigger renewal error:', error)
-    res.status(500).json({ error: '触发续期任务失败' })
+    logger.error({ error }, 'Trigger renewal error')
+    return sendError(res, '触发续期任务失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

@@ -103,8 +103,7 @@ export default function Providers() {
   const getCurrentType = (): ProviderType | undefined => {
     return providerTypes.find(t => t.id === selectedType)
   }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
     if (!selectedType) {
       alert('请选择服务商类型')
@@ -143,7 +142,7 @@ export default function Providers() {
       resetForm()
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '操作失败')
+      alert(error.message || '操作失败')
     }
   }
 
@@ -160,7 +159,7 @@ export default function Providers() {
       await deleteProvider(id)
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '删除失败')
+      alert(error.message || '删除失败')
     }
   }
 
@@ -172,7 +171,7 @@ export default function Providers() {
       await fetchDomains()
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '同步失败')
+      alert(error.message || '同步失败')
     }
     finally {
       setSyncingProvider(null)

@@ -8,6 +8,7 @@ import notificationChannelRoutes from './routes/notificationChannels.js'
 import providerRoutes from './routes/providers.js'
 import renewalLogRoutes from './routes/renewalLogs.js'
 import { startAutoRenewalScheduler } from './services/autoRenew.js'
+import { logger, requestLogger } from './utils/index.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -15,15 +16,7 @@ const PORT = process.env.PORT || 3001
 // 中间件
 app.use(cors())
 app.use(express.json())
-
-// 请求日志中间件
-app.use((req, _res, next) => {
-  const timestamp = new Date().toISOString()
-  const method = req.method
-  const url = req.url
-  console.log(`[${timestamp}] ${method} ${url}`)
-  next()
-})
+app.use(requestLogger)
 
 // 路由
 app.use('/api/auth', authRoutes)
@@ -40,7 +33,7 @@ app.get('/api/health', (req, res) => {
 
 // 错误处理
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err)
+  logger.error({ err, path: req.path, method: req.method }, 'Server error')
   res.status(500).json({ error: '服务器内部错误' })
 })
 
@@ -55,11 +48,11 @@ async function start() {
     startAutoRenewalScheduler(cronExpression)
 
     app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`)
+      logger.info({ port: PORT }, `Server is running on http://localhost:${PORT}`)
     })
   }
   catch (error) {
-    console.error('Failed to start server:', error)
+    logger.fatal({ error }, 'Failed to start server')
     process.exit(1)
   }
 }

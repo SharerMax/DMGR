@@ -76,7 +76,7 @@ export const useDomainStore = create<DomainState>(set => ({
       set({ domains: response.data, loading: false })
     }
     catch (error: any) {
-      set({ error: error.response?.data?.error || '获取域名列表失败', loading: false })
+      set({ error: error.message || '获取域名列表失败', loading: false })
     }
   },
 

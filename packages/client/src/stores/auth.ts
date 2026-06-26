@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>(set => ({
       return
     }
     try {
-      const response = await api.get('/auth/me')
+      const response = await api.get<User>('/auth/me')
       const user = response.data
       localStorage.setItem('user', JSON.stringify(user))
       set({ user, token, isAuthenticated: true })
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>(set => ({
   },
 
   updateProfile: async (email) => {
-    const response = await api.put('/auth/profile', { email })
+    const response = await api.put<User>('/auth/profile', { email })
     const user = response.data
     localStorage.setItem('user', JSON.stringify(user))
     set({ user })

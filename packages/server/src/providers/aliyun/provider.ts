@@ -128,7 +128,7 @@ export class AliyunDNSProvider extends DNSProvider {
         ttl: record.TTL,
         priority: record.Priority || null,
         line: record.Line,
-        status: record.Status === 'ENABLE' ? 'ENABLE' : 'DISABLE',
+
         createdAt: record.createTime,
         updatedAt: record.updateTime,
       })) || []
@@ -181,7 +181,6 @@ export class AliyunDNSProvider extends DNSProvider {
         value: record.value,
         ttl: record.ttl || 600,
         priority: record.priority || null,
-        status: 'ENABLE',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
@@ -239,7 +238,6 @@ export class AliyunDNSProvider extends DNSProvider {
         value: record.value || '',
         ttl: record.ttl || 600,
         priority: record.priority || null,
-        status: 'ENABLE',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

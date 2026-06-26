@@ -1,8 +1,6 @@
 import type { DateRange } from 'react-day-picker'
-import type { RenewalLog, RenewalLogFilters } from '@/api/renewalLogs'
 import { format } from 'date-fns'
-import { useEffect, useState } from 'react'
-import { getRenewalLogs, getRenewalLogStats } from '@/api/renewalLogs'
+import { useEffect } from 'react'
 import { DateRangePicker } from '@/components/DatePicker'
 import { DomainFilter } from '@/components/DomainFilter'
 import { Pagination } from '@/components/Pagination'
@@ -13,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
 import { useDomainStore } from '@/stores/domains'
+import { useRenewalLogStore } from '@/stores/renewalLogs'
 
 const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-green-500',
@@ -33,65 +32,19 @@ const STATUS_LABELS: Record<string, string> = {
 export default function RenewalLogs() {
   const { domains } = useDomainStore()
   const { token } = useAuthStore()
-
-  const [logs, setLogs] = useState<RenewalLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<{
-    total: number
-    completed: number
-    failed: number
-    pending: number
-    skipped: number
-    successRate: number
-  } | null>(null)
-
-  const [filters, setFilters] = useState<RenewalLogFilters>({
-    page: 1,
-    pageSize: 10,
-  })
-
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    totalPages: 0,
-  })
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
-
-  const fetchData = async () => {
-    if (!token)
-      return
-
-    setLoading(true)
-    try {
-      const queryFilters: RenewalLogFilters = {
-        ...filters,
-        startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-        endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
-      }
-
-      const response = await getRenewalLogs(queryFilters)
-      setLogs(response.data)
-      setPagination(response.pagination)
-    }
-    catch (error) {
-      console.error('Failed to fetch renewal logs:', error)
-    }
-    finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchStats = async () => {
-    try {
-      const response = await getRenewalLogStats()
-      setStats(response.summary)
-    }
-    catch (error) {
-      console.error('Failed to fetch stats:', error)
-    }
-  }
+  const {
+    logs,
+    stats,
+    loading,
+    pagination,
+    filters,
+    dateRange,
+    fetchLogs,
+    fetchStats,
+    setFilters,
+    setDateRange,
+    clearFilters,
+  } = useRenewalLogStore()
 
   useEffect(() => {
     if (token) {
@@ -100,36 +53,37 @@ export default function RenewalLogs() {
   }, [token])
 
   useEffect(() => {
-    fetchData()
-  }, [filters])
+    if (token) {
+      fetchLogs()
+    }
+  }, [token, filters, fetchLogs])
 
   useEffect(() => {
     if (token) {
       fetchStats()
     }
-  }, [token])
+  }, [token, fetchStats])
+
+  useEffect(() => {
+    if (token) {
+      setFilters({
+        startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+        endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+        page: 1,
+      })
+    }
+  }, [dateRange, setFilters, token])
 
   const handlePageChange = (newPage: number) => {
-    setFilters(prev => ({ ...prev, page: newPage }))
+    setFilters({ page: newPage })
   }
 
-  const handleFilterChange = (key: keyof RenewalLogFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value, page: 1 }))
+  const handleFilterChange = (key: keyof typeof filters, value: any) => {
+    setFilters({ [key]: value, page: 1 })
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range)
-    setFilters(prev => ({
-      ...prev,
-      startDate: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
-      endDate: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
-      page: 1,
-    }))
-  }
-
-  const clearFilters = () => {
-    setFilters({ page: 1, pageSize: 10 })
-    setDateRange(undefined)
   }
 
   return (

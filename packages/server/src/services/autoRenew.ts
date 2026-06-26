@@ -7,12 +7,11 @@ import { differenceInDays } from 'date-fns'
 import cron from 'node-cron'
 import { prisma } from '../db/index.js'
 import { getProviderConfig } from '../providers/index.js'
+import { logger } from '../utils/index.js'
 import { sendNotification } from './notification.js'
 
-// 续期状态
 export type RenewalStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'
 
-// 续期结果
 export interface RenewalResult {
   domainId: number
   domainName: string
@@ -22,12 +21,10 @@ export interface RenewalResult {
   renewedAt?: Date
 }
 
-// 续期执行器接口
 export interface RenewalExecutor {
   renew: (domainName: string, config: Record<string, string>) => Promise<{ success: boolean, error?: string }>
 }
 
-// 续期记录操作
 export async function createRenewalLog(
   domainId: number,
   status: RenewalStatus,
@@ -44,7 +41,6 @@ export async function createRenewalLog(
   })
 }
 
-// 获取需要续期的域名列表
 export async function getDomainsNeedingRenewal(): Promise<Array<{
   domain: {
     id: number
@@ -63,7 +59,6 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
 }>> {
   const now = new Date()
 
-  // 查询所有开启自动续期且未过期的域名
   const domains = await prisma.domain.findMany({
     where: {
       autoRenew: true,
@@ -75,7 +70,6 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
     },
   })
 
-  // 过滤出需要续期的域名
   return domains
     .map(domain => ({
       domain: {
@@ -103,36 +97,30 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
         : null,
     }))
     .filter(({ domain, provider }) => {
-      // 检查是否到达续期触发时间
       const daysUntilExpiry = differenceInDays(domain.expiryDate, now)
-      const triggerDays = domain.autoRenewDays || 30 // 默认 30 天
+      const triggerDays = domain.autoRenewDays || 30
 
-      // 服务商必须支持自动续期
       if (!provider?.supportsAutoRenew) {
         return false
       }
 
-      // 检查是否在可续期范围内
       const providerConfig = getProviderConfig(provider.type)
       if (providerConfig && providerConfig.maxRenewalDays) {
         if (daysUntilExpiry > providerConfig.maxRenewalDays) {
-          return false // 还未到可续期时间
+          return false
         }
       }
 
-      // 检查是否到达触发阈值
       return daysUntilExpiry <= triggerDays
     })
 }
 
-// 执行单个域名续期
 export async function renewDomain(
   domainId: number,
   domainName: string,
   providerType: string,
   config: Record<string, string>,
 ): Promise<RenewalResult> {
-  // 检查今天是否已经尝试过续期
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -153,7 +141,6 @@ export async function renewDomain(
     }
   }
 
-  // 获取续期执行器
   const executor = getRenewalExecutor(providerType)
   if (!executor) {
     const error = `不支持的服务商类型: ${providerType}`
@@ -167,7 +154,6 @@ export async function renewDomain(
   }
 
   try {
-    // 执行续期
     const result = await executor.renew(domainName, config)
 
     if (result.success) {
@@ -202,19 +188,15 @@ export async function renewDomain(
   }
 }
 
-// 获取续期执行器
 function getRenewalExecutor(providerType: string): RenewalExecutor | null {
-  // 导入各服务商的续期实现
   const executors: Record<string, RenewalExecutor> = {
     aliyun: createAliyunRenewalExecutor(),
     tencent: createTencentRenewalExecutor(),
-    // 其他服务商...
   }
 
   return executors[providerType] || null
 }
 
-// 阿里云续期执行器
 function createAliyunRenewalExecutor(): RenewalExecutor {
   return {
     async renew(domainName: string, config: Record<string, string>): Promise<{ success: boolean, error?: string }> {
@@ -225,20 +207,13 @@ function createAliyunRenewalExecutor(): RenewalExecutor {
         return { success: false, error: '缺少阿里云 API 凭证' }
       }
 
-      // 实际实现需要调用阿里云域名续期 API
-      // 这里暂时返回模拟结果
-      console.warn(`[AutoRenew] 阿里云续期 API 未实现，模拟续期成功: ${domainName}`)
-
-      // 实际 API 调用示例：
-      // const result = await aliyunRenewDomain(accessKeyId, accessKeySecret, domainName)
-      // return { success: result.Success, error: result.Message }
+      logger.warn({ domainName }, 'Aliyun renewal API not implemented, simulating success')
 
       return { success: true }
     },
   }
 }
 
-// 腾讯云续期执行器
 function createTencentRenewalExecutor(): RenewalExecutor {
   return {
     async renew(domainName: string, config: Record<string, string>): Promise<{ success: boolean, error?: string }> {
@@ -249,15 +224,13 @@ function createTencentRenewalExecutor(): RenewalExecutor {
         return { success: false, error: '缺少腾讯云 API 凭证' }
       }
 
-      // 实际实现需要调用腾讯云域名续期 API
-      console.warn(`[AutoRenew] 腾讯云续期 API 未实现，模拟续期成功: ${domainName}`)
+      logger.warn({ domainName }, 'Tencent renewal API not implemented, simulating success')
 
       return { success: true }
     },
   }
 }
 
-// 批量执行续期
 export async function executeAutoRenewal(): Promise<{
   processed: number
   succeeded: number
@@ -265,10 +238,10 @@ export async function executeAutoRenewal(): Promise<{
   skipped: number
   results: RenewalResult[]
 }> {
-  console.log('[AutoRenew] 开始执行自动续期检查...')
+  logger.info('Starting auto renewal check')
 
   const domainsToRenew = await getDomainsNeedingRenewal()
-  console.log(`[AutoRenew] 发现 ${domainsToRenew.length} 个域名需要续期`)
+  logger.info({ count: domainsToRenew.length }, 'Found domains needing renewal')
 
   const results: RenewalResult[] = []
   let succeeded = 0
@@ -299,14 +272,12 @@ export async function executeAutoRenewal(): Promise<{
     switch (result.status) {
       case 'completed':
         succeeded++
-        // 发送成功通知
         await sendNotification(domain.userId, domain.id, 'renewal_success', {
           domainName: domain.name,
         })
         break
       case 'failed':
         failed++
-        // 发送失败通知
         await sendNotification(domain.userId, domain.id, 'renewal_failed', {
           domainName: domain.name,
           error: result.error,
@@ -318,7 +289,7 @@ export async function executeAutoRenewal(): Promise<{
     }
   }
 
-  console.log(`[AutoRenew] 续期完成: 成功 ${succeeded}, 失败 ${failed}, 跳过 ${skipped}`)
+  logger.info({ succeeded, failed, skipped }, 'Auto renewal completed')
 
   return {
     processed: domainsToRenew.length,
@@ -329,30 +300,27 @@ export async function executeAutoRenewal(): Promise<{
   }
 }
 
-// 启动定时任务
 let renewalTask: ReturnType<typeof cron.schedule> | undefined
-let currentCronExpression: string = '0 2 * * *' // 默认每天凌晨2点
+let currentCronExpression: string = '0 2 * * *'
 
 export function startAutoRenewalScheduler(cronExpression: string = '0 2 * * *') {
-  // 停止已有的定时任务
   stopAutoRenewalScheduler()
 
   currentCronExpression = cronExpression
 
-  // 立即执行一次
   executeAutoRenewal().catch((err) => {
-    console.error('[AutoRenew] 自动续期执行失败:', err)
+    logger.error({ err }, 'Auto renewal execution failed')
   })
 
-  // 设置定时任务
-  console.log(`[AutoRenew] 开始设置定时任务，cron: ${cronExpression}`)
+  logger.info({ cronExpression }, 'Setting up scheduled renewal task')
+
   renewalTask = cron.schedule(cronExpression, () => {
     executeAutoRenewal().catch((err) => {
-      console.error('[AutoRenew] 自动续期执行失败:', err)
+      logger.error({ err }, 'Scheduled renewal execution failed')
     })
   })
 
-  console.log(`[AutoRenew] 自动续期定时任务已启动，cron: ${cronExpression}`)
+  logger.info({ cronExpression }, 'Auto renewal scheduler started')
 }
 
 export function updateAutoRenewalSchedule(cronExpression: string) {
@@ -368,7 +336,7 @@ export function stopAutoRenewalScheduler() {
     renewalTask.stop()
     renewalTask = undefined
     currentCronExpression = ''
-    console.log('[AutoRenew] 自动续期定时任务已停止')
+    logger.info('Auto renewal scheduler stopped')
   }
 }
 

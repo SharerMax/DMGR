@@ -24,7 +24,7 @@ export default function Profile() {
       alert('邮箱更新成功')
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '更新失败')
+      alert(error.message || '更新失败')
     }
     finally {
       setLoading(false)
@@ -41,7 +41,7 @@ export default function Profile() {
       setNewPassword('')
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '修改密码失败')
+      alert(error.message || '修改密码失败')
     }
     finally {
       setPasswordLoading(false)

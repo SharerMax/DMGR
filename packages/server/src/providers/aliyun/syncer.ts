@@ -268,7 +268,6 @@ export class AliyunSyncer extends DomainSyncer {
           ttl: record.TTL,
           priority: record.Priority || null,
           line: record.Line,
-          status: record.Status === 'ENABLE' ? 'ENABLE' : 'DISABLE',
           createdAt: record.createTime,
           updatedAt: record.updateTime,
         }),

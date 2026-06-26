@@ -246,11 +246,11 @@ export default function Domains() {
       resetForm()
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '操作失败')
+      alert(error.message || '操作失败')
     }
   }
 
-  const handleDNSRecordSubmit = async (e: React.FormEvent) => {
+  const handleDNSRecordSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
     try {
       if (editingDNSRecord) {
@@ -271,7 +271,7 @@ export default function Domains() {
       resetDnsForm()
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '操作失败')
+      alert(error.message || '操作失败')
     }
   }
 
@@ -288,7 +288,7 @@ export default function Domains() {
       await deleteDomain(id)
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '删除失败')
+      alert(error.message || '删除失败')
     }
   }
 
@@ -305,7 +305,7 @@ export default function Domains() {
       await deleteRecord(id)
     }
     catch (error: any) {
-      alert(error.response?.data?.error || '删除失败')
+      alert(error.message || '删除失败')
     }
   }
 

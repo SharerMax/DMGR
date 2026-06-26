@@ -21,7 +21,6 @@ export interface DNSRecordOutput {
   ttl: number
   priority: number | null
   line?: string
-  status: 'ENABLE' | 'DISABLE'
   createdAt: string
   updatedAt: string
 }
@@ -122,22 +121,22 @@ export abstract class DNSProvider {
    */
   abstract deleteDNSRecord(domain: string, recordId: string): Promise<DNSOperationResult>
 
-  /**
-   * 设置 DNS 记录状态（启用/禁用）
-   */
-  abstract setDNSRecordStatus(
-    domain: string,
-    recordId: string,
-    status: 'ENABLE' | 'DISABLE'
-  ): Promise<DNSOperationResult>
+  // /**
+  //  * 设置 DNS 记录状态（启用/禁用）
+  //  */
+  // abstract setDNSRecordStatus(
+  //   domain: string,
+  //   recordId: string,
+  //   status: 'ENABLE' | 'DISABLE'
+  // ): Promise<DNSOperationResult>
 
-  /**
-   * 批量操作 DNS 记录
-   */
-  abstract batchUpdateDNSRecords(
-    domain: string,
-    records: Array<{ id: string, data: Partial<DNSRecordInput> }>
-  ): Promise<DNSOperationResult>
+  // /**
+  //  * 批量操作 DNS 记录
+  //  */
+  // abstract batchUpdateDNSRecords(
+  //   domain: string,
+  //   records: Array<{ id: string, data: Partial<DNSRecordInput> }>
+  // ): Promise<DNSOperationResult>
 }
 
 /**
@@ -150,12 +149,10 @@ export abstract class DomainSyncer {
   abstract readonly name: string
 
   // API 配置
-  protected apiUrl?: string
   protected apiKey?: string
   protected apiSecret?: string
 
-  constructor(config: { apiUrl?: string, apiKey?: string, apiSecret?: string }) {
-    this.apiUrl = config.apiUrl
+  constructor(config: { apiKey?: string, apiSecret?: string }) {
     this.apiKey = config.apiKey
     this.apiSecret = config.apiSecret
   }

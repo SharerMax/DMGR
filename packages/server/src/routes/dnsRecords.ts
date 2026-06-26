@@ -1,6 +1,7 @@
+import type { AuthRequest } from '../middleware/index.js'
 import { Router } from 'express'
-import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import { authMiddleware } from '../middleware/index.js'
 import {
   createDNSRecord,
   deleteDNSRecord,
@@ -9,27 +10,10 @@ import {
   updateDNSRecord,
 } from '../models/dnsRecord.js'
 import { getDomainById } from '../models/domain.js'
+import { logger } from '../utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-
-function authMiddleware(req: any, res: any, next: any) {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-    req.userId = decoded.userId
-    next()
-  }
-  catch {
-    res.status(401).json({ error: '未授权' })
-  }
-}
 
 const dnsRecordSchema = z.object({
   type: z.enum(['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'PTR', 'SOA']),
@@ -39,106 +23,115 @@ const dnsRecordSchema = z.object({
   priority: z.number().positive().optional(),
 })
 
-router.get('/domain/:domainId', authMiddleware, async (req: any, res) => {
+router.get('/domain/:domainId', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const domain = await getDomainById(Number(req.params.domainId))
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const records = await getDNSRecordsByDomainId(Number(req.params.domainId))
-    res.json(records)
+    return sendSuccess(res, records)
   }
   catch (error) {
-    console.error('Get DNS records error:', error)
-    res.status(500).json({ error: '获取DNS记录失败' })
+    logger.error({ error }, 'Get DNS records error')
+    return sendError(res, '获取DNS记录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.get('/:id', authMiddleware, async (req: any, res) => {
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const record = await getDNSRecordById(Number(req.params.id))
     if (!record) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const domain = await getDomainById(record.domainId)
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
-    res.json(record)
+    return sendSuccess(res, record)
   }
   catch (error) {
-    console.error('Get DNS record error:', error)
-    res.status(500).json({ error: '获取DNS记录失败' })
+    logger.error({ error }, 'Get DNS record error')
+    return sendError(res, '获取DNS记录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.post('/', authMiddleware, async (req: any, res) => {
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { domainId, ...data } = dnsRecordSchema.extend({ domainId: z.number().positive() }).parse(req.body)
 
     const domain = await getDomainById(domainId)
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const record = await createDNSRecord({ domainId, ...data })
-    res.status(201).json(record)
+
+    logger.info({ recordId: record.id, domainId }, 'DNS record created')
+
+    return sendSuccess(res, record, '创建成功', HTTP_STATUS.CREATED)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Create DNS record error:', error)
-    res.status(500).json({ error: '创建DNS记录失败' })
+    logger.error({ error }, 'Create DNS record error')
+    return sendError(res, '创建DNS记录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.put('/:id', authMiddleware, async (req: any, res) => {
+router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const record = await getDNSRecordById(Number(req.params.id))
     if (!record) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const domain = await getDomainById(record.domainId)
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const data = dnsRecordSchema.partial().parse(req.body)
     const updated = await updateDNSRecord(Number(req.params.id), data)
-    res.json(updated)
+
+    logger.info({ recordId: updated!.id }, 'DNS record updated')
+
+    return sendSuccess(res, updated, '更新成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Update DNS record error:', error)
-    res.status(500).json({ error: '更新DNS记录失败' })
+    logger.error({ error }, 'Update DNS record error')
+    return sendError(res, '更新DNS记录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
-router.delete('/:id', authMiddleware, async (req: any, res) => {
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const record = await getDNSRecordById(Number(req.params.id))
     if (!record) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const domain = await getDomainById(record.domainId)
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: 'DNS记录不存在' })
+      return sendError(res, 'DNS记录不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     await deleteDNSRecord(Number(req.params.id))
-    res.status(204).send()
+
+    logger.info({ recordId: record.id }, 'DNS record deleted')
+
+    return res.status(HTTP_STATUS.NO_CONTENT).send()
   }
   catch (error) {
-    console.error('Delete DNS record error:', error)
-    res.status(500).json({ error: '删除DNS记录失败' })
+    logger.error({ error }, 'Delete DNS record error')
+    return sendError(res, '删除DNS记录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

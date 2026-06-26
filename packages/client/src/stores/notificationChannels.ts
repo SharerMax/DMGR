@@ -43,7 +43,7 @@ export const useNotificationChannelStore = create<NotificationChannelState>(set 
       set({ channels: response.data, loading: false })
     }
     catch (error: any) {
-      set({ error: error.response?.data?.error || '获取通知渠道失败', loading: false })
+      set({ error: error.message || '获取通知渠道失败', loading: false })
     }
   },
 

@@ -64,7 +64,7 @@ export const useProviderStore = create<ProviderState>(set => ({
       set({ providers: response.data, loading: false })
     }
     catch (error: any) {
-      set({ error: error.response?.data?.error || '获取服务商列表失败', loading: false })
+      set({ error: error.message || '获取服务商列表失败', loading: false })
     }
   },
 

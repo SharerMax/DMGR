@@ -31,7 +31,7 @@ export default function Login() {
       navigate('/')
     }
     catch (err: any) {
-      setError(err.response?.data?.error || '操作失败')
+      setError(err.message || '操作失败')
     }
     finally {
       setLoading(false)

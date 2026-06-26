@@ -18,6 +18,8 @@
     "express": "catalog:",
     "jsonwebtoken": "catalog:",
     "node-cron": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

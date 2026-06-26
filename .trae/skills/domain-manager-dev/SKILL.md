@@ -10,12 +10,12 @@ pnpm monorepo: `packages/server` (Express+Prisma+SQLite) + `packages/client` (Re
 ## Commands
 
 ```bash
-pnpm install                    # 安装依赖
-pnpm dev:server                 # 后端 http://localhost:3001
-pnpm dev:client                 # 前端 http://localhost:3000
-pnpm build                      # 构建
-pnpm lint / pnpm lint:fix       # 检查/修复
-pnpm typecheck                  # 类型检查（前后端）
+pnpm install --no-frozen-lockfile  # 安装依赖（lockfile 可能不匹配时用此命令）
+pnpm dev:server                     # 后端 http://localhost:3001
+pnpm dev:client                     # 前端 http://localhost:3000
+pnpm build                          # 构建
+pnpm lint / pnpm lint:fix           # 检查/修复
+pnpm typecheck                      # 类型检查（前后端同时）
 ```
 
 ## Prisma Commands
@@ -38,24 +38,36 @@ Client 输出: `./generated`
 ```typescript
 import { Router } from 'express'
 import { z } from 'zod'
-import { authMiddleware } from '../models/user.js'
+import { authMiddleware, AuthRequest } from '../middleware/index.js'
 import { prisma } from '../db/index.js'
+import { sendSuccess, sendError, HTTP_STATUS } from '../utils/response.js'
+import { logger } from '../utils/index.js'
 
 const router = Router()
 
 // 受保护路由
-router.get('/', authMiddleware, async (req, res) => {
-  const userId = req.user!.id
-  const items = await prisma.domain.findMany({ where: { userId } })
-  res.json(items)
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
+  const items = await prisma.domain.findMany({ where: { userId: req.userId! } })
+  sendSuccess(res, items)
 })
 
 // 带验证的创建
-router.post('/', authMiddleware, async (req, res) => {
-  const schema = z.object({ name: z.string(), expiryDate: z.string() })
-  const data = schema.parse(req.body)
-  const item = await prisma.domain.create({ data: { ...data, userId: req.user!.id } })
-  res.json(item)
+const createSchema = z.object({ name: z.string(), expiryDate: z.string() })
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
+  const data = createSchema.parse(req.body)
+  const item = await prisma.domain.create({ data: { ...data, userId: req.userId! } })
+  logger.info({ id: item.id }, 'Domain created')
+  sendSuccess(res, item, '创建成功', HTTP_STATUS.CREATED)
+})
+
+// 错误处理
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
+  const item = await prisma.domain.findUnique({ where: { id: +req.params.id } })
+  if (!item || item.userId !== req.userId) {
+    return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
+  }
+  await prisma.domain.delete({ where: { id: +req.params.id } })
+  return res.status(HTTP_STATUS.NO_CONTENT).send()
 })
 
 export default router
@@ -86,6 +98,27 @@ await prisma.domain.findMany({
 })
 ```
 
+## 前端 API 调用模式
+
+```typescript
+import api from '@/lib/api'
+
+// GET
+const res = await api.get<Domain[]>('/domains')
+const domains = res.data  // response.data 已自动提取（后端 {code,message,data} → data）
+
+// POST
+const res = await api.post<Domain>('/domains', data)
+const newDomain = res.data
+
+// 错误处理
+try {
+  await api.post('/domains', data)
+} catch (error: any) {
+  alert(error.message || '操作失败')  // error.message 是后端返回的消息
+}
+```
+
 ## 关键约定
 
 1. 只用 `pnpm`，不用 npm/yarn
@@ -93,12 +126,18 @@ await prisma.domain.findMany({
 3. Server 导入必须用 `.js` 扩展名: `import { x } from './db/index.js'`
 4. 配置字段 (Provider.config, NotificationChannel.config) 存 JSON 字符串
 5. Schema 变更后必须 `prisma generate` + `prisma migrate dev`
+6. **后端统一响应格式**: `{ code, message, data }`，用 `sendSuccess/sendError`
+7. **后端统一日志**: 用 `logger` (Pino)，禁止 `console.*`
+8. **后端认证**: 用 `middleware/auth.ts` 的 `authMiddleware`，挂载 `req.userId`
+9. **providers 目录按服务商拆分**: 每个服务商一个子目录
+10. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
 
 ## 环境变量
 
 - `PORT`: 3001 (默认)
 - `JWT_SECRET`: JWT 密钥（生产必须设置）
 - `RENEWAL_CRON_EXPRESSION`: 自动续期 cron（默认 `0 2 * * *`）
+- `LOG_LEVEL`: 日志级别（默认 `info`）
 
 ## 测试账号
 

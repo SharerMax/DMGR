@@ -137,38 +137,56 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
     features: ['域名同步', 'DNS管理'],
   },
   {
-    id: 'custom',
-    name: '自定义',
-    description: '自定义服务商（使用 API URL）',
+    id: 'vps8',
+    name: 'VPS8',
+    description: 'VPS8 域名服务',
     fields: [
-      {
-        key: 'apiUrl',
-        label: 'API 地址',
-        type: 'url',
-        required: true,
-        placeholder: 'https://api.example.com',
-        description: '服务商 API 地址',
-      },
       {
         key: 'apiKey',
         label: 'API Key',
-        type: 'text',
+        type: 'password',
         required: true,
         placeholder: '输入 API Key',
-        description: 'API 密钥',
-      },
-      {
-        key: 'apiSecret',
-        label: 'API Secret',
-        type: 'password',
-        required: false,
-        placeholder: '输入 API Secret',
-        description: 'API 密钥（可选）',
+        description: 'VPS8 API Key',
       },
     ],
     supportsAutoRenew: false,
     features: ['域名同步'],
   },
+  // TODO: 自定义服务商配置, 后期根据需求添加
+  // {
+  //   id: 'custom',
+  //   name: '自定义',
+  //   description: '自定义服务商（使用 API URL）',
+  //   fields: [
+  //     {
+  //       key: 'apiUrl',
+  //       label: 'API 地址',
+  //       type: 'url',
+  //       required: true,
+  //       placeholder: 'https://api.example.com',
+  //       description: '服务商 API 地址',
+  //     },
+  //     {
+  //       key: 'apiKey',
+  //       label: 'API Key',
+  //       type: 'text',
+  //       required: true,
+  //       placeholder: '输入 API Key',
+  //       description: 'API 密钥',
+  //     },
+  //     {
+  //       key: 'apiSecret',
+  //       label: 'API Secret',
+  //       type: 'password',
+  //       required: false,
+  //       placeholder: '输入 API Secret',
+  //       description: 'API 密钥（可选）',
+  //     },
+  //   ],
+  //   supportsAutoRenew: false,
+  //   features: ['域名同步'],
+  // },
 ]
 
 // 根据 ID 获取服务商配置

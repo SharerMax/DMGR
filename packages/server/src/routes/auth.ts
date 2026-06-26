@@ -1,17 +1,19 @@
+import type { AuthRequest } from '../middleware/index.js'
 import bcrypt from 'bcryptjs'
 import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import { authMiddleware, JWT_SECRET } from '../middleware/index.js'
 import { createUser, getUserByEmail, getUserById, getUserByUsername, updateUser } from '../models/user.js'
+import { logger } from '../utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
 const registerSchema = z.object({
   username: z.string().min(3).max(50),
   password: z.string().min(6),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
 })
 
 const loginSchema = z.object({
@@ -27,7 +29,7 @@ router.post('/register', async (req, res) => {
     // 检查用户是否存在
     const existingUser = await getUserByUsername(username)
     if (existingUser) {
-      return res.status(400).json({ error: '用户名已存在' })
+      return sendError(res, '用户名已存在', 1, HTTP_STATUS.BAD_REQUEST)
     }
 
     // 加密密码
@@ -43,21 +45,23 @@ router.post('/register', async (req, res) => {
     // 生成token
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' })
 
-    res.status(201).json({
+    logger.info({ userId: user.id }, 'User registered')
+
+    return sendSuccess(res, {
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
       },
       token,
-    })
+    }, '注册成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Register error:', error)
-    res.status(500).json({ error: '注册失败' })
+    logger.error({ error }, 'Register error')
+    return sendError(res, '注册失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
@@ -70,53 +74,47 @@ router.post('/login', async (req, res) => {
     const isEmail = username.includes('@')
     const user = isEmail ? await getUserByEmail(username) : await getUserByUsername(username)
     if (!user) {
-      return res.status(401).json({ error: '用户名或密码错误' })
+      return sendError(res, '用户名或密码错误', 1, HTTP_STATUS.UNAUTHORIZED)
     }
 
     // 验证密码
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
-      return res.status(401).json({ error: '用户名或密码错误' })
+      return sendError(res, '用户名或密码错误', 1, HTTP_STATUS.UNAUTHORIZED)
     }
 
     // 生成token
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' })
 
-    res.json({
+    logger.info({ userId: user.id }, 'User logged in')
+
+    return sendSuccess(res, {
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
       },
       token,
-    })
+    }, '登录成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Login error:', error)
-    res.status(500).json({ error: '登录失败' })
+    logger.error({ error }, 'Login error')
+    return sendError(res, '登录失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 获取当前用户信息
-router.get('/me', async (req, res) => {
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-
-    const user = await getUserById(decoded.userId)
+    const user = await getUserById(req.userId!)
     if (!user) {
-      return res.status(401).json({ error: '用户不存在' })
+      return sendError(res, '用户不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
-    res.json({
+    return sendSuccess(res, {
       id: user.id,
       username: user.username,
       email: user.email,
@@ -124,7 +122,7 @@ router.get('/me', async (req, res) => {
     })
   }
   catch {
-    res.status(401).json({ error: '未授权' })
+    return sendError(res, '获取用户信息失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
@@ -133,35 +131,29 @@ const updateProfileSchema = z.object({
   email: z.string().email().optional().nullable(),
 })
 
-router.put('/profile', async (req, res) => {
+router.put('/profile', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-
     const { email } = updateProfileSchema.parse(req.body)
 
-    const user = await updateUser(decoded.userId, { email: email || null })
+    const user = await updateUser(req.userId!, { email: email || null })
     if (!user) {
-      return res.status(404).json({ error: '用户不存在' })
+      return sendError(res, '用户不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
-    res.json({
+    logger.info({ userId: req.userId }, 'User profile updated')
+
+    return sendSuccess(res, {
       id: user.id,
       username: user.username,
       email: user.email,
-    })
+    }, '更新成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Update profile error:', error)
-    res.status(500).json({ error: '更新失败' })
+    logger.error({ error }, 'Update profile error')
+    return sendError(res, '更新失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
@@ -171,41 +163,35 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(6),
 })
 
-router.put('/password', async (req, res) => {
+router.put('/password', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-
     const { currentPassword, newPassword } = changePasswordSchema.parse(req.body)
 
     // 验证当前密码
-    const user = await getUserById(decoded.userId)
+    const user = await getUserById(req.userId!)
     if (!user) {
-      return res.status(404).json({ error: '用户不存在' })
+      return sendError(res, '用户不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const isValid = await bcrypt.compare(currentPassword, user.password)
     if (!isValid) {
-      return res.status(400).json({ error: '当前密码错误' })
+      return sendError(res, '当前密码错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
 
     // 更新密码
     const hashedPassword = await bcrypt.hash(newPassword, 10)
-    await updateUser(decoded.userId, { password: hashedPassword })
+    await updateUser(req.userId!, { password: hashedPassword })
 
-    res.json({ message: '密码修改成功' })
+    logger.info({ userId: req.userId }, 'Password changed')
+
+    return sendSuccess(res, undefined, '密码修改成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Change password error:', error)
-    res.status(500).json({ error: '修改密码失败' })
+    logger.error({ error }, 'Change password error')
+    return sendError(res, '修改密码失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

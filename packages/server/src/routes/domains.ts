@@ -1,6 +1,7 @@
+import type { AuthRequest } from '../middleware/index.js'
 import { Router } from 'express'
-import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import { authMiddleware } from '../middleware/index.js'
 import {
   createDomain,
   deleteDomain,
@@ -14,35 +15,17 @@ import {
   deleteRemindersByDomainId,
   getRemindersByDomainId,
 } from '../models/reminder.js'
+import { logger } from '../utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-
-// 验证中间件
-function authMiddleware(req: any, res: any, next: any) {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: '未授权' })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number }
-    req.userId = decoded.userId
-    next()
-  }
-  catch {
-    res.status(401).json({ error: '未授权' })
-  }
-}
 
 const domainSchema = z.object({
   name: z.string().min(1).max(255),
   providerId: z.number().optional().nullable(),
   expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   autoRenew: z.boolean().optional(),
-  autoRenewDays: z.number().int().positive().optional().nullable(), // 自动续期触发阈值
+  autoRenewDays: z.number().int().positive().optional().nullable(),
   renewalPrice: z.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
@@ -52,12 +35,11 @@ const reminderSchema = z.object({
 })
 
 // 获取所有域名（支持过滤）
-router.get('/', authMiddleware, async (req: any, res) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    // 解析过滤参数
     const { search, providerId } = req.query
 
-    let domains = await getDomainsByUserId(req.userId)
+    let domains = await getDomainsByUserId(req.userId!)
 
     // 应用过滤
     if (search) {
@@ -78,110 +60,122 @@ router.get('/', authMiddleware, async (req: any, res) => {
         reminders: await getRemindersByDomainId(domain.id),
       })),
     )
-    res.json(domainsWithReminders)
+
+    return sendSuccess(res, domainsWithReminders)
   }
   catch (error) {
-    console.error('Get domains error:', error)
-    res.status(500).json({ error: '获取域名列表失败' })
+    logger.error({ error }, 'Get domains error')
+    return sendError(res, '获取域名列表失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 获取即将过期的域名
-router.get('/expiring', authMiddleware, async (req: any, res) => {
+router.get('/expiring', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const days = Number(req.query.days) || 30
     const domains = await getExpiringDomains(days)
     // 只返回当前用户的域名
     const userDomains = domains.filter(d => d.userId === req.userId)
-    res.json(userDomains)
+
+    return sendSuccess(res, userDomains)
   }
   catch (error) {
-    console.error('Get expiring domains error:', error)
-    res.status(500).json({ error: '获取即将过期域名失败' })
+    logger.error({ error }, 'Get expiring domains error')
+    return sendError(res, '获取即将过期域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 获取单个域名
-router.get('/:id', authMiddleware, async (req: any, res) => {
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const domain = await getDomainById(Number(req.params.id))
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
     const reminders = await getRemindersByDomainId(domain.id)
-    res.json({ ...domain, reminders })
+
+    return sendSuccess(res, { ...domain, reminders })
   }
   catch (error) {
-    console.error('Get domain error:', error)
-    res.status(500).json({ error: '获取域名失败' })
+    logger.error({ error }, 'Get domain error')
+    return sendError(res, '获取域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 创建域名
-router.post('/', authMiddleware, async (req: any, res) => {
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const data = domainSchema.parse(req.body)
     const domain = await createDomain({
       ...data,
-      userId: req.userId,
+      userId: req.userId!,
     })
-    res.status(201).json(domain)
+
+    logger.info({ domainId: domain.id, name: domain.name }, 'Domain created')
+
+    return sendSuccess(res, domain, '域名创建成功', HTTP_STATUS.CREATED)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Create domain error:', error)
-    res.status(500).json({ error: '创建域名失败' })
+    logger.error({ error }, 'Create domain error')
+    return sendError(res, '创建域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 更新域名
-router.put('/:id', authMiddleware, async (req: any, res) => {
+router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const domain = await getDomainById(Number(req.params.id))
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const data = domainSchema.partial().parse(req.body)
     const updated = await updateDomain(Number(req.params.id), data)
-    res.json(updated)
+
+    logger.info({ domainId: updated!.id }, 'Domain updated')
+
+    return sendSuccess(res, updated, '域名更新成功')
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Update domain error:', error)
-    res.status(500).json({ error: '更新域名失败' })
+    logger.error({ error }, 'Update domain error')
+    return sendError(res, '更新域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 删除域名
-router.delete('/:id', authMiddleware, async (req: any, res) => {
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const domain = await getDomainById(Number(req.params.id))
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     // 删除关联的提醒
     await deleteRemindersByDomainId(domain.id)
     await deleteDomain(Number(req.params.id))
-    res.status(204).send()
+
+    logger.info({ domainId: domain.id, name: domain.name }, 'Domain deleted')
+
+    return res.status(HTTP_STATUS.NO_CONTENT).send()
   }
   catch (error) {
-    console.error('Delete domain error:', error)
-    res.status(500).json({ error: '删除域名失败' })
+    logger.error({ error }, 'Delete domain error')
+    return sendError(res, '删除域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
 // 添加提醒
-router.post('/:id/reminders', authMiddleware, async (req: any, res) => {
+router.post('/:id/reminders', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const domain = await getDomainById(Number(req.params.id))
     if (!domain || domain.userId !== req.userId) {
-      return res.status(404).json({ error: '域名不存在' })
+      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
 
     const data = reminderSchema.parse(req.body)
@@ -189,14 +183,17 @@ router.post('/:id/reminders', authMiddleware, async (req: any, res) => {
       domainId: domain.id,
       daysBefore: data.daysBefore,
     })
-    res.status(201).json(reminder)
+
+    logger.info({ domainId: domain.id, reminderId: reminder.id }, 'Reminder created')
+
+    return sendSuccess(res, reminder, '提醒创建成功', HTTP_STATUS.CREATED)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.issues })
+      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
-    console.error('Create reminder error:', error)
-    res.status(500).json({ error: '创建提醒失败' })
+    logger.error({ error }, 'Create reminder error')
+    return sendError(res, '创建提醒失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

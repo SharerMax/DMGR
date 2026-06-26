@@ -12,3 +12,6 @@ export * from './base'
 
 // 服务商配置
 export * from './config'
+
+// vps8
+export * from './vps8' // VPS8 服务商配置
