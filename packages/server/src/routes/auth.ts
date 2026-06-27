@@ -11,7 +11,7 @@ const router = Router()
 const registerSchema = z.object({
   username: z.string().min(3).max(50),
   password: z.string().min(6),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
 })
 
 const loginSchema = z.object({
@@ -71,7 +71,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
 })
 
 const updateProfileSchema = z.object({
-  email: z.string().email().optional().nullable(),
+  email: z.email().optional().nullable(),
 })
 
 router.put('/profile', authMiddleware, async (req: AuthRequest, res) => {

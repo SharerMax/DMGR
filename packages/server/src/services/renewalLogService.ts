@@ -8,7 +8,7 @@ import {
   getRenewalStats,
 
 } from '../models/renewalLog.js'
-import { executeAutoRenewal, getCurrentCronExpression, stopAutoRenewalScheduler, updateAutoRenewalSchedule } from './autoRenew.js'
+import { executeAutoRenewal, getCurrentCronExpression, stopAutoRenewalScheduler, updateAutoRenewalSchedule } from './autoRenewService.js'
 
 export interface RenewalLogQuery extends RenewalLogFilters {
   page: number

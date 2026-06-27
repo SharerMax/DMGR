@@ -1,6 +1,6 @@
 import type { DNSOperationResult, DNSRecordOutput, DomainInfo, SyncResult } from '../base'
 import { Buffer } from 'node:buffer'
-import { DomainSyncer } from '../base'
+import { DNSProviderFactory, DomainSyncer } from '../base'
 
 // VPS8 API 地址（预留）
 const VPS8_API_URL = 'https://vps8.zz.cd/api/client/dnsopenapi'
@@ -130,3 +130,5 @@ export class VPS8Syncer extends DomainSyncer {
     throw new Error('Method not implemented.')
   }
 }
+
+DNSProviderFactory.registerSyncer('vps8', VPS8Syncer)

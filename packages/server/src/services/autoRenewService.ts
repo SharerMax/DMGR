@@ -8,7 +8,7 @@ import cron from 'node-cron'
 import { prisma } from '../db/index.js'
 import { DNSProviderFactory, getProviderConfig } from '../providers/index.js'
 import { logger } from '../utils/index.js'
-import { sendNotification } from './notification.js'
+import { sendNotification } from './notificationService.js'
 
 export type RenewalStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'
 

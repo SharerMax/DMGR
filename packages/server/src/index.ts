@@ -7,7 +7,7 @@ import domainRoutes from './routes/domains.js'
 import notificationChannelRoutes from './routes/notificationChannels.js'
 import providerRoutes from './routes/providers.js'
 import renewalLogRoutes from './routes/renewalLogs.js'
-import { startAutoRenewalScheduler } from './services/autoRenew.js'
+import { startAutoRenewalScheduler } from './services/autoRenewService.js'
 import { logger, requestLogger } from './utils/index.js'
 
 const app = express()
