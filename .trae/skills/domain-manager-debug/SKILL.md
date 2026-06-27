@@ -89,7 +89,7 @@ rm -rf packages/client/node_modules/.vite
 4. 本地操作成功但三方失败时，service 层只记 warn 不报错，需查日志
 
 ### 自动续期不执行
-1. 检查 `autoRenew.ts` 调度器是否启动（看启动日志 `Auto renewal scheduler started`）
+1. 检查 `autoRenewService.ts` 调度器是否启动（看启动日志 `Auto renewal scheduler started`）
 2. 检查域名的 `autoRenew` 是否为 true，`expiryDate` 是否在续期窗口内
 3. 检查 Provider 的 `supportsAutoRenew` 是否为 true
 4. 检查 `providers/<name>/renewer.ts` 是否正确注册到 `DNSProviderFactory`

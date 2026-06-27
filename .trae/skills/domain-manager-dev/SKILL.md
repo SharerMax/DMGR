@@ -159,7 +159,7 @@ try {
 11. **providers 目录按服务商拆分**: 每个服务商一个子目录
 12. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
 13. **三方集成**: 域名/DNS 操作会同步到服务商 API，失败不阻塞本地操作，仅记录 warn
-14. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenew.ts` 只做调度
+14. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenewService.ts` 只做调度
 15. **DNSProviderFactory**: 统一创建 provider/syncer/renewer 实例，禁止手动 switch/case
 
 ## 环境变量

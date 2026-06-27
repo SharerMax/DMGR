@@ -35,8 +35,8 @@ packages/server/src/
 │   ├── dnsRecordService.ts # DNS 记录业务（CRUD/权限校验）
 │   ├── notificationChannelService.ts # 通知渠道业务
 │   ├── renewalLogService.ts  # 续期日志业务（查询/统计/自动续期配置）
-│   ├── autoRenew.ts     # 自动续期调度服务
-│   └── notification.ts  # 通知发送服务
+│   ├── autoRenewService.ts     # 自动续期调度服务
+│   └── notificationService.ts  # 通知发送服务
 ├── models/              # 数据访问层（纯 CRUD，不包含业务逻辑）
 │   ├── user.ts
 │   ├── domain.ts
@@ -244,4 +244,4 @@ const renewer = DNSProviderFactory.createRenewer('aliyun', { apiKey, apiSecret }
 | 域名更新 | 先更新本地 DB，再同步三方信息 | 仅记录 warn，不回滚本地 |
 | 域名删除 | 只删本地，不删三方（防误删） | - |
 
-自动续期: `services/autoRenew.ts` 只做调度编排，具体续期逻辑由 `providers/<name>/renewer.ts` 提供。
+自动续期: `services/autoRenewService.ts` 只做调度编排，具体续期逻辑由 `providers/<name>/renewer.ts` 提供。
