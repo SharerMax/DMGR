@@ -4,6 +4,171 @@
  * 后续可以继承此类实现具体的 DNS 服务商
  */
 
+/**
+ * HTTP 请求方法
+ */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+
+/**
+ * API 请求选项
+ */
+export interface ApiRequestOptions {
+  method?: HttpMethod
+  headers?: Record<string, string>
+  body?: any
+  query?: Record<string, any>
+  timeout?: number
+}
+
+/**
+ * BaseApiClient 通用 API 响应（由各服务商的 response 转换）
+ */
+export interface ApiClientResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  code?: string
+  raw?: any
+}
+
+/**
+ * BaseApiClient 配置
+ */
+export interface BaseApiClientConfig {
+  apiUrl?: string
+  apiKey?: string
+  apiSecret?: string
+  [key: string]: any
+}
+
+/**
+ * BaseApiClient 抽象基类
+ * 封装 HTTP 请求和认证逻辑，供 provider/syncer/renewer 共用
+ */
+export abstract class BaseApiClient {
+  protected apiUrl: string
+  protected config: BaseApiClientConfig
+
+  constructor(config: BaseApiClientConfig) {
+    this.apiUrl = config.apiUrl || ''
+    this.config = config
+  }
+
+  /**
+   * 构建请求头（由子类实现具体认证方式）
+   */
+  protected buildHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+    }
+  }
+
+  /**
+   * 构建 URL（拼接路径和查询参数）
+   */
+  protected buildUrl(path: string, query?: Record<string, any>): string {
+    let url = this.apiUrl
+    if (path && !url.endsWith('/') && !path.startsWith('/')) {
+      url = `${url}/${path}`
+    }
+    else if (path) {
+      url = `${url}${path}`
+    }
+    else {
+      url = this.apiUrl
+    }
+
+    if (query && Object.keys(query).length > 0) {
+      const qs = new URLSearchParams()
+      for (const [key, value] of Object.entries(query)) {
+        if (value !== undefined && value !== null) {
+          qs.append(key, String(value))
+        }
+      }
+      const queryString = qs.toString()
+      if (queryString) {
+        url = `${url}?${queryString}`
+      }
+    }
+
+    return url
+  }
+
+  /**
+   * 核心请求方法（由具体子类实现响应解析）
+   */
+  protected async httpRequest<T = any>(
+    path: string,
+    options: ApiRequestOptions = {},
+  ): Promise<ApiClientResponse<T>> {
+    const {
+      method = 'GET',
+      headers,
+      body,
+      query,
+      timeout,
+    } = options
+
+    const finalHeaders = {
+      ...this.buildHeaders(),
+      ...(headers || {}),
+    }
+
+    const url = this.buildUrl(path, query)
+
+    const init: RequestInit = {
+      method,
+      headers: finalHeaders,
+    }
+
+    if (body !== undefined && method !== 'GET') {
+      init.body = typeof body === 'string' ? body : JSON.stringify(body)
+    }
+
+    try {
+      const response = timeout
+        ? await Promise.race([
+            fetch(url, init),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeout)),
+          ])
+        : await fetch(url, init)
+
+      const text = await response.text()
+      const data = text ? JSON.parse(text) : null
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data?.message || data?.error || `HTTP ${response.status}`,
+          code: String(response.status),
+          raw: data,
+        }
+      }
+
+      return {
+        success: true,
+        data: data as T,
+        raw: data,
+      }
+    }
+    catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Network error',
+      }
+    }
+  }
+
+  /**
+   * 业务层 request 方法（由具体实现者调用）
+   * 封装统一的 API 调用方式，返回 provider/syncer/renewer 需要的结构化数据
+   *
+   * @param pathOrAction API 路径或 action 名称（由具体实现决定）
+   * @param params 请求参数
+   */
+  abstract request<T = any>(pathOrAction: string, params?: Record<string, any>): Promise<ApiClientResponse<T>>
+}
+
 export interface DNSRecordInput {
   type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SRV' | 'CAA' | 'PTR' | 'SOA'
   name: string
@@ -86,10 +251,14 @@ export abstract class DNSProvider {
   protected apiKey?: string
   protected apiSecret?: string
 
-  constructor(config: { apiUrl?: string, apiKey?: string, apiSecret?: string }) {
+  // API 客户端（可选，由具体实现注入）
+  protected apiClient?: BaseApiClient
+
+  constructor(config: { apiUrl?: string, apiKey?: string, apiSecret?: string, apiClient?: BaseApiClient }) {
     this.apiUrl = config.apiUrl
     this.apiKey = config.apiKey
     this.apiSecret = config.apiSecret
+    this.apiClient = config.apiClient
   }
 
   /**
@@ -152,9 +321,13 @@ export abstract class DomainSyncer {
   protected apiKey?: string
   protected apiSecret?: string
 
-  constructor(config: { apiKey?: string, apiSecret?: string }) {
+  // API 客户端（可选，由具体实现注入）
+  protected apiClient?: BaseApiClient
+
+  constructor(config: { apiKey?: string, apiSecret?: string, apiClient?: BaseApiClient }) {
     this.apiKey = config.apiKey
     this.apiSecret = config.apiSecret
+    this.apiClient = config.apiClient
   }
 
   /**
@@ -214,9 +387,13 @@ export abstract class DomainRenewer {
   protected apiKey?: string
   protected apiSecret?: string
 
-  constructor(config: { apiKey?: string, apiSecret?: string }) {
+  // API 客户端（可选，由具体实现注入）
+  protected apiClient?: BaseApiClient
+
+  constructor(config: { apiKey?: string, apiSecret?: string, apiClient?: BaseApiClient }) {
     this.apiKey = config.apiKey
     this.apiSecret = config.apiSecret
+    this.apiClient = config.apiClient
   }
 
   /**

@@ -47,13 +47,17 @@ packages/server/src/
 │   └── renewalLog.ts
 ├── providers/           # DNS 服务商适配层（按服务商拆分目录）
 │   ├── index.ts         # 统一导出
-│   ├── base.ts          # 抽象基类（DNSProvider / DomainSyncer / DomainRenewer / DNSProviderFactory）
+│   ├── base.ts          # 抽象基类（DNSProvider / DomainSyncer / DomainRenewer / DNSProviderFactory / BaseApiClient）
 │   ├── config.ts        # 内置服务商配置
-│   └── aliyun/          # 阿里云目录
-│       ├── index.ts
+│   ├── aliyun/          # 阿里云目录
+│   │   ├── apiClient.ts # 阿里云 API 客户端（封装签名/请求/响应处理）
+│   │   ├── provider.ts  # DNS Provider 实现
+│   │   ├── syncer.ts    # 域名同步实现
+│   │   └── renewer.ts   # 域名续期实现
+│   └── vps8/            # VPS8 目录
+│       ├── apiClient.ts # VPS8 API 客户端（Basic Auth + JSON）
 │       ├── provider.ts  # DNS Provider 实现
-│       ├── syncer.ts    # 域名同步实现
-│       └── renewer.ts   # 域名续期实现
+│       └── syncer.ts    # 域名同步实现
 └── utils/               # 工具函数
     ├── index.ts
     ├── logger.ts        # Pino logger 配置
@@ -200,12 +204,19 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 
 按服务商拆分目录结构，每个服务商目录下只放服务商相关代码：
 
-服务商类型: aliyun, tencent, cloudflare, dnspod, namecheap, custom
+服务商类型: aliyun, vps8, tencent, cloudflare, dnspod, namecheap, custom
 
 每个 Provider 实现三类组件:
 - **DNSProvider**: DNS 记录管理（增删改查）
 - **DomainSyncer**: 域名同步（从服务商拉取域名列表）
 - **DomainRenewer**: 域名续期（自动续期执行）
+
+所有组件共享一个 **ApiClient**（继承 `BaseApiClient`）负责:
+- 构建请求头（认证方式：Basic Auth / Bearer / 签名等）
+- 发送 HTTP 请求（`fetch`）
+- 解析服务商响应格式（统一转为 `ApiClientResponse<T>`）
+- 处理业务错误码（如 aliyun Code 字段、vps8 error 字段）
+- 统一超时和错误处理
 
 使用 `DNSProviderFactory` 统一创建各类实例：
 
@@ -224,12 +235,13 @@ const renewer = DNSProviderFactory.createRenewer('aliyun', { apiKey, apiSecret }
 
 添加新 Provider:
 1. 在 `providers/<name>/` 创建目录
-2. 实现 `provider.ts`（继承 `DNSProvider`）
-3. 实现 `syncer.ts`（继承 `DomainSyncer`）
-4. 实现 `renewer.ts`（继承 `DomainRenewer`，可选，仅 supportsAutoRenew=true 时）
-5. 创建 `index.ts` 导出并注册到 DNSProviderFactory
-6. 在 `providers/config.ts` 添加配置
-7. 在 `providers/index.ts` 统一导出
+2. 实现 `apiClient.ts`（继承 `BaseApiClient`，封装 HTTP/认证/响应解析）
+3. 实现 `provider.ts`（继承 `DNSProvider`，注入 apiClient）
+4. 实现 `syncer.ts`（继承 `DomainSyncer`，注入 apiClient）
+5. 实现 `renewer.ts`（继承 `DomainRenewer`，可选，仅 supportsAutoRenew=true 时，注入 apiClient）
+6. 创建 `index.ts` 导出并注册到 DNSProviderFactory
+7. 在 `providers/config.ts` 添加配置
+8. 在 `providers/index.ts` 统一导出
 
 ## 三方服务集成
 

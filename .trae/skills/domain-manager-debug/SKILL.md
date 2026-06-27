@@ -99,4 +99,11 @@ rm -rf packages/client/node_modules/.vite
 1. 检查 `providers/config.ts` 是否注册了该服务商
 2. 检查对应服务商目录的 `index.ts` 是否调用了 `DNSProviderFactory.registerXxx`
 3. 检查 `providers/index.ts` 是否导入了该服务商模块（触发注册）
-4. 类型名拼写是否一致（aliyun / tencent / cloudflare 等）
+4. 类型名拼写是否一致（aliyun / vps8 / cloudflare 等）
+
+### ApiClient 调用异常
+1. 检查 `providers/<name>/apiClient.ts` 的 `buildHeaders()` 是否正确设置认证信息
+2. 检查 `buildUrl()` 是否正确拼接 API endpoint 和查询参数
+3. 检查 `request()` 中业务错误码解析是否符合服务商响应格式（如 aliyun Code 字段、vps8 error 字段）
+4. 三方 API 不可达时 `httpRequest` 返回 success=false + error 信息，不会抛异常
+5. 可在 `httpRequest` 中加 logger 调试实际请求 URL 和响应 body

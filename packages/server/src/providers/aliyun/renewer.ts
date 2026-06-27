@@ -5,11 +5,13 @@
 import type { RenewalResult } from '../base'
 import { logger } from '../../utils/index.js'
 import { DNSProviderFactory, DomainRenewer } from '../base'
+import { AliyunApiClient } from './apiClient'
 
 interface AliyunRenewerConfig {
   apiKey: string
   apiSecret: string
   region?: string
+  apiUrl?: string
 }
 
 /**
@@ -20,9 +22,15 @@ export class AliyunDomainRenewer extends DomainRenewer {
   readonly name = '阿里云'
 
   private config: AliyunRenewerConfig
+  protected declare apiClient?: AliyunApiClient
 
   constructor(config: AliyunRenewerConfig) {
-    super(config)
+    const apiClient = new AliyunApiClient(config)
+    super({
+      apiKey: config.apiKey,
+      apiSecret: config.apiSecret,
+      apiClient,
+    })
     this.config = {
       region: 'cn-hangzhou',
       ...config,
