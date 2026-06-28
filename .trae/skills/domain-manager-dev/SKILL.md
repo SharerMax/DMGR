@@ -11,12 +11,18 @@ pnpm monorepo: `packages/server` (Express+Prisma+SQLite) + `packages/client` (Re
 
 ```bash
 pnpm install --no-frozen-lockfile  # 安装依赖（lockfile 可能不匹配时用此命令）
+pnpm update --latest               # 升级所有依赖到范围最新（受 pnpm 默认 minimumReleaseAge 策略保护：新发布的版本在特定时间窗口内不会被采用，以防御供应链攻击）
 pnpm dev:server                     # 后端 http://localhost:3001
 pnpm dev:client                     # 前端 http://localhost:3000
 pnpm build                          # 构建
 pnpm lint / pnpm lint:fix           # 检查/修复
 pnpm typecheck                      # 类型检查（前后端同时）
 ```
+
+**依赖管理说明**:
+- 依赖版本集中在 `pnpm-workspace.yaml` 的 `catalog` 字段声明，各工作区的 `package.json` 中使用 `"<pkg>": "catalog:"`
+- 升级依赖时用 `pnpm update --latest`，它会把 catalog 内版本范围推到 npm 上的最新大版本
+- pnpm 默认启用 `minimumReleaseAge` 安全策略：发布时间早于阈值的版本才会被解析为候选。**不要绕过**该策略（如设置为 0 或排除特定包）。如果某个版本因策略被拒，要么等待时间窗口，要么手工在 catalog 中写入稍旧且安全的版本
 
 ## Prisma Commands
 
@@ -161,6 +167,7 @@ try {
 13. **三方集成**: 域名/DNS 操作会同步到服务商 API，失败不阻塞本地操作，仅记录 warn
 14. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenewService.ts` 只做调度
 15. **DNSProviderFactory**: 统一创建 provider/syncer/renewer 实例，禁止手动 switch/case
+16. **依赖版本集中管理**: 依赖版本写在 `pnpm-workspace.yaml` 的 `catalog` 字段；各 workspace 用 `"catalog:"` 引用。升级时用 `pnpm update --latest`；不要绕过 `minimumReleaseAge` 策略
 
 ## 环境变量
 

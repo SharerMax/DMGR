@@ -47,10 +47,28 @@ packages/server/src/
 │   └── renewalLog.ts
 ├── providers/           # DNS 服务商适配层（按服务商拆分目录）
 │   ├── index.ts         # 统一导出
-│   ├── base.ts          # 抽象基类（DNSProvider / DomainSyncer / DomainRenewer / DNSProviderFactory / BaseApiClient）
-│   ├── config.ts        # 内置服务商配置
-│   ├── aliyun/          # 阿里云目录
+│   ├── base.ts          # 抽象基类（DNSProvider / DomainSyncer / DomainRenewer / DNSProviderFactory）
+│   ├── config.ts        # 内置服务商配置（含 fields 定义，驱动前端动态表单）
+│   ├── aliyun/          # 阿里云目录（使用官方 SDK @alicloud/pop-core）
 │   │   ├── apiClient.ts # 阿里云 API 客户端（封装签名/请求/响应处理）
+│   │   ├── provider.ts  # DNS Provider 实现
+│   │   ├── syncer.ts    # 域名同步实现
+│   │   └── renewer.ts   # 域名续期实现
+│   ├── tencent/         # 腾讯云目录（使用官方 SDK tencentcloud-sdk-nodejs-*）
+│   │   ├── apiClient.ts # 腾讯云 DNS/域名 API 客户端
+│   │   ├── provider.ts  # DNS Provider 实现
+│   │   ├── syncer.ts    # 域名同步实现
+│   │   └── renewer.ts   # 域名续期实现
+│   ├── cloudflare/      # Cloudflare 目录（使用官方 SDK cloudflare）
+│   │   ├── apiClient.ts # Cloudflare Zone/DNS API 客户端
+│   │   ├── provider.ts  # DNS Provider 实现
+│   │   ├── syncer.ts    # 域名同步实现
+│   ├── dnspod/          # DNSPod 目录（表单 API，Login Token 认证）
+│   │   ├── apiClient.ts # DNSPod DNS API 客户端
+│   │   ├── provider.ts  # DNS Provider 实现
+│   │   └── syncer.ts    # 域名同步实现
+│   ├── namecheap/       # Namecheap 目录（XML API，HMAC-SHA1 签名）
+│   │   ├── apiClient.ts # Namecheap DNS/域名 API 客户端
 │   │   ├── provider.ts  # DNS Provider 实现
 │   │   ├── syncer.ts    # 域名同步实现
 │   │   └── renewer.ts   # 域名续期实现
@@ -211,12 +229,22 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 - **DomainSyncer**: 域名同步（从服务商拉取域名列表）
 - **DomainRenewer**: 域名续期（自动续期执行）
 
-所有组件共享一个 **ApiClient**（继承 `BaseApiClient`）负责:
-- 构建请求头（认证方式：Basic Auth / Bearer / 签名等）
-- 发送 HTTP 请求（`fetch`）
-- 解析服务商响应格式（统一转为 `ApiClientResponse<T>`）
-- 处理业务错误码（如 aliyun Code 字段、vps8 error 字段）
-- 统一超时和错误处理
+**重要：不再存在 BaseApiClient。** 每个服务商目录下的 `apiClient.ts` **直接**导入并封装该服务商的官方 SDK/HTTP 客户端，对外暴露业务方法（如 `describeRecordList`、`createRecord`、`renewDomain`）。外部（provider/syncer/renewer）直接 `import { XxxApiClient } from './apiClient'` 使用，不需要继承基类。
+
+| 服务商 | SDK / 客户端 | 认证方式 | 目录 |
+|--------|-------------|---------|-----|
+| aliyun | `@alicloud/pop-core` | AccessKeyId / AccessKeySecret（签名） | `providers/aliyun/` |
+| tencent | `tencentcloud-sdk-nodejs-dnspod` / `-domain` | SecretId / SecretKey（TC3-HMAC-SHA256，SDK 内部处理） | `providers/tencent/` |
+| cloudflare | `cloudflare`（官方 TS SDK） | Bearer Token | `providers/cloudflare/` |
+| dnspod | 原生 fetch + 表单 | Login Token（`ID,Token`） | `providers/dnspod/` |
+| namecheap | `fast-xml-parser` 解析 XML + 原生 fetch | ApiUser / ApiKey / ClientIp（HMAC-SHA1 签名） | `providers/namecheap/` |
+| vps8 | 原生 fetch | Basic Auth（base64(username:password)） | `providers/vps8/` |
+
+ApiClient 职责:
+- 封装认证（SDK 内部处理 或 手写签名）
+- 暴露业务化 API 方法（返回类型已声明）
+- 处理错误码与异常
+- 统一错误消息
 
 使用 `DNSProviderFactory` 统一创建各类实例：
 
@@ -224,24 +252,24 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 import { DNSProviderFactory } from '../providers/index.js'
 
 // 创建 DNS Provider
-const dns = DNSProviderFactory.createProvider('aliyun', { apiKey, apiSecret })
+const dns = DNSProviderFactory.createProvider('aliyun', { accessKeyId, accessKeySecret })
 
 // 创建域名同步器
-const syncer = DNSProviderFactory.createSyncer('aliyun', { apiKey, apiSecret })
+const syncer = DNSProviderFactory.createSyncer('aliyun', { accessKeyId, accessKeySecret })
 
 // 创建域名续期器
-const renewer = DNSProviderFactory.createRenewer('aliyun', { apiKey, apiSecret })
+const renewer = DNSProviderFactory.createRenewer('aliyun', { accessKeyId, accessKeySecret })
 ```
 
 添加新 Provider:
 1. 在 `providers/<name>/` 创建目录
-2. 实现 `apiClient.ts`（继承 `BaseApiClient`，封装 HTTP/认证/响应解析）
-3. 实现 `provider.ts`（继承 `DNSProvider`，注入 apiClient）
+2. 实现 `apiClient.ts`（封装官方 SDK 或 HTTP 客户端，直接暴露业务方法）
+3. 实现 `provider.ts`（继承 `DNSProvider`，内部实例化 `<Name>ApiClient` 并调用其方法）
 4. 实现 `syncer.ts`（继承 `DomainSyncer`，注入 apiClient）
-5. 实现 `renewer.ts`（继承 `DomainRenewer`，可选，仅 supportsAutoRenew=true 时，注入 apiClient）
+5. 实现 `renewer.ts`（继承 `DomainRenewer`，可选，仅 supportsAutoRenew=true，注入 apiClient）
 6. 创建 `index.ts` 导出并注册到 DNSProviderFactory
-7. 在 `providers/config.ts` 添加配置
-8. 在 `providers/index.ts` 统一导出
+7. 在 `providers/config.ts` 添加配置（`fields` 定义驱动前端动态表单）
+8. 在 `providers/index.ts` 统一导出（按字母序，符合 `perfectionist/sort-exports`）
 
 ## 三方服务集成
 

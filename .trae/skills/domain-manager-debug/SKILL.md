@@ -102,8 +102,8 @@ rm -rf packages/client/node_modules/.vite
 4. 类型名拼写是否一致（aliyun / vps8 / cloudflare 等）
 
 ### ApiClient 调用异常
-1. 检查 `providers/<name>/apiClient.ts` 的 `buildHeaders()` 是否正确设置认证信息
-2. 检查 `buildUrl()` 是否正确拼接 API endpoint 和查询参数
-3. 检查 `request()` 中业务错误码解析是否符合服务商响应格式（如 aliyun Code 字段、vps8 error 字段）
-4. 三方 API 不可达时 `httpRequest` 返回 success=false + error 信息，不会抛异常
-5. 可在 `httpRequest` 中加 logger 调试实际请求 URL 和响应 body
+1. 检查 `providers/<name>/apiClient.ts` 是否正确使用了对应服务商的官方 SDK（如 `@alicloud/pop-core`、`tencentcloud-sdk-nodejs-*`、`cloudflare`），或正确拼接了认证参数（如 DNSPod Login Token、Namecheap HMAC-SHA1 + Timestamp + ClientIp）
+2. 检查 `provider.ts` / `syncer.ts` / `renewer.ts` 是否直接从 `./apiClient` 导入并实例化（**不再继承 `BaseApiClient`**）
+3. 对于使用官方 SDK 的服务商（aliyun / tencent / cloudflare），签名由 SDK 内部处理；如报签名错误，先确认 AccessKey / SecretId / Token 本身是否正确
+4. 对于手写签名的服务商（namecheap / vps8 / dnspod），核对签名算法、参数排序、时间戳、nonce 等
+5. 可在 apiClient 方法中加 logger 输出实际请求参数和响应 body
