@@ -1,5 +1,6 @@
 import type { Provider } from '../models/provider.js'
 import type { DomainSyncer } from '../providers/index.js'
+import logger from '@/utils/logger.js'
 import { createDomain, getDomainsByUserId } from '../models/domain.js'
 import {
   createProvider,
@@ -151,6 +152,7 @@ async function syncNewDomains(userId: number, providerId: number, domainList: Ar
   const syncedDomains = []
   for (const domain of domainList) {
     if (!existingDomainNames.has(domain.name)) {
+      logger.info(`同步域名: ${domain.name} ${domain.expiryDate} ${domain.autoRenew}`)
       const newDomain = await createDomain({
         name: domain.name,
         providerId,

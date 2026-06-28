@@ -15,7 +15,7 @@ interface VPS8RawResponse<T = any> {
   error?: string
 }
 
-interface VPS8DNSRecord {
+export interface VPS8DNSRecord {
   id: number
   host: string
   type: string
@@ -25,18 +25,18 @@ interface VPS8DNSRecord {
   provider_record_id: string
 }
 
-interface VPS8SelfPlatformDomain {
+export interface VPS8SelfPlatformDomain {
   domain: string
-  platform_type: string
-  source_service: string
+  platform_type: 'self_platform'
+  source_service: 'domain'
   created_at: string
   expires_at: string
 }
 
-interface VPS8OtherPlatformDomain {
+export interface VPS8OtherPlatformDomain {
   domain: string
-  platform_type: string
-  source_service: string
+  platform_type: 'hosted'
+  source_service: 'dns'
 }
 
 export type VPS8Domain = VPS8SelfPlatformDomain | VPS8OtherPlatformDomain
