@@ -9,17 +9,22 @@
     "typecheck": "tsc --noEmit --forceConsistentCasingInFileNames"
   },
   "dependencies": {
+    "@alicloud/pop-core": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/client": "catalog:",
     "@types/node-cron": "catalog:",
     "bcryptjs": "catalog:",
     "better-sqlite3": "catalog:",
+    "cloudflare": "catalog:",
     "cors": "catalog:",
     "express": "catalog:",
+    "fast-xml-parser": "catalog:",
     "jsonwebtoken": "catalog:",
     "node-cron": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
+    "tencentcloud-sdk-nodejs-dnspod": "catalog:",
+    "tencentcloud-sdk-nodejs-domain": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

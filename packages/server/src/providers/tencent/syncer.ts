@@ -1,5 +1,5 @@
 /**
- * 阿里云域名同步器实现
+ * 腾讯云域名同步器实现
  */
 
 import type {
@@ -9,63 +9,32 @@ import type {
   SyncResult,
 } from '../base'
 import { DNSProviderFactory, DomainSyncer } from '../base'
-import { AliyunApiClient } from './apiClient'
+import { TencentApiClient } from './apiClient'
 
-interface AliyunConfig {
-  accessKeyId: string
-  accessKeySecret: string
+interface TencentConfig {
+  secretId: string
+  secretKey: string
   region?: string
   apiUrl?: string
 }
 
-interface AliyunDomain {
-  DomainName: string
-  DomainId: string
-  AliDomain: boolean
-  Registrar?: string
-  RegistrationDate?: string
-  ExpirationDate?: string
-  DomainType?: string
-  DNSServers?: {
-    DnsServer: string
-  }[]
-}
+export class TencentSyncer extends DomainSyncer {
+  readonly id = 'tencent'
+  readonly name = '腾讯云'
 
-interface AliyunRecord {
-  RecordId: string
-  RR: string
-  Type: string
-  Value: string
-  TTL: number
-  Priority?: number
-  Line?: string
-  Status: string
-  Locked: boolean
-  Weight?: number
-  Remark?: string
-  createTime: string
-  updateTime: string
-}
+  private apiClient: TencentApiClient
 
-export class AliyunSyncer extends DomainSyncer {
-  readonly id = 'aliyun'
-  readonly name = '阿里云'
-
-  private config: AliyunConfig
-  private apiClient: AliyunApiClient
-
-  constructor(config: AliyunConfig) {
+  constructor(config: TencentConfig) {
     super(config)
-    this.config = { region: 'cn-hangzhou', ...config }
-    this.apiClient = new AliyunApiClient(this.config)
+    this.apiClient = new TencentApiClient(config)
   }
 
   validateConfig(): boolean {
-    return !!(this.config.accessKeyId && this.config.accessKeySecret)
+    return !!this.apiClient
   }
 
   async getAccountInfo(): Promise<DNSOperationResult<any>> {
-    const response = await this.apiClient.describeDomainInfo('')
+    const response = await this.apiClient.describeDomainList(1)
 
     if (!response.success) {
       return {
@@ -79,7 +48,7 @@ export class AliyunSyncer extends DomainSyncer {
   }
 
   async listDomains(): Promise<DNSOperationResult<DomainInfo[]>> {
-    const response = await this.apiClient.describeDomains()
+    const response = await this.apiClient.describeDomainList()
 
     if (!response.success) {
       return {
@@ -89,14 +58,12 @@ export class AliyunSyncer extends DomainSyncer {
       }
     }
 
-    const domains: DomainInfo[] = (response.data?.Domains?.Domain || []).map(
-      (domain: AliyunDomain) => ({
-        name: domain.DomainName,
-        registrar: domain.Registrar,
-        registrationDate: domain.RegistrationDate,
+    const domains: DomainInfo[] = (response.data?.DomainList || []).map(
+      (domain: any) => ({
+        name: domain.Name,
         expirationDate: domain.ExpirationDate || '',
-        status: domain.DomainType || 'active',
-        dnsServers: domain.DNSServers?.map(d => d.DnsServer),
+        status: domain.Status || 'active',
+        dnsServers: [],
       }),
     )
 
@@ -104,7 +71,7 @@ export class AliyunSyncer extends DomainSyncer {
   }
 
   async getDomainInfo(domain: string): Promise<DNSOperationResult<DomainInfo>> {
-    const response = await this.apiClient.describeDomainInfo(domain)
+    const response = await this.apiClient.describeDomain(domain)
 
     if (!response.success) {
       return {
@@ -114,16 +81,14 @@ export class AliyunSyncer extends DomainSyncer {
       }
     }
 
-    const domainData = response.data as AliyunDomain | undefined
+    const domainData: any = response.data
     return {
       success: true,
       data: {
-        name: domainData?.DomainName || domain,
-        registrar: domainData?.Registrar,
-        registrationDate: domainData?.RegistrationDate,
+        name: domainData?.Name || domain,
         expirationDate: domainData?.ExpirationDate || '',
-        status: domainData?.DomainType || 'active',
-        dnsServers: domainData?.DNSServers?.map(d => d.DnsServer),
+        status: domainData?.Status || 'active',
+        dnsServers: [],
       },
     }
   }
@@ -153,7 +118,7 @@ export class AliyunSyncer extends DomainSyncer {
   }
 
   async getDomainRecords(domain: string): Promise<DNSOperationResult<DNSRecordOutput[]>> {
-    const response = await this.apiClient.describeDomainRecords(domain)
+    const response = await this.apiClient.describeRecordList(domain)
 
     if (!response.success) {
       return {
@@ -163,17 +128,17 @@ export class AliyunSyncer extends DomainSyncer {
       }
     }
 
-    const records: DNSRecordOutput[] = (response.data?.DomainRecords?.Record || []).map(
-      (record: AliyunRecord) => ({
-        id: record.RecordId,
+    const records: DNSRecordOutput[] = (response.data?.RecordList || []).map(
+      (record: any) => ({
+        id: String(record.RecordId),
         type: record.Type,
-        name: record.RR,
+        name: record.Name,
         value: record.Value,
         ttl: record.TTL,
         priority: record.Priority || null,
         line: record.Line,
-        createdAt: record.createTime,
-        updatedAt: record.updateTime,
+        createdAt: '',
+        updatedAt: record.UpdatedOn || '',
       }),
     )
 
@@ -185,4 +150,4 @@ export class AliyunSyncer extends DomainSyncer {
   }
 }
 
-DNSProviderFactory.registerSyncer('aliyun', AliyunSyncer)
+DNSProviderFactory.registerSyncer('tencent', TencentSyncer)

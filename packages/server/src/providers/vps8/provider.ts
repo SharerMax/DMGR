@@ -21,26 +21,19 @@ export class VPS8DNSProvider extends DNSProvider {
   readonly id = 'vps8'
   readonly name = 'VPS8'
 
-  protected declare apiClient?: VPS8ApiClient
+  private apiClient: VPS8ApiClient
 
   constructor(config: VPS8ProviderConfig) {
-    const apiClient = new VPS8ApiClient(config)
-    super({
-      apiUrl: config.apiUrl,
-      apiKey: config.apiKey,
-      apiClient,
-    })
+    super(config)
+    this.apiClient = new VPS8ApiClient(config)
   }
 
   validateConfig(): boolean {
-    return !!this.apiKey
+    return !!this.apiClient
   }
 
   async getDNSRecords(domain: string): Promise<DNSOperationResult<DNSRecordOutput[]>> {
-    const response = await this.apiClient!.request<VPS8DNSRecord[]>(
-      '/record_list',
-      { domain },
-    )
+    const response = await this.apiClient.listRecords(domain)
 
     if (!response.success) {
       return {
@@ -49,7 +42,7 @@ export class VPS8DNSProvider extends DNSProvider {
       }
     }
 
-    const records = (response.data || []).map(record => ({
+    const records = (response.data || []).map((record: VPS8DNSRecord) => ({
       id: record.id.toString(),
       type: record.type,
       value: record.value,
@@ -60,20 +53,16 @@ export class VPS8DNSProvider extends DNSProvider {
       updatedAt: '',
     }))
 
-    return {
-      success: true,
-      data: records,
-    }
+    return { success: true, data: records }
   }
 
   async addDNSRecord(domain: string, record: DNSRecordInput): Promise<DNSOperationResult<DNSRecordOutput>> {
-    const response = await this.apiClient!.request<VPS8DNSRecord>('/record_create', {
-      domain,
+    const response = await this.apiClient.createRecord(domain, {
       host: record.name,
       type: record.type,
       value: record.value,
       ttl: record.ttl,
-      priority: record.priority,
+      priority: record.priority ?? undefined,
     })
 
     if (!response.success) {
@@ -99,10 +88,7 @@ export class VPS8DNSProvider extends DNSProvider {
   }
 
   async deleteDNSRecord(domain: string, recordId: string): Promise<DNSOperationResult> {
-    const response = await this.apiClient!.request('/record_delete', {
-      domain,
-      record_id: recordId,
-    })
+    const response = await this.apiClient.deleteRecord(domain, recordId)
 
     if (!response.success) {
       return {
@@ -111,10 +97,7 @@ export class VPS8DNSProvider extends DNSProvider {
       }
     }
 
-    return {
-      success: true,
-      data: {},
-    }
+    return { success: true, data: {} }
   }
 
   async updateDNSRecord(
@@ -122,12 +105,10 @@ export class VPS8DNSProvider extends DNSProvider {
     recordId: string,
     record: Partial<DNSRecordInput>,
   ): Promise<DNSOperationResult<DNSRecordOutput>> {
-    const response = await this.apiClient!.request<VPS8DNSRecord>('/record_update', {
-      domain,
-      id: recordId,
+    const response = await this.apiClient.updateRecord(domain, recordId, {
       value: record.value,
       ttl: record.ttl,
-      priority: record.priority,
+      priority: record.priority ?? undefined,
     })
 
     if (!response.success) {

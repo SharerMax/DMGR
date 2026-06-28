@@ -1,14 +1,13 @@
 /**
  * VPS8 API 客户端
- * 封装 VPS8 OpenAPI 调用，供 provider/syncer 共用
+ * 直接提供业务化的 API 方法，由 provider / syncer 导入使用
  */
 
-import type { ApiClientResponse, BaseApiClientConfig } from '../base'
 import { Buffer } from 'node:buffer'
-import { BaseApiClient } from '../base'
 
-interface VPS8Config extends BaseApiClientConfig {
+interface VPS8Config {
   apiKey: string
+  apiUrl?: string
 }
 
 interface VPS8RawResponse<T = any> {
@@ -16,22 +15,65 @@ interface VPS8RawResponse<T = any> {
   error?: string
 }
 
-const VPS8_API_URL = 'https://vps8.zz.cd/api/client/dnsopenapi'
+interface VPS8DNSRecord {
+  id: number
+  host: string
+  type: string
+  value: string
+  ttl: number
+  priority: number
+  provider_record_id: string
+}
 
-export class VPS8ApiClient extends BaseApiClient {
+interface VPS8SelfPlatformDomain {
+  domain: string
+  platform_type: string
+  source_service: string
+  created_at: string
+  expires_at: string
+}
+
+interface VPS8OtherPlatformDomain {
+  domain: string
+  platform_type: string
+  source_service: string
+}
+
+export type VPS8Domain = VPS8SelfPlatformDomain | VPS8OtherPlatformDomain
+
+export interface VPS8ApiResult<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  raw?: any
+}
+
+const VPS8_DEFAULT_API_URL = 'https://vps8.zz.cd/api/client/dnsopenapi'
+
+/**
+ * VPS8 API 客户端
+ *
+ * 示例：
+ *
+ *   import { VPS8ApiClient } from './apiClient'
+ *
+ *   const client = new VPS8ApiClient({ apiKey })
+ *   const records = await client.listRecords('example.com')
+ */
+export class VPS8ApiClient {
+  private apiUrl: string
+  private apiKey: string
+
   constructor(config: VPS8Config) {
-    super({
-      ...config,
-      apiUrl: config.apiUrl || VPS8_API_URL,
-    })
+    this.apiUrl = config.apiUrl || VPS8_DEFAULT_API_URL
+    this.apiKey = config.apiKey
   }
 
   /**
    * 构建 VPS8 请求头（含 Basic Auth）
    */
-  protected override buildHeaders(): Record<string, string> {
-    const apiKey = this.config.apiKey || ''
-    const token = Buffer.from(`client:${apiKey}`).toString('base64')
+  private buildHeaders(): Record<string, string> {
+    const token = Buffer.from(`client:${this.apiKey}`).toString('base64')
     return {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${token}`,
@@ -39,42 +81,91 @@ export class VPS8ApiClient extends BaseApiClient {
   }
 
   /**
-   * 调用 VPS8 OpenAPI
-   *
-   * @param apiPath API 路径，如 /record_list / record_create
-   * @param params 请求参数（放入 POST body）
+   * 统一请求入口
    */
-  async request<T = any>(
+  private async request<T = any>(
     apiPath: string,
     params: Record<string, any> = {},
-  ): Promise<ApiClientResponse<T>> {
-    const response = await this.httpRequest<VPS8RawResponse<T>>(apiPath, {
+  ): Promise<VPS8ApiResult<T>> {
+    const init: RequestInit = {
       method: 'POST',
-      body: params,
-    })
+      headers: this.buildHeaders(),
+      body: JSON.stringify(params),
+    }
 
-    // VPS8 通过 error 字段表示业务错误
-    const raw = response.raw as VPS8RawResponse<T> | undefined
-    if (raw?.error) {
+    try {
+      const url = this.apiUrl && apiPath && !this.apiUrl.endsWith('/') && !apiPath.startsWith('/')
+        ? `${this.apiUrl}/${apiPath}`
+        : `${this.apiUrl}${apiPath}`
+
+      const response = await fetch(url, init)
+      const text = await response.text()
+      const raw: VPS8RawResponse<T> | undefined = text ? JSON.parse(text) : undefined
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: raw?.error || `HTTP ${response.status}`,
+          raw,
+        }
+      }
+
+      if (raw?.error) {
+        return {
+          success: false,
+          error: raw.error,
+          raw,
+        }
+      }
+
       return {
-        success: false,
-        error: raw.error,
+        success: true,
+        data: raw?.result,
         raw,
       }
     }
-
-    if (!response.success) {
+    catch (error: any) {
       return {
         success: false,
-        error: response.error,
-        raw: response.raw,
+        error: error.message || 'Network error',
       }
     }
+  }
 
-    return {
-      success: true,
-      data: raw?.result,
-      raw,
-    }
+  // --- DNS 记录相关 ---
+
+  async listRecords(domain: string): Promise<VPS8ApiResult<VPS8DNSRecord[]>> {
+    return this.request('/record_list', { domain })
+  }
+
+  async createRecord(domain: string, record: { host: string, type: string, value: string, ttl?: number, priority?: number }): Promise<VPS8ApiResult<VPS8DNSRecord>> {
+    return this.request('/record_create', {
+      domain,
+      host: record.host,
+      type: record.type,
+      value: record.value,
+      ttl: record.ttl,
+      priority: record.priority,
+    })
+  }
+
+  async updateRecord(domain: string, recordId: string, record: { value?: string, ttl?: number, priority?: number }): Promise<VPS8ApiResult<VPS8DNSRecord>> {
+    return this.request('/record_update', {
+      domain,
+      id: recordId,
+      value: record.value,
+      ttl: record.ttl,
+      priority: record.priority,
+    })
+  }
+
+  async deleteRecord(domain: string, recordId: string): Promise<VPS8ApiResult<Record<string, any>>> {
+    return this.request('/record_delete', { domain, record_id: recordId })
+  }
+
+  // --- 域名相关 ---
+
+  async listDomains(): Promise<VPS8ApiResult<VPS8Domain[]>> {
+    return this.request('/domain_list')
   }
 }

@@ -1,5 +1,5 @@
 /**
- * 阿里云 DNS Provider 实现
+ * 腾讯云 DNS Provider 实现
  */
 
 import type {
@@ -8,50 +8,32 @@ import type {
   DNSRecordOutput,
 } from '../base'
 import { DNSProvider, DNSProviderFactory } from '../base'
-import { AliyunApiClient } from './apiClient'
+import { TencentApiClient } from './apiClient'
 
-interface AliyunRecord {
-  RecordId: string
-  RR: string
-  Type: string
-  Value: string
-  TTL: number
-  Priority?: number
-  Line?: string
-  Status: string
-  Locked: boolean
-  Weight?: number
-  Remark?: string
-  createTime: string
-  updateTime: string
-}
-
-interface AliyunConfig {
-  accessKeyId: string
-  accessKeySecret: string
+interface TencentConfig {
+  secretId: string
+  secretKey: string
   region?: string
   apiUrl?: string
 }
 
-export class AliyunDNSProvider extends DNSProvider {
-  readonly id = 'aliyun'
-  readonly name = '阿里云'
+export class TencentDNSProvider extends DNSProvider {
+  readonly id = 'tencent'
+  readonly name = '腾讯云'
 
-  private config: AliyunConfig
-  private apiClient: AliyunApiClient
+  private apiClient: TencentApiClient
 
-  constructor(config: AliyunConfig) {
+  constructor(config: TencentConfig) {
     super(config)
-    this.config = { region: 'cn-hangzhou', ...config }
-    this.apiClient = new AliyunApiClient(this.config)
+    this.apiClient = new TencentApiClient(config)
   }
 
   validateConfig(): boolean {
-    return !!(this.config.accessKeyId && this.config.accessKeySecret)
+    return !!(this.apiClient)
   }
 
   async getDNSRecords(domain: string): Promise<DNSOperationResult<DNSRecordOutput[]>> {
-    const response = await this.apiClient.describeDomainRecords(domain)
+    const response = await this.apiClient.describeRecordList(domain)
 
     if (!response.success) {
       return {
@@ -61,17 +43,17 @@ export class AliyunDNSProvider extends DNSProvider {
       }
     }
 
-    const records: DNSRecordOutput[] = (response.data?.DomainRecords?.Record || []).map(
-      (record: AliyunRecord) => ({
-        id: record.RecordId,
+    const records: DNSRecordOutput[] = (response.data?.RecordList || []).map(
+      (record: any) => ({
+        id: String(record.RecordId),
         type: record.Type,
-        name: record.RR,
+        name: record.Name,
         value: record.Value,
         ttl: record.TTL,
         priority: record.Priority || null,
         line: record.Line,
-        createdAt: record.createTime,
-        updatedAt: record.updateTime,
+        createdAt: '',
+        updatedAt: record.UpdatedOn || '',
       }),
     )
 
@@ -79,13 +61,13 @@ export class AliyunDNSProvider extends DNSProvider {
   }
 
   async addDNSRecord(domain: string, record: DNSRecordInput): Promise<DNSOperationResult<DNSRecordOutput>> {
-    const response = await this.apiClient.addDomainRecord(domain, {
-      RR: record.name,
-      Type: record.type,
-      Value: record.value,
-      TTL: record.ttl,
-      Priority: record.priority ?? undefined,
-      Line: record.line,
+    const response = await this.apiClient.createRecord(domain, {
+      subDomain: record.name,
+      recordType: record.type,
+      recordLine: record.line || '默认',
+      value: record.value,
+      ttl: record.ttl,
+      priority: record.priority ?? undefined,
     })
 
     if (!response.success) {
@@ -99,7 +81,7 @@ export class AliyunDNSProvider extends DNSProvider {
     return {
       success: true,
       data: {
-        id: response.data?.RecordId || '',
+        id: String(response.data?.RecordId || ''),
         type: record.type,
         name: record.name,
         value: record.value,
@@ -112,17 +94,17 @@ export class AliyunDNSProvider extends DNSProvider {
   }
 
   async updateDNSRecord(
-    _domain: string,
+    domain: string,
     recordId: string,
     record: Partial<DNSRecordInput>,
   ): Promise<DNSOperationResult<DNSRecordOutput>> {
-    const response = await this.apiClient.updateDomainRecord(recordId, {
-      RR: record.name,
-      Type: record.type,
-      Value: record.value,
-      TTL: record.ttl,
-      Priority: record.priority ?? undefined,
-      Line: record.line,
+    const response = await this.apiClient.updateRecord(domain, Number(recordId), {
+      subDomain: record.name,
+      recordType: record.type,
+      recordLine: record.line,
+      value: record.value,
+      ttl: record.ttl,
+      priority: record.priority ?? undefined,
     })
 
     if (!response.success) {
@@ -148,8 +130,8 @@ export class AliyunDNSProvider extends DNSProvider {
     }
   }
 
-  async deleteDNSRecord(_domain: string, recordId: string): Promise<DNSOperationResult> {
-    const response = await this.apiClient.deleteDomainRecord(recordId)
+  async deleteDNSRecord(domain: string, recordId: string): Promise<DNSOperationResult> {
+    const response = await this.apiClient.deleteRecord(domain, Number(recordId))
 
     if (!response.success) {
       return {
@@ -163,4 +145,4 @@ export class AliyunDNSProvider extends DNSProvider {
   }
 }
 
-DNSProviderFactory.registerProvider('aliyun', AliyunDNSProvider)
+DNSProviderFactory.registerProvider('tencent', TencentDNSProvider)

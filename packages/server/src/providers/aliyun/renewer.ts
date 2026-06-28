@@ -8,37 +8,27 @@ import { DNSProviderFactory, DomainRenewer } from '../base'
 import { AliyunApiClient } from './apiClient'
 
 interface AliyunRenewerConfig {
-  apiKey: string
-  apiSecret: string
+  accessKeyId: string
+  accessKeySecret: string
   region?: string
   apiUrl?: string
 }
 
-/**
- * 阿里云域名续期器实现
- */
 export class AliyunDomainRenewer extends DomainRenewer {
   readonly id = 'aliyun'
   readonly name = '阿里云'
 
   private config: AliyunRenewerConfig
-  protected declare apiClient?: AliyunApiClient
+  private apiClient: AliyunApiClient
 
   constructor(config: AliyunRenewerConfig) {
-    const apiClient = new AliyunApiClient(config)
-    super({
-      apiKey: config.apiKey,
-      apiSecret: config.apiSecret,
-      apiClient,
-    })
-    this.config = {
-      region: 'cn-hangzhou',
-      ...config,
-    }
+    super(config)
+    this.config = { region: 'cn-hangzhou', ...config }
+    this.apiClient = new AliyunApiClient(this.config)
   }
 
   validateConfig(): boolean {
-    return !!(this.config.apiKey && this.config.apiSecret)
+    return !!(this.config.accessKeyId && this.config.accessKeySecret)
   }
 
   async checkRenewalEligibility(domain: string): Promise<{

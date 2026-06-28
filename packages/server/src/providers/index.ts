@@ -6,12 +6,22 @@
 
 // 阿里云
 export * from './aliyun'
-
-// 基础抽象类
+// 基础抽象类 & 配置
 export * from './base'
 
-// 服务商配置
+// Cloudflare
+export * from './cloudflare'
+
 export * from './config'
 
-// vps8
-export * from './vps8' // VPS8 服务商配置
+// DNSPod
+export * from './dnspod'
+
+// Namecheap
+export * from './namecheap'
+
+// 腾讯云
+export * from './tencent'
+
+// VPS8
+export * from './vps8'

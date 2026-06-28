@@ -15,30 +15,19 @@ interface VPS8SelfPlatformDomain {
   expires_at: string
 }
 
-interface VPS8OtherPlatformDomain {
-  domain: string
-  platform_type: string
-  source_service: string
-}
-
-type VPS8Domain = VPS8SelfPlatformDomain | VPS8OtherPlatformDomain
-
 export class VPS8Syncer extends DomainSyncer {
   readonly id: string = 'vps8'
   readonly name: string = 'VPS8'
 
-  protected declare apiClient?: VPS8ApiClient
+  private apiClient: VPS8ApiClient
 
   constructor(config: VPS8Config) {
-    const apiClient = new VPS8ApiClient(config)
-    super({
-      apiKey: config.apiKey,
-      apiClient,
-    })
+    super(config)
+    this.apiClient = new VPS8ApiClient(config)
   }
 
   validateConfig(): boolean {
-    return !!this.apiKey
+    return !!this.apiClient
   }
 
   getAccountInfo(): Promise<DNSOperationResult<any>> {
@@ -46,7 +35,7 @@ export class VPS8Syncer extends DomainSyncer {
   }
 
   async listDomains(): Promise<DNSOperationResult<DomainInfo[]>> {
-    const response = await this.apiClient!.request<VPS8Domain[]>('/domain_list')
+    const response = await this.apiClient.listDomains()
 
     if (!response.success) {
       return {
@@ -57,7 +46,7 @@ export class VPS8Syncer extends DomainSyncer {
 
     return {
       success: true,
-      data: (response.data || []).map((domain: VPS8Domain) => ({
+      data: (response.data || []).map(domain => ({
         name: domain.domain,
         expirationDate: (domain as VPS8SelfPlatformDomain).expires_at || '',
         status: domain.platform_type === 'self_platform' ? 'active' : 'inactive',
