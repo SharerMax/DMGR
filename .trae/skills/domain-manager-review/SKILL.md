@@ -40,6 +40,7 @@ description: "Reviews Domain Manager code for quality and best practices. Invoke
 - **三方集成**: 域名/DNS 记录操作需同步服务商 API，service 层协调
 - **Renew 下沉**: 续期逻辑必须在 providers/ 层实现，autoRenewService.ts 只做调度
 - **DNSProviderFactory**: 统一创建实例，禁止手动 switch/case 判断服务商类型
+- **路由顺序**: 通配路由 `/:id` 必须放在所有具体路径路由之后，防止具体路径被 `:id` 捕获
 
 ### 安全
 - 无硬编码密钥/凭证

@@ -32,6 +32,8 @@ description: "Debugs Domain Manager application issues. Invoke when user reports
 | 接口返回格式不对 | 是否使用 `sendSuccess/sendError`？返回是否为 `{ code, message, data }` 格式？ |
 | 数据查询问题 | 从 routes → services → models 逐层排查，先确认 service 层返回是否正确 |
 | 权限问题 | service 层是否做了 userId 校验？`getUserXxx` 方法是否验证所有权？ |
+| 路由 404/匹配错误 | 检查路由顺序：通配路由 `/:id` 是否放在了具体路径路由（`/config`、`/stats` 等）之前？Express 按定义顺序匹配 |
+| PrismaClientValidationError | 检查传入 Prisma 的参数类型是否正确（如 `id: NaN` 会触发此错误） |
 
 ## 日志查看
 
@@ -39,6 +41,8 @@ description: "Debugs Domain Manager application issues. Invoke when user reports
 - 请求日志自动输出：`[timestamp] METHOD path status duration`
 - 错误日志带 `err` 字段
 - 可通过 `LOG_LEVEL` 环境变量调整级别
+- **生产环境**：日志写入文件（`LOG_DIR` 目录，默认 `./logs`），按天轮转，gzip 压缩
+- **开发环境**：日志输出到控制台（pino-pretty 美化）
 
 ## 诊断命令
 

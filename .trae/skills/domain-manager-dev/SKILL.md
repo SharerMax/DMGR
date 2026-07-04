@@ -162,12 +162,14 @@ try {
 8. **后端认证**: 用 `middleware/auth.ts` 的 `authMiddleware`，挂载 `req.userId`
 9. **分层架构**: routes → services → models → db/prisma，禁止跨层调用
 10. **路由层禁止直接导入 models/ 或 prisma**：必须通过 services/ 访问数据
-11. **providers 目录按服务商拆分**: 每个服务商一个子目录
-12. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
-13. **三方集成**: 域名/DNS 操作会同步到服务商 API，失败不阻塞本地操作，仅记录 warn
-14. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenewService.ts` 只做调度
-15. **DNSProviderFactory**: 统一创建 provider/syncer/renewer 实例，禁止手动 switch/case
-16. **依赖版本集中管理**: 依赖版本写在 `pnpm-workspace.yaml` 的 `catalog` 字段；各 workspace 用 `"catalog:"` 引用。升级时用 `pnpm update --latest`；不要绕过 `minimumReleaseAge` 策略
+11. **路由顺序**: 通配路由 `/:id` 必须放在所有具体路径路由（`/config`、`/stats/summary` 等）之后，否则具体路径会被 `:id` 捕获
+12. **providers 目录按服务商拆分**: 每个服务商一个子目录
+13. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
+14. **三方集成**: 域名/DNS 操作会同步到服务商 API，失败不阻塞本地操作，仅记录 warn
+15. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenewService.ts` 只做调度
+16. **DNSProviderFactory**: 统一创建 provider/syncer/renewer 实例，禁止手动 switch/case
+17. **依赖版本集中管理**: 依赖版本写在 `pnpm-workspace.yaml` 的 `catalog` 字段；各 workspace 用 `"catalog:"` 引用。升级时用 `pnpm update --latest`；不要绕过 `minimumReleaseAge` 策略
+18. **生产环境日志写入文件**: 使用 `rotating-file-stream` 按天轮转，保留 30 天，gzip 压缩，支持 `LOG_DIR` 环境变量
 
 ## 环境变量
 
@@ -175,6 +177,7 @@ try {
 - `JWT_SECRET`: JWT 密钥（生产必须设置）
 - `RENEWAL_CRON_EXPRESSION`: 自动续期 cron（默认 `0 2 * * *`）
 - `LOG_LEVEL`: 日志级别（默认 `info`）
+- `LOG_DIR`: 日志文件目录（生产环境，默认 `./logs`）
 
 ## 测试账号
 

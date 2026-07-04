@@ -136,3 +136,6 @@ const ok = await confirm({ title: '确认删除？', destructive: true })
 ```bash
 cd packages/client && npx shadcn@latest add <component>
 ```
+
+已添加的 shadcn/ui 组件：
+- alert-dialog, badge, button, calendar, card, dialog, dropdown-menu, input, label, popover, select, switch, table, textarea

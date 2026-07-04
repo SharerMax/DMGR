@@ -143,9 +143,19 @@ logger.warn({ domain }, 'Domain expiring soon')
 
 请求日志由 `requestLogger` 中间件自动记录（包含 method、path、status、duration）。
 
+**生产环境日志写入文件**（`rotating-file-stream`）：
+- 按天轮转（interval: '1d'）
+- 单文件最大 10MB
+- 保留最近 30 天
+- 自动 gzip 压缩过期文件
+- 日志目录由 `LOG_DIR` 环境变量控制（默认 `./logs`）
+- 开发环境仍输出到控制台（pino-pretty）
+
 ## 路由开发
 
 **重要：路由层只能调用 services/，禁止直接导入 models/ 或 prisma。**
+
+**路由顺序：通配路由 `/:id` 必须放在所有具体路径路由（`/config`、`/stats/summary` 等）之后，否则具体路径会被 `:id` 参数捕获，导致路由匹配错误。**
 
 1. 在 `routes/` 创建路由文件
 2. 用 Zod 验证输入，`authMiddleware` 保护路由
