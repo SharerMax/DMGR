@@ -23,6 +23,7 @@
     "node-cron": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
+    "rotating-file-stream": "catalog:",
     "tencentcloud-sdk-nodejs-dnspod": "catalog:",
     "tencentcloud-sdk-nodejs-domain": "catalog:",
     "zod": "catalog:"
