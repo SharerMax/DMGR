@@ -48,21 +48,6 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   }
 })
 
-router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-    const log = await getUserRenewalLog(req.userId!, Number.parseInt(id, 10))
-    if (!log) {
-      return sendError(res, '续期日志不存在', 1, HTTP_STATUS.NOT_FOUND)
-    }
-    return sendSuccess(res, log)
-  }
-  catch (error) {
-    logger.error({ error }, 'Get renewal log error')
-    return sendError(res, '获取续期日志详情失败', 1, HTTP_STATUS.INTERNAL_ERROR)
-  }
-})
-
 router.get('/stats/summary', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const result = await getUserRenewalSummary(req.userId!)
@@ -118,6 +103,25 @@ router.post('/trigger', authMiddleware, async (_req: AuthRequest, res) => {
   catch (error) {
     logger.error({ error }, 'Trigger renewal error')
     return sendError(res, '触发续期任务失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+  }
+})
+
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+    const numericId = Number.parseInt(id, 10)
+    if (Number.isNaN(numericId)) {
+      return sendError(res, '无效的ID', 1, HTTP_STATUS.BAD_REQUEST)
+    }
+    const log = await getUserRenewalLog(req.userId!, numericId)
+    if (!log) {
+      return sendError(res, '续期日志不存在', 1, HTTP_STATUS.NOT_FOUND)
+    }
+    return sendSuccess(res, log)
+  }
+  catch (error) {
+    logger.error({ error }, 'Get renewal log error')
+    return sendError(res, '获取续期日志详情失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 
