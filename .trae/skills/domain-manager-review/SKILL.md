@@ -41,6 +41,7 @@ description: "Reviews Domain Manager code for quality and best practices. Invoke
 - **Renew 下沉**: 续期逻辑必须在 providers/ 层实现，autoRenewService.ts 只做调度
 - **DNSProviderFactory**: 统一创建实例，禁止手动 switch/case 判断服务商类型
 - **路由顺序**: 通配路由 `/:id` 必须放在所有具体路径路由之后，防止具体路径被 `:id` 捕获
+- **可选字段空值保护**: 当查询/遍历 `DateTime?` 字段（如 `expiryDate`、`deletedAt`）时，需检查 `null`，防止对 `null` 调用 `.getTime()` 等方法导致运行时错误
 
 ### 安全
 - 无硬编码密钥/凭证

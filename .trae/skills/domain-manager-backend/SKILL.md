@@ -107,7 +107,7 @@ User ─┬─> Provider ──> Domain
 ```
 
 关键字段:
-- Domain: `autoRenew`, `autoRenewDays`, `expiryDate`, `status`
+- Domain: `autoRenew`, `autoRenewDays`, `expiryDate`（可选, `DateTime?`）, `status`
 - Provider: `config` (JSON string), `supportsAutoRenew`
 - NotificationChannel: `config` (JSON string), `defaultDays`, `isActive`
 
