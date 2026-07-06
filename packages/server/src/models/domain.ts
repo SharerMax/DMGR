@@ -11,7 +11,7 @@ export interface CreateDomainInput {
   name: string
   providerId?: number | null
   userId: number
-  expiryDate: string
+  expiryDate?: string | null
   autoRenew?: boolean
   autoRenewDays?: number | null
   renewalPrice?: number | null
@@ -24,7 +24,7 @@ export async function createDomain(input: CreateDomainInput): Promise<Domain> {
       name: input.name,
       providerId: input.providerId,
       userId: input.userId,
-      expiryDate: new Date(input.expiryDate),
+      expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
       autoRenew: input.autoRenew ?? false,
       autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,
@@ -61,6 +61,7 @@ export async function getExpiringDomains(
     where: {
       status: 'active',
       expiryDate: {
+        not: null,
         lte: futureDate,
       },
     },
@@ -76,7 +77,7 @@ export async function getExpiringDomains(
 export interface UpdateDomainInput {
   name?: string
   providerId?: number | null
-  expiryDate?: string
+  expiryDate?: string | null
   autoRenew?: boolean
   autoRenewDays?: number | null
   renewalPrice?: number | null
@@ -93,7 +94,7 @@ export async function updateDomain(
     data: {
       name: input.name,
       providerId: input.providerId,
-      expiryDate: input.expiryDate ? new Date(input.expiryDate) : undefined,
+      expiryDate: input.expiryDate === undefined ? undefined : input.expiryDate ? new Date(input.expiryDate) : null,
       autoRenew: input.autoRenew,
       autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,

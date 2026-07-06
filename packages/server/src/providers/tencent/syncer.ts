@@ -61,7 +61,7 @@ export class TencentSyncer extends DomainSyncer {
     const domains: DomainInfo[] = (response.data?.DomainList || []).map(
       (domain: any) => ({
         name: domain.Name,
-        expirationDate: domain.ExpirationDate || '',
+        expirationDate: domain.ExpirationDate || null,
         status: domain.Status || 'active',
         dnsServers: [],
       }),
@@ -86,7 +86,7 @@ export class TencentSyncer extends DomainSyncer {
       success: true,
       data: {
         name: domainData?.Name || domain,
-        expirationDate: domainData?.ExpirationDate || '',
+        expirationDate: domainData?.ExpirationDate || null,
         status: domainData?.Status || 'active',
         dnsServers: [],
       },

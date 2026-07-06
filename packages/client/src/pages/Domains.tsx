@@ -176,7 +176,7 @@ export default function Domains() {
     setFormData({
       name: domain.name,
       providerId: domain.providerId?.toString() || '',
-      expiryDate: domain.expiryDate.split('T')[0],
+      expiryDate: domain.expiryDate?.split('T')[0] || '',
       autoRenew: !!domain.autoRenew,
       autoRenewDays: domain.autoRenewDays?.toString() || '',
       renewalPrice: domain.renewalPrice?.toString() || '',
@@ -227,7 +227,7 @@ export default function Domains() {
       const data = {
         name: formData.name,
         providerId: formData.providerId ? Number(formData.providerId) : null,
-        expiryDate: formData.expiryDate,
+        expiryDate: formData.expiryDate || null,
         autoRenew: formData.autoRenew,
         autoRenewDays: formData.autoRenew && formData.autoRenewDays
           ? Number(formData.autoRenewDays)
@@ -309,7 +309,10 @@ export default function Domains() {
     }
   }
 
-  const getExpiryStatus = (expiryDate: string) => {
+  const getExpiryStatus = (expiryDate: string | null) => {
+    if (!expiryDate)
+      return { text: '未知', color: 'text-gray-600', bg: 'bg-gray-100' }
+
     const days = differenceInDays(parseISO(expiryDate), new Date())
     if (days < 0)
       return { text: '已过期', color: 'text-red-600', bg: 'bg-red-100' }
@@ -400,7 +403,7 @@ export default function Domains() {
                               <TableCell className="font-medium">{domain.name}</TableCell>
                               <TableCell>{domain.provider_name || '未设置'}</TableCell>
                               <TableCell>
-                                {format(parseISO(domain.expiryDate), 'yyyy-MM-dd', { locale: zhCN })}
+                                {domain.expiryDate ? format(parseISO(domain.expiryDate), 'yyyy-MM-dd', { locale: zhCN }) : '-'}
                               </TableCell>
                               <TableCell>
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${status.bg} ${status.color}`}>
@@ -516,7 +519,6 @@ export default function Domains() {
                 type="date"
                 value={formData.expiryDate}
                 onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
-                required
               />
             </div>
             <div className="flex items-center space-x-2">

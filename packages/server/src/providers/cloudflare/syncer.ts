@@ -61,7 +61,7 @@ export class CloudflareSyncer extends DomainSyncer {
     const domains: DomainInfo[] = zones.map((zone: any) => ({
       name: zone.name,
       status: zone.status || 'active',
-      expirationDate: '',
+      expirationDate: null,
       dnsServers: zone.name_servers || [],
     }))
 
@@ -94,7 +94,7 @@ export class CloudflareSyncer extends DomainSyncer {
       data: {
         name: zone.name,
         status: zone.status || 'active',
-        expirationDate: '',
+        expirationDate: null,
         dnsServers: zone.name_servers || [],
       },
     }

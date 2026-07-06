@@ -42,7 +42,7 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
     id: number
     name: string
     userId: number
-    expiryDate: Date
+    expiryDate: Date | null
     autoRenew: boolean
     autoRenewDays: number | null
   }
@@ -93,6 +93,10 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
         : null,
     }))
     .filter(({ domain, provider }) => {
+      if (!domain.expiryDate) {
+        return false
+      }
+
       const daysUntilExpiry = differenceInDays(domain.expiryDate, now)
       const triggerDays = domain.autoRenewDays || 30
 

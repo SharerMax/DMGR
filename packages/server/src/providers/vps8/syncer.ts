@@ -49,7 +49,7 @@ export class VPS8Syncer extends DomainSyncer {
         }
         return {
           name: domain.domain,
-          expirationDate: '1970-01-01 00:00:00',
+          expirationDate: null,
           status: 'active',
         }
       }),

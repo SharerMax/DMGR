@@ -29,7 +29,7 @@ export interface DomainInfo {
   name: string
   registrar?: string
   registrationDate?: string
-  expirationDate: string
+  expirationDate?: string | null
   status: string
   dnsServers?: string[]
 }

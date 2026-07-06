@@ -61,7 +61,7 @@ export class NamecheapSyncer extends DomainSyncer {
     const domains: DomainInfo[] = (response.data || []).map((domain: any) => ({
       name: domain.Name,
       status: domain.IsExpired ? 'expired' : 'active',
-      expirationDate: domain.Expires || '',
+      expirationDate: domain.Expires || null,
       dnsServers: [],
     }))
 
@@ -85,7 +85,7 @@ export class NamecheapSyncer extends DomainSyncer {
       data: {
         name: data?.Name || domain,
         status: data?.IsExpired ? 'expired' : 'active',
-        expirationDate: data?.Expires || '',
+        expirationDate: data?.Expires || null,
         dnsServers: [],
       },
     }

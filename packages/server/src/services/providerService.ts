@@ -145,7 +145,7 @@ function generateMockDomains(provider: Provider) {
   ]
 }
 
-async function syncNewDomains(userId: number, providerId: number, domainList: Array<{ name: string, expiryDate: string, autoRenew?: boolean }>) {
+async function syncNewDomains(userId: number, providerId: number, domainList: Array<{ name: string, expiryDate?: string | null, autoRenew?: boolean }>) {
   const existingDomains = await getDomainsByUserId(userId)
   const existingDomainNames = new Set(existingDomains.map(d => d.name))
 
@@ -157,7 +157,7 @@ async function syncNewDomains(userId: number, providerId: number, domainList: Ar
         name: domain.name,
         providerId,
         userId,
-        expiryDate: domain.expiryDate,
+        expiryDate: domain.expiryDate || null,
         autoRenew: domain.autoRenew,
       })
       syncedDomains.push(newDomain)
@@ -189,7 +189,7 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
   const domainList = syncResult.domains.map(d => ({
     name: d.name,
-    expiryDate: d.expirationDate,
+    expiryDate: d.expirationDate || null,
     autoRenew: provider.supportsAutoRenew,
   }))
 

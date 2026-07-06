@@ -7,7 +7,7 @@ export interface Domain {
   providerId: number | null
   provider_name?: string | null
   userId: number
-  expiryDate: string
+  expiryDate: string | null
   autoRenew: boolean
   autoRenewDays: number | null // 自动续期触发阈值
   renewalPrice: number | null
@@ -46,7 +46,7 @@ export interface DomainFilters {
 export interface CreateDomainInput {
   name: string
   providerId?: number | null
-  expiryDate: string
+  expiryDate?: string | null
   autoRenew?: boolean
   autoRenewDays?: number | null
   renewalPrice?: number | null

@@ -42,7 +42,7 @@ model Domain {
   provider     Provider?  @relation(fields: [providerId], references: [id], onDelete: SetNull)
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiryDate   DateTime
+  expiryDate   DateTime?
   autoRenew    Boolean    @default(false)
   autoRenewDays Int?      // 自动续期触发阈值（过期前多少天）
   renewalPrice Float?

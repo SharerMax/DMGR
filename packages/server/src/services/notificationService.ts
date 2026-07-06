@@ -174,6 +174,10 @@ export async function checkExpiringDomains(): Promise<void> {
   })
 
   for (const domain of domains) {
+    if (!domain.expiryDate) {
+      continue
+    }
+
     const daysUntilExpiry = Math.ceil(
       (domain.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     )
