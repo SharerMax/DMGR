@@ -1,6 +1,7 @@
 import { Bell, FileText, Globe, LogOut, Moon, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -209,6 +210,7 @@ function App() {
   return (
     <ConfirmDialogProvider>
       <BrowserRouter>
+        <Toaster position="top-right" richColors closeButton />
         <AppRoutes />
       </BrowserRouter>
     </ConfirmDialogProvider>

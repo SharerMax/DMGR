@@ -4,6 +4,7 @@ import { differenceInDays, format, parseISO } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { DomainFilter } from '@/components/DomainFilter'
 import { Pagination } from '@/components/Pagination'
 import { Button } from '@/components/ui/button'
@@ -219,7 +220,7 @@ export default function Domains() {
       if (formData.autoRenew && formData.autoRenewDays) {
         const renewDays = Number(formData.autoRenewDays)
         if (providerType?.maxRenewalDays && renewDays > providerType.maxRenewalDays) {
-          alert(`自动续期阈值不能超过服务商限制的 ${providerType.maxRenewalDays} 天`)
+          toast.warning(`自动续期阈值不能超过服务商限制的 ${providerType.maxRenewalDays} 天`)
           return
         }
       }
@@ -246,7 +247,7 @@ export default function Domains() {
       resetForm()
     }
     catch (error: any) {
-      alert(error.message || '操作失败')
+      toast.error(error.message || '操作失败')
     }
   }
 
@@ -271,7 +272,7 @@ export default function Domains() {
       resetDnsForm()
     }
     catch (error: any) {
-      alert(error.message || '操作失败')
+      toast.error(error.message || '操作失败')
     }
   }
 
@@ -288,7 +289,7 @@ export default function Domains() {
       await deleteDomain(id)
     }
     catch (error: any) {
-      alert(error.message || '删除失败')
+      toast.error(error.message || '删除失败')
     }
   }
 
@@ -305,7 +306,7 @@ export default function Domains() {
       await deleteRecord(id)
     }
     catch (error: any) {
-      alert(error.message || '删除失败')
+      toast.error(error.message || '删除失败')
     }
   }
 

@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { Lock, Mail, Save, User } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,10 +22,10 @@ export default function Profile() {
     setLoading(true)
     try {
       await updateProfile(email || null)
-      alert('邮箱更新成功')
+      toast.success('邮箱更新成功')
     }
     catch (error: any) {
-      alert(error.message || '更新失败')
+      toast.error(error.message || '更新失败')
     }
     finally {
       setLoading(false)
@@ -36,12 +37,12 @@ export default function Profile() {
     setPasswordLoading(true)
     try {
       await changePassword(currentPassword, newPassword)
-      alert('密码修改成功')
+      toast.success('密码修改成功')
       setCurrentPassword('')
       setNewPassword('')
     }
     catch (error: any) {
-      alert(error.message || '修改密码失败')
+      toast.error(error.message || '修改密码失败')
     }
     finally {
       setPasswordLoading(false)

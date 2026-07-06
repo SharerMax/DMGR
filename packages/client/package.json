@@ -23,6 +23,7 @@
     "react-dom": "catalog:",
     "react-router-dom": "catalog:",
     "shadcn": "catalog:",
+    "sonner": "catalog:",
     "tailwind-merge": "catalog:",
     "zustand": "catalog:"
   },

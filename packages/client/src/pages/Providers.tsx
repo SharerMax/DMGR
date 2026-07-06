@@ -1,6 +1,7 @@
 import type { Provider, ProviderField, ProviderType } from '@/stores/providers'
 import { Database, Globe, Pencil, Plus, RefreshCw, Shield, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -106,7 +107,7 @@ export default function Providers() {
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
     if (!selectedType) {
-      alert('请选择服务商类型')
+      toast.error('请选择服务商类型')
       return
     }
 
@@ -120,7 +121,7 @@ export default function Providers() {
       .map(f => f.label)
 
     if (missingFields.length > 0) {
-      alert(`请填写以下必填字段: ${missingFields.join(', ')}`)
+      toast.error(`请填写以下必填字段: ${missingFields.join(', ')}`)
       return
     }
 
@@ -142,7 +143,7 @@ export default function Providers() {
       resetForm()
     }
     catch (error: any) {
-      alert(error.message || '操作失败')
+      toast.error(error.message || '操作失败')
     }
   }
 
@@ -159,7 +160,7 @@ export default function Providers() {
       await deleteProvider(id)
     }
     catch (error: any) {
-      alert(error.message || '删除失败')
+      toast.error(error.message || '删除失败')
     }
   }
 
@@ -167,11 +168,11 @@ export default function Providers() {
     setSyncingProvider(provider.id)
     try {
       const result = await syncDomains(provider.id)
-      alert(`同步成功！新增 ${result.syncedCount} 个域名`)
+      toast.success(`同步成功！新增 ${result.syncedCount} 个域名`)
       await fetchDomains()
     }
     catch (error: any) {
-      alert(error.message || '同步失败')
+      toast.error(error.message || '同步失败')
     }
     finally {
       setSyncingProvider(null)
