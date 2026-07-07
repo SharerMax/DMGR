@@ -349,18 +349,16 @@ export default function Providers() {
                       <SelectContent>
                         {providerTypes.map(type => (
                           <SelectItem key={type.id} value={type.id}>
-                            <div className="flex flex-col">
-                              <span>{type.name}</span>
-                              {type.description && (
-                                <span className="text-xs text-gray-500">{type.description}</span>
-                              )}
-                            </div>
+                            {type.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 />
+                {currentType?.description && (
+                  <p className="text-xs text-gray-500">{currentType.description}</p>
+                )}
                 {errors.type && (
                   <p className="text-xs text-red-500">{errors.type.message}</p>
                 )}
