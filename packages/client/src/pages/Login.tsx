@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,27 +7,42 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth'
 
+interface LoginFormValues {
+  username: string
+  password: string
+  email?: string
+}
+
 export default function Login() {
   const navigate = useNavigate()
-  const { login, register } = useAuthStore()
+  const { login, register: registerUser } = useAuthStore()
   const [isLogin, setIsLogin] = useState(true)
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    defaultValues: {
+      username: '',
+      password: '',
+      email: '',
+    },
+  })
+
+  const onSubmit = async (data: LoginFormValues) => {
     setError('')
     setLoading(true)
 
     try {
       if (isLogin) {
-        await login(username, password)
+        await login(data.username, data.password)
       }
       else {
-        await register(username, password, email || undefined)
+        await registerUser(data.username, data.password, data.email || undefined)
       }
       navigate('/')
     }
@@ -36,6 +52,12 @@ export default function Login() {
     finally {
       setLoading(false)
     }
+  }
+
+  const switchMode = () => {
+    setIsLogin(!isLogin)
+    setError('')
+    reset({ username: '', password: '', email: '' })
   }
 
   return (
@@ -48,17 +70,22 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">{isLogin ? '用户名 / 邮箱' : '用户名'}</Label>
+              <Label htmlFor="username">
+                {isLogin ? '用户名 / 邮箱' : '用户名'}
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="username"
                 type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                required
+                {...register('username', { required: '请输入用户名' })}
                 placeholder={isLogin ? '请输入用户名或邮箱' : '请输入用户名'}
+                aria-invalid={!!errors.username}
               />
+              {errors.username && (
+                <p className="text-xs text-red-500">{errors.username.message}</p>
+              )}
             </div>
             {!isLogin && (
               <div className="space-y-2">
@@ -66,22 +93,38 @@ export default function Login() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  {...register('email', {
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/,
+                      message: '请输入有效的邮箱地址',
+                    },
+                  })}
                   placeholder="请输入邮箱"
+                  aria-invalid={!!errors.email}
                 />
+                {errors.email && (
+                  <p className="text-xs text-red-500">{errors.email.message}</p>
+                )}
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="password">密码</Label>
+              <Label htmlFor="password">
+                密码
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="password"
                 type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
+                {...register('password', {
+                  required: '请输入密码',
+                  minLength: { value: 6, message: '密码至少6位' },
+                })}
                 placeholder="请输入密码"
+                aria-invalid={!!errors.password}
               />
+              {errors.password && (
+                <p className="text-xs text-red-500">{errors.password.message}</p>
+              )}
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
@@ -91,10 +134,7 @@ export default function Login() {
               type="button"
               variant="ghost"
               className="w-full"
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setError('')
-              }}
+              onClick={switchMode}
             >
               {isLogin ? '没有账户？立即注册' : '已有账户？立即登录'}
             </Button>

@@ -1,6 +1,7 @@
-import type { Provider, ProviderField, ProviderType } from '@/stores/providers'
+import type { Provider, ProviderField } from '@/stores/providers'
 import { Database, Globe, Pencil, Plus, RefreshCw, Shield, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +25,12 @@ import { useConfirm } from '@/hooks/useConfirm'
 import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
 
+interface ProviderFormValues {
+  type: string
+  name: string
+  config: Record<string, string>
+}
+
 export default function Providers() {
   const {
     providers,
@@ -41,106 +48,86 @@ export default function Providers() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [syncingProvider, setSyncingProvider] = useState<number | null>(null)
-  const [selectedType, setSelectedType] = useState<string>('')
-  const [configData, setConfigData] = useState<Record<string, string>>({})
-  const [formData, setFormData] = useState({
-    name: '',
-    supportsAutoRenew: false,
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ProviderFormValues>({
+    defaultValues: {
+      type: '',
+      name: '',
+      config: {},
+    },
   })
+
+  const selectedType = watch('type')
+  const currentType = providerTypes.find(t => t.id === selectedType)
 
   useEffect(() => {
     fetchProviders()
     fetchProviderTypes()
   }, [fetchProviders, fetchProviderTypes])
 
-  const resetForm = () => {
-    setFormData({ name: '', supportsAutoRenew: false })
-    setSelectedType('')
-    setConfigData({})
-    setEditingProvider(null)
-  }
-
   const openCreateDialog = () => {
-    resetForm()
+    setEditingProvider(null)
+    reset({ type: '', name: '', config: {} })
     setDialogOpen(true)
   }
 
   const openEditDialog = (provider: Provider) => {
     setEditingProvider(provider)
-    setSelectedType(provider.type)
-    setFormData({
-      name: provider.name,
-      supportsAutoRenew: provider.supportsAutoRenew,
-    })
-    // 解析配置
+    let parsedConfig: Record<string, string> = {}
     try {
-      const parsedConfig = JSON.parse(provider.config)
-      setConfigData(parsedConfig)
+      parsedConfig = JSON.parse(provider.config)
     }
     catch {
-      setConfigData({})
+      parsedConfig = {}
     }
+    reset({
+      type: provider.type,
+      name: provider.name,
+      config: parsedConfig,
+    })
     setDialogOpen(true)
   }
 
   const handleTypeChange = (typeId: string) => {
-    setSelectedType(typeId)
-    setConfigData({})
-    // 设置默认名称
+    setValue('type', typeId)
+    setValue('config', {})
     const type = providerTypes.find(t => t.id === typeId)
-    if (type && !formData.name) {
-      setFormData(prev => ({ ...prev, name: type.name }))
-    }
-    // 设置默认自动续期
     if (type) {
-      setFormData(prev => ({ ...prev, supportsAutoRenew: type.features.autoRenew }))
+      const currentName = watch('name')
+      if (!currentName) {
+        setValue('name', type.name)
+      }
     }
   }
 
-  const updateConfigField = (key: string, value: string) => {
-    setConfigData(prev => ({ ...prev, [key]: value }))
-  }
-
-  const getCurrentType = (): ProviderType | undefined => {
-    return providerTypes.find(t => t.id === selectedType)
-  }
-  const handleSubmit = async (e: React.SubmitEvent) => {
-    e.preventDefault()
-    if (!selectedType) {
-      toast.error('请选择服务商类型')
-      return
-    }
-
-    const type = getCurrentType()
-    if (!type)
-      return
-
-    // 验证必填字段
-    const missingFields = type.fields
-      .filter(f => f.required && !configData[f.key])
-      .map(f => f.label)
-
-    if (missingFields.length > 0) {
-      toast.error(`请填写以下必填字段: ${missingFields.join(', ')}`)
-      return
-    }
-
+  const onSubmit = async (data: ProviderFormValues) => {
     try {
-      const data = {
-        type: selectedType,
-        name: formData.name,
-        config: configData,
-        supportsAutoRenew: formData.supportsAutoRenew,
+      const type = editingProvider ? editingProvider.type : data.type
+      const typeConfig = providerTypes.find(t => t.id === type)
+      const supportsAutoRenew = typeConfig?.features.autoRenew ?? false
+
+      const payload = {
+        type,
+        name: data.name,
+        config: data.config,
+        supportsAutoRenew,
       }
 
       if (editingProvider) {
-        await updateProvider(editingProvider.id, data)
+        await updateProvider(editingProvider.id, payload)
       }
       else {
-        await createProvider(data)
+        await createProvider(payload)
       }
       setDialogOpen(false)
-      resetForm()
     }
     catch (error: any) {
       toast.error(error.message || '操作失败')
@@ -203,6 +190,7 @@ export default function Providers() {
   }
 
   const renderField = (field: ProviderField) => {
+    const fieldError = errors.config?.[field.key]
     return (
       <div key={field.key} className="space-y-2">
         <Label htmlFor={field.key}>
@@ -212,12 +200,17 @@ export default function Providers() {
         <Input
           id={field.key}
           type={field.type === 'password' ? 'password' : 'text'}
-          value={configData[field.key] || ''}
-          onChange={e => updateConfigField(field.key, e.target.value)}
+          {...register(`config.${field.key}`, {
+            required: field.required ? `${field.label}为必填项` : false,
+          })}
           placeholder={field.placeholder}
+          aria-invalid={!!fieldError}
         />
         {field.description && (
           <p className="text-xs text-gray-500">{field.description}</p>
+        )}
+        {fieldError && (
+          <p className="text-xs text-red-500">{fieldError.message as string}</p>
         )}
       </div>
     )
@@ -336,32 +329,41 @@ export default function Providers() {
           <DialogHeader>
             <DialogTitle>{editingProvider ? '编辑服务商' : '添加服务商'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* 服务商类型选择 */}
             {!editingProvider && (
               <div className="space-y-2">
                 <Label htmlFor="type">
                   服务商类型
-                  {' '}
-                  <span className="text-red-500">*</span>
+                  <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <Select value={selectedType} onValueChange={handleTypeChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择服务商类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providerTypes.map(type => (
-                      <SelectItem key={type.id} value={type.id}>
-                        <div className="flex flex-col">
-                          <span>{type.name}</span>
-                          {type.description && (
-                            <span className="text-xs text-gray-500">{type.description}</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="type"
+                  rules={{ required: '请选择服务商类型' }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={handleTypeChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="请选择服务商类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {providerTypes.map(type => (
+                          <SelectItem key={type.id} value={type.id}>
+                            <div className="flex flex-col">
+                              <span>{type.name}</span>
+                              {type.description && (
+                                <span className="text-xs text-gray-500">{type.description}</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.type && (
+                  <p className="text-xs text-red-500">{errors.type.message}</p>
+                )}
               </div>
             )}
 
@@ -370,30 +372,35 @@ export default function Providers() {
               <div className="space-y-2">
                 <Label>服务商类型</Label>
                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                  {providerTypes.find(t => t.id === selectedType)?.name}
+                  {currentType?.name}
                 </div>
               </div>
             )}
 
             {/* 服务商名称 */}
             <div className="space-y-2">
-              <Label htmlFor="name">名称</Label>
+              <Label htmlFor="name">
+                名称
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                {...register('name', { required: '请输入服务商名称' })}
                 placeholder="服务商显示名称"
-                required
+                aria-invalid={!!errors.name}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
             </div>
 
             {/* 动态配置字段 */}
-            {selectedType && (
+            {currentType && (
               <div className="space-y-4 border-t pt-4">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   API 配置
                 </h3>
-                {getCurrentType()?.fields.map(field => renderField(field))}
+                {currentType.fields.map(field => renderField(field))}
               </div>
             )}
 

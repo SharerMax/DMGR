@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { Lock, Mail, Save, User } from 'lucide-react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,19 +10,46 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth'
 
+interface EmailFormValues {
+  email: string
+}
+
+interface PasswordFormValues {
+  currentPassword: string
+  newPassword: string
+}
+
 export default function Profile() {
   const { user, updateProfile, changePassword } = useAuthStore()
-  const [email, setEmail] = useState(user?.email || '')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const {
+    register: registerEmail,
+    handleSubmit: handleEmailSubmit,
+    formState: { errors: emailErrors },
+  } = useForm<EmailFormValues>({
+    defaultValues: {
+      email: user?.email || '',
+    },
+  })
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPasswordForm,
+    formState: { errors: passwordErrors },
+  } = useForm<PasswordFormValues>({
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+    },
+  })
+
+  const onEmailSubmit = async (data: EmailFormValues) => {
     setLoading(true)
     try {
-      await updateProfile(email || null)
+      await updateProfile(data.email || null)
       toast.success('邮箱更新成功')
     }
     catch (error: any) {
@@ -32,14 +60,12 @@ export default function Profile() {
     }
   }
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onPasswordSubmit = async (data: PasswordFormValues) => {
     setPasswordLoading(true)
     try {
-      await changePassword(currentPassword, newPassword)
+      await changePassword(data.currentPassword, data.newPassword)
       toast.success('密码修改成功')
-      setCurrentPassword('')
-      setNewPassword('')
+      resetPasswordForm({ currentPassword: '', newPassword: '' })
     }
     catch (error: any) {
       toast.error(error.message || '修改密码失败')
@@ -89,16 +115,24 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <form onSubmit={handleEmailSubmit(onEmailSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">邮箱地址</Label>
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  {...registerEmail('email', {
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/,
+                      message: '请输入有效的邮箱地址',
+                    },
+                  })}
                   placeholder="example@email.com"
+                  aria-invalid={!!emailErrors.email}
                 />
+                {emailErrors.email && (
+                  <p className="text-xs text-red-500">{emailErrors.email.message}</p>
+                )}
               </div>
               <Button type="submit" disabled={loading}>
                 <Save className="h-4 w-4 mr-2" />
@@ -117,30 +151,42 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">当前密码</Label>
+                  <Label htmlFor="currentPassword">
+                    当前密码
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="currentPassword"
                     type="password"
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
+                    {...registerPassword('currentPassword', { required: '请输入当前密码' })}
                     placeholder="输入当前密码"
-                    required
+                    aria-invalid={!!passwordErrors.currentPassword}
                   />
+                  {passwordErrors.currentPassword && (
+                    <p className="text-xs text-red-500">{passwordErrors.currentPassword.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">新密码</Label>
+                  <Label htmlFor="newPassword">
+                    新密码
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="newPassword"
                     type="password"
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
+                    {...registerPassword('newPassword', {
+                      required: '请输入新密码',
+                      minLength: { value: 6, message: '密码至少6位' },
+                    })}
                     placeholder="输入新密码（至少6位）"
-                    required
-                    minLength={6}
+                    aria-invalid={!!passwordErrors.newPassword}
                   />
+                  {passwordErrors.newPassword && (
+                    <p className="text-xs text-red-500">{passwordErrors.newPassword.message}</p>
+                  )}
                 </div>
               </div>
               <Button type="submit" disabled={passwordLoading}>

@@ -4,6 +4,7 @@ import { differenceInDays, format, parseISO } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { DomainFilter } from '@/components/DomainFilter'
 import { Pagination } from '@/components/Pagination'
@@ -34,6 +35,24 @@ import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
 
 const DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'PTR', 'SOA']
+
+interface DomainFormValues {
+  name: string
+  providerId: string
+  expiryDate: string
+  autoRenew: boolean
+  autoRenewDays: string
+  renewalPrice: string
+  notes: string
+}
+
+interface DNSFormValues {
+  type: string
+  name: string
+  value: string
+  ttl: string
+  priority: string
+}
 
 export default function Domains() {
   const { domains, loading, fetchDomains, createDomain, updateDomain, deleteDomain } = useDomainStore()
@@ -75,23 +94,45 @@ export default function Domains() {
     providerId: 'all',
   })
 
-  const [formData, setFormData] = useState({
-    name: '',
-    providerId: '',
-    expiryDate: '',
-    autoRenew: false,
-    autoRenewDays: '',
-    renewalPrice: '',
-    notes: '',
+  const {
+    register: registerDomain,
+    handleSubmit: handleDomainSubmit,
+    control: domainControl,
+    reset: resetDomainForm,
+    watch: watchDomain,
+    formState: { errors: domainErrors },
+  } = useForm<DomainFormValues>({
+    defaultValues: {
+      name: '',
+      providerId: '',
+      expiryDate: '',
+      autoRenew: false,
+      autoRenewDays: '',
+      renewalPrice: '',
+      notes: '',
+    },
   })
-  const [dnsFormData, setDnsFormData] = useState<CreateDNSRecordInput>({
-    domainId: 0,
-    type: 'A',
-    name: '',
-    value: '',
-    ttl: 3600,
-    priority: undefined,
+
+  const {
+    register: registerDNS,
+    handleSubmit: handleDNSSubmit,
+    control: dnsControl,
+    reset: resetDNSForm,
+    watch: watchDNS,
+    formState: { errors: dnsErrors },
+  } = useForm<DNSFormValues>({
+    defaultValues: {
+      type: 'A',
+      name: '',
+      value: '',
+      ttl: '3600',
+      priority: '',
+    },
   })
+
+  const watchedProviderId = watchDomain('providerId')
+  const watchedAutoRenew = watchDomain('autoRenew')
+  const watchedDNSType = watchDNS('type')
 
   // 当过滤器改变时重新获取数据
   useEffect(() => {
@@ -115,18 +156,25 @@ export default function Domains() {
 
   const paginatedDomains = domains.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  // 渲染自动续期阈值配置字段
-  const renderAutoRenewDaysField = () => {
-    const selectedProvider = providers.find(p => p.id === Number(formData.providerId))
-    const providerType = selectedProvider
+  const getCurrentProviderType = () => {
+    const selectedProvider = watchedProviderId
+      ? providers.find(p => p.id === Number(watchedProviderId))
+      : null
+    return selectedProvider
       ? providerTypes.find(t => t.id === selectedProvider.type)
       : null
+  }
+
+  // 渲染自动续期阈值配置字段
+  const renderAutoRenewDaysField = () => {
+    const providerType = getCurrentProviderType()
 
     if (providerType?.features.autoRenew && providerType.maxRenewalDays) {
       return (
         <div className="space-y-2">
           <Label htmlFor="auto_renew_days">
             自动续期阈值（天）
+            <span className="text-red-500 ml-1">*</span>
             <span className="text-xs text-gray-500 ml-2">
               最大:
               {' '}
@@ -140,18 +188,32 @@ export default function Domains() {
             type="number"
             min={1}
             max={providerType.maxRenewalDays}
-            value={formData.autoRenewDays}
-            onChange={e => setFormData({ ...formData, autoRenewDays: e.target.value })}
+            {...registerDomain('autoRenewDays', {
+              required: watchedAutoRenew ? '请输入自动续期阈值' : false,
+              validate: (value) => {
+                if (!watchedAutoRenew || !value)
+                  return true
+                const renewDays = Number(value)
+                if (providerType?.maxRenewalDays && renewDays > providerType.maxRenewalDays) {
+                  return `自动续期阈值不能超过 ${providerType.maxRenewalDays} 天`
+                }
+                return true
+              },
+            })}
             placeholder={`过期前多少天自动续期（最大 ${providerType.maxRenewalDays} 天）`}
+            aria-invalid={!!domainErrors.autoRenewDays}
           />
           <p className="text-xs text-gray-500">
             域名过期前指定天数时触发自动续期
           </p>
+          {domainErrors.autoRenewDays && (
+            <p className="text-xs text-red-500">{domainErrors.autoRenewDays.message}</p>
+          )}
         </div>
       )
     }
 
-    if (formData.providerId && !providerType?.features.autoRenew) {
+    if (watchedProviderId && !providerType?.features.autoRenew) {
       return (
         <p className="text-sm text-yellow-600">
           当前服务商不支持自动续期
@@ -162,8 +224,9 @@ export default function Domains() {
     return null
   }
 
-  const resetForm = () => {
-    setFormData({
+  const openCreateDialog = () => {
+    setEditingDomain(null)
+    resetDomainForm({
       name: '',
       providerId: '',
       expiryDate: '',
@@ -172,29 +235,12 @@ export default function Domains() {
       renewalPrice: '',
       notes: '',
     })
-    setEditingDomain(null)
-  }
-
-  const resetDnsForm = () => {
-    setDnsFormData({
-      domainId: selectedDomainId || 0,
-      type: 'A',
-      name: '',
-      value: '',
-      ttl: 3600,
-      priority: undefined,
-    })
-    setEditingDNSRecord(null)
-  }
-
-  const openCreateDialog = () => {
-    resetForm()
     setDialogOpen(true)
   }
 
   const openEditDialog = (domain: Domain) => {
     setEditingDomain(domain)
-    setFormData({
+    resetDomainForm({
       name: domain.name,
       providerId: domain.providerId?.toString() || '',
       expiryDate: domain.expiryDate?.split('T')[0] || '',
@@ -210,86 +256,74 @@ export default function Domains() {
     setSelectedDomainId(domainId)
     if (record) {
       setEditingDNSRecord(record)
-      setDnsFormData({
-        domainId: record.domainId,
+      resetDNSForm({
         type: record.type,
         name: record.name,
         value: record.value,
-        ttl: record.ttl,
-        priority: record.priority,
+        ttl: record.ttl.toString(),
+        priority: record.priority?.toString() || '',
       })
     }
     else {
-      resetDnsForm()
+      setEditingDNSRecord(null)
+      resetDNSForm({
+        type: 'A',
+        name: '',
+        value: '',
+        ttl: '3600',
+        priority: '',
+      })
     }
     setDnsDialogOpen(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onDomainSubmit = async (data: DomainFormValues) => {
     try {
-      // 获取服务商配置以验证 autoRenewDays
-      const selectedProvider = formData.providerId
-        ? providers.find(p => p.id === Number(formData.providerId))
-        : null
-      const providerType = selectedProvider
-        ? providerTypes.find(t => t.id === selectedProvider.type)
-        : null
-
-      // 验证自动续期阈值
-      if (formData.autoRenew && formData.autoRenewDays) {
-        const renewDays = Number(formData.autoRenewDays)
-        if (providerType?.maxRenewalDays && renewDays > providerType.maxRenewalDays) {
-          toast.warning(`自动续期阈值不能超过服务商限制的 ${providerType.maxRenewalDays} 天`)
-          return
-        }
-      }
-
-      const data = {
-        name: formData.name,
-        providerId: formData.providerId ? Number(formData.providerId) : null,
-        expiryDate: formData.expiryDate || null,
-        autoRenew: formData.autoRenew,
-        autoRenewDays: formData.autoRenew && formData.autoRenewDays
-          ? Number(formData.autoRenewDays)
+      const payload = {
+        name: data.name,
+        providerId: data.providerId ? Number(data.providerId) : null,
+        expiryDate: data.expiryDate || null,
+        autoRenew: data.autoRenew,
+        autoRenewDays: data.autoRenew && data.autoRenewDays
+          ? Number(data.autoRenewDays)
           : null,
-        renewalPrice: formData.renewalPrice ? Number(formData.renewalPrice) : null,
-        notes: formData.notes || null,
+        renewalPrice: data.renewalPrice ? Number(data.renewalPrice) : null,
+        notes: data.notes || null,
       }
 
       if (editingDomain) {
-        await updateDomain(editingDomain.id, data)
+        await updateDomain(editingDomain.id, payload)
       }
       else {
-        await createDomain(data)
+        await createDomain(payload)
       }
       setDialogOpen(false)
-      resetForm()
     }
     catch (error: any) {
       toast.error(error.message || '操作失败')
     }
   }
 
-  const handleDNSRecordSubmit = async (e: React.SubmitEvent) => {
-    e.preventDefault()
+  const onDNSSubmit = async (data: DNSFormValues) => {
     try {
+      const payload = {
+        type: data.type as CreateDNSRecordInput['type'],
+        name: data.name,
+        value: data.value,
+        ttl: Number(data.ttl) || 3600,
+        priority: data.priority ? Number(data.priority) : undefined,
+      }
+
       if (editingDNSRecord) {
-        await updateRecord(editingDNSRecord.id, {
-          type: dnsFormData.type,
-          name: dnsFormData.name,
-          value: dnsFormData.value,
-          ttl: dnsFormData.ttl,
-          priority: dnsFormData.priority,
-        })
+        await updateRecord(editingDNSRecord.id, payload)
       }
       else {
         await createRecord({
-          ...dnsFormData,
+          ...payload,
           domainId: selectedDomainId!,
         })
       }
-      resetDnsForm()
+      resetDNSForm()
     }
     catch (error: any) {
       toast.error(error.message || '操作失败')
@@ -505,56 +539,72 @@ export default function Domains() {
           <DialogHeader>
             <DialogTitle>{editingDomain ? '编辑域名' : '添加域名'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleDomainSubmit(onDomainSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">域名</Label>
+              <Label htmlFor="name">
+                域名
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                {...registerDomain('name', { required: '请输入域名' })}
                 placeholder="example.com"
-                required
+                aria-invalid={!!domainErrors.name}
               />
+              {domainErrors.name && (
+                <p className="text-xs text-red-500">{domainErrors.name.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="provider">服务商</Label>
-              <Select
-                value={formData.providerId || 'none'}
-                onValueChange={value => setFormData({ ...formData, providerId: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择服务商" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">无</SelectItem>
-                  {providers.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={domainControl}
+                name="providerId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={value => field.onChange(value === 'none' ? '' : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择服务商" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">无</SelectItem>
+                      {providers.map(p => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="expiry_date">过期日期</Label>
               <Input
                 id="expiry_date"
                 type="date"
-                value={formData.expiryDate}
-                onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
+                {...registerDomain('expiryDate')}
               />
             </div>
-            {supportsAutoRenew(formData.providerId ? Number(formData.providerId) : null) && (
+            {supportsAutoRenew(watchedProviderId ? Number(watchedProviderId) : null) && (
               <>
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto_renew"
-                    checked={formData.autoRenew}
-                    onCheckedChange={checked => setFormData({ ...formData, autoRenew: checked })}
+                  <Controller
+                    control={domainControl}
+                    name="autoRenew"
+                    render={({ field }) => (
+                      <Switch
+                        id="auto_renew"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
                   />
                   <Label htmlFor="auto_renew">自动续期</Label>
                 </div>
-                {formData.autoRenew && formData.providerId && renderAutoRenewDaysField()}
+                {watchedAutoRenew && watchedProviderId && renderAutoRenewDaysField()}
               </>
             )}
             <div className="space-y-2">
@@ -563,8 +613,7 @@ export default function Domains() {
                 id="renewal_price"
                 type="number"
                 step="0.01"
-                value={formData.renewalPrice}
-                onChange={e => setFormData({ ...formData, renewalPrice: e.target.value })}
+                {...registerDomain('renewalPrice')}
                 placeholder="0.00"
               />
             </div>
@@ -572,8 +621,7 @@ export default function Domains() {
               <Label htmlFor="notes">备注</Label>
               <Textarea
                 id="notes"
-                value={formData.notes}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                {...registerDomain('notes')}
                 placeholder="备注信息"
               />
             </div>
@@ -654,13 +702,20 @@ export default function Domains() {
 
           <div className="border-t pt-4">
             <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">添加记录</span>
+              <span className="font-medium">{editingDNSRecord ? '编辑记录' : '添加记录'}</span>
               {editingDNSRecord && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    resetDnsForm()
+                    setEditingDNSRecord(null)
+                    resetDNSForm({
+                      type: 'A',
+                      name: '',
+                      value: '',
+                      ttl: '3600',
+                      priority: '',
+                    })
                   }}
                 >
                   取消编辑
@@ -668,67 +723,95 @@ export default function Domains() {
               )}
             </div>
 
-            <form onSubmit={handleDNSRecordSubmit} className="space-y-4">
+            <form onSubmit={handleDNSSubmit(onDNSSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dns_type">记录类型</Label>
-                  <Select
-                    value={dnsFormData.type}
-                    onValueChange={value => setDnsFormData({ ...dnsFormData, type: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择类型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DNS_TYPES.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="dns_type">
+                    记录类型
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Controller
+                    control={dnsControl}
+                    name="type"
+                    rules={{ required: '请选择记录类型' }}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择类型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DNS_TYPES.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {dnsErrors.type && (
+                    <p className="text-xs text-red-500">{dnsErrors.type.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dns_name">主机名</Label>
+                  <Label htmlFor="dns_name">
+                    主机名
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="dns_name"
-                    value={dnsFormData.name}
-                    onChange={e => setDnsFormData({ ...dnsFormData, name: e.target.value })}
+                    {...registerDNS('name', { required: '请输入主机名' })}
                     placeholder="www, @, mail"
-                    required
+                    aria-invalid={!!dnsErrors.name}
                   />
+                  {dnsErrors.name && (
+                    <p className="text-xs text-red-500">{dnsErrors.name.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dns_value">记录值</Label>
+                  <Label htmlFor="dns_value">
+                    记录值
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="dns_value"
-                    value={dnsFormData.value}
-                    onChange={e => setDnsFormData({ ...dnsFormData, value: e.target.value })}
+                    {...registerDNS('value', { required: '请输入记录值' })}
                     placeholder="IP地址或目标域名"
-                    required
+                    aria-invalid={!!dnsErrors.value}
                   />
+                  {dnsErrors.value && (
+                    <p className="text-xs text-red-500">{dnsErrors.value.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dns_ttl">TTL（秒）</Label>
+                  <Label htmlFor="dns_ttl">
+                    TTL（秒）
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="dns_ttl"
                     type="number"
-                    value={dnsFormData.ttl}
-                    onChange={e => setDnsFormData({ ...dnsFormData, ttl: Number.parseInt(e.target.value) || 3600 })}
+                    {...registerDNS('ttl', {
+                      required: '请输入TTL',
+                      min: { value: 1, message: 'TTL必须大于0' },
+                    })}
                     placeholder="3600"
+                    aria-invalid={!!dnsErrors.ttl}
                   />
+                  {dnsErrors.ttl && (
+                    <p className="text-xs text-red-500">{dnsErrors.ttl.message}</p>
+                  )}
                 </div>
               </div>
 
-              {(dnsFormData.type === 'MX' || dnsFormData.type === 'SRV') && (
+              {(watchedDNSType === 'MX' || watchedDNSType === 'SRV') && (
                 <div className="space-y-2">
                   <Label htmlFor="dns_priority">优先级</Label>
                   <Input
                     id="dns_priority"
                     type="number"
-                    value={dnsFormData.priority || ''}
-                    onChange={e => setDnsFormData({ ...dnsFormData, priority: Number.parseInt(e.target.value) || undefined })}
+                    {...registerDNS('priority')}
                     placeholder="10"
                   />
                 </div>

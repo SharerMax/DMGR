@@ -1,6 +1,8 @@
 import type { CreateChannelInput } from '@/stores/notificationChannels'
 import { Edit2, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -17,47 +19,80 @@ const channelTypeConfig = {
   webhook: { label: 'Webhook', color: 'bg-purple-100 text-purple-700' },
 }
 
+interface ChannelFormValues {
+  type: CreateChannelInput['type']
+  name: string
+  configValue: string
+  defaultDays: string
+  isActive: boolean
+}
+
 export default function NotificationChannels() {
   const { channels, loading, fetchChannels, createChannel, updateChannel, deleteChannel }
     = useNotificationChannelStore()
   const { confirm } = useConfirm()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<typeof channels[0] | null>(null)
-  const [formData, setFormData] = useState<CreateChannelInput & { configValue: string }>({
-    type: 'email',
-    name: '',
-    config: {},
-    configValue: '',
-    defaultDays: 90,
-    isActive: true,
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<ChannelFormValues>({
+    defaultValues: {
+      type: 'email',
+      name: '',
+      configValue: '',
+      defaultDays: '90',
+      isActive: true,
+    },
   })
+
+  const watchedType = watch('type')
 
   useEffect(() => {
     fetchChannels()
   }, [fetchChannels])
 
+  const getConfigLabel = () => {
+    if (watchedType === 'email')
+      return '邮箱地址'
+    if (watchedType === 'sms')
+      return '手机号码'
+    return 'Webhook URL'
+  }
+
+  const getPlaceholder = () => {
+    if (watchedType === 'email')
+      return 'example@email.com'
+    if (watchedType === 'sms')
+      return '13800138000'
+    return 'https://example.com/webhook'
+  }
+
   const handleOpenDialog = (channel?: typeof channels[0]) => {
     if (channel) {
       setEditingChannel(channel)
-      setFormData({
+      reset({
         type: channel.type,
         name: channel.name,
-        config: channel.config,
         configValue: channel.type === 'email'
           ? (channel.config.email as string) || ''
           : channel.type === 'webhook' ? (channel.config.url as string) || '' : '',
-        defaultDays: channel.defaultDays,
+        defaultDays: channel.defaultDays.toString(),
         isActive: channel.isActive,
       })
     }
     else {
       setEditingChannel(null)
-      setFormData({
+      reset({
         type: 'email',
         name: '',
-        config: {},
         configValue: '',
-        defaultDays: 90,
+        defaultDays: '90',
         isActive: true,
       })
     }
@@ -69,41 +104,39 @@ export default function NotificationChannels() {
     setEditingChannel(null)
   }
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: ChannelFormValues) => {
     try {
       const config: Record<string, unknown> = {}
-      if (formData.type === 'email') {
-        config.email = formData.configValue
+      if (data.type === 'email') {
+        config.email = data.configValue
       }
-      else if (formData.type === 'sms') {
-        config.phone = formData.configValue
+      else if (data.type === 'sms') {
+        config.phone = data.configValue
       }
-      else if (formData.type === 'webhook') {
-        config.url = formData.configValue
+      else if (data.type === 'webhook') {
+        config.url = data.configValue
+      }
+
+      const payload = {
+        type: data.type,
+        name: data.name,
+        config,
+        defaultDays: Number(data.defaultDays) || 90,
+        isActive: data.isActive,
       }
 
       if (editingChannel) {
-        await updateChannel(editingChannel.id, {
-          type: formData.type,
-          name: formData.name,
-          config,
-          defaultDays: formData.defaultDays,
-          isActive: formData.isActive,
-        })
+        await updateChannel(editingChannel.id, payload)
+        toast.success('通知渠道已更新')
       }
       else {
-        await createChannel({
-          type: formData.type,
-          name: formData.name,
-          config,
-          defaultDays: formData.defaultDays,
-          isActive: formData.isActive,
-        })
+        await createChannel(payload)
+        toast.success('通知渠道已创建')
       }
       handleCloseDialog()
     }
-    catch (error) {
-      console.error('Save channel error:', error)
+    catch (error: any) {
+      toast.error(error.message || '保存失败')
     }
   }
 
@@ -118,18 +151,11 @@ export default function NotificationChannels() {
       return
     try {
       await deleteChannel(id)
+      toast.success('通知渠道已删除')
     }
-    catch (error) {
-      console.error('Delete channel error:', error)
+    catch (error: any) {
+      toast.error(error.message || '删除失败')
     }
-  }
-
-  const getPlaceholder = () => {
-    if (formData.type === 'email')
-      return 'example@email.com'
-    if (formData.type === 'sms')
-      return '13800138000'
-    return 'https://example.com/webhook'
   }
 
   return (
@@ -220,73 +246,117 @@ export default function NotificationChannels() {
           <DialogHeader>
             <DialogTitle>{editingChannel ? '编辑通知渠道' : '添加通知渠道'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">渠道类型</Label>
-              <Select
-                value={formData.type}
-                onValueChange={value => setFormData(prev => ({ ...prev, type: value as CreateChannelInput['type'] }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择渠道类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="email">邮件</SelectItem>
-                  <SelectItem value="sms">短信</SelectItem>
-                  <SelectItem value="webhook">Webhook</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="type">
+                渠道类型
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <Controller
+                control={control}
+                name="type"
+                rules={{ required: '请选择渠道类型' }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择渠道类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">邮件</SelectItem>
+                      <SelectItem value="sms">短信</SelectItem>
+                      <SelectItem value="webhook">Webhook</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.type && (
+                <p className="text-xs text-red-500">{errors.type.message}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">渠道名称</Label>
+              <Label htmlFor="name">
+                渠道名称
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                {...register('name', { required: '请输入渠道名称' })}
                 placeholder="输入渠道名称"
+                aria-invalid={!!errors.name}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="configValue">
-                {formData.type === 'email' && '邮箱地址'}
-                {formData.type === 'sms' && '手机号码'}
-                {formData.type === 'webhook' && 'Webhook URL'}
+                {getConfigLabel()}
+                <span className="text-red-500 ml-1">*</span>
               </Label>
               <Input
                 id="configValue"
-                value={formData.configValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, configValue: e.target.value }))}
+                {...register('configValue', {
+                  required: `请输入${getConfigLabel()}`,
+                  validate: (value) => {
+                    if (watchedType === 'email') {
+                      return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(value) || '请输入有效的邮箱地址'
+                    }
+                    if (watchedType === 'webhook') {
+                      return /^https?:\/\//i.test(value) || '请输入有效的 URL'
+                    }
+                    return true
+                  },
+                })}
                 placeholder={getPlaceholder()}
+                aria-invalid={!!errors.configValue}
               />
+              {errors.configValue && (
+                <p className="text-xs text-red-500">{errors.configValue.message}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defaultDays">默认提前提醒天数</Label>
+              <Label htmlFor="defaultDays">
+                默认提前提醒天数
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="defaultDays"
                 type="number"
-                min="1"
-                max="365"
-                value={formData.defaultDays}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, defaultDays: Number.parseInt(e.target.value) || 90 }))}
+                {...register('defaultDays', {
+                  required: '请输入提醒天数',
+                  min: { value: 1, message: '天数不能小于1' },
+                  max: { value: 365, message: '天数不能超过365' },
+                })}
+                placeholder="90"
+                aria-invalid={!!errors.defaultDays}
               />
+              {errors.defaultDays && (
+                <p className="text-xs text-red-500">{errors.defaultDays.message}</p>
+              )}
             </div>
             <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => setFormData(prev => ({ ...prev, isActive: checked }))}
+              <Controller
+                control={control}
+                name="isActive"
+                render={({ field }) => (
+                  <Switch
+                    id="isActive"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
               />
               <Label htmlFor="isActive">启用状态</Label>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleCloseDialog}>
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>
                 取消
               </Button>
-              <Button onClick={handleSubmit}>
+              <Button type="submit">
                 {editingChannel ? '保存' : '创建'}
               </Button>
             </DialogFooter>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
     </>
