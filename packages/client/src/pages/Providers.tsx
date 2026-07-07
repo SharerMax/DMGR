@@ -168,8 +168,21 @@ export default function Providers() {
     setSyncingProvider(provider.id)
     try {
       const result = await syncDomains(provider.id)
-      toast.success(`同步成功！新增 ${result.syncedCount} 个域名`)
       await fetchDomains()
+      const parts = [`新增 ${result.syncedCount} 个域名`]
+      if (result.dnsRecordsInserted || result.dnsRecordsDeleted) {
+        const changeParts = []
+        if (result.dnsRecordsInserted)
+          changeParts.push(`新增 ${result.dnsRecordsInserted} 条 DNS 记录`)
+        if (result.dnsRecordsDeleted)
+          changeParts.push(`移除 ${result.dnsRecordsDeleted} 条 DNS 记录`)
+        if (changeParts.length)
+          parts.push(changeParts.join('，'))
+      }
+      else {
+        parts.push('DNS 记录无变化')
+      }
+      toast.success(`同步成功！${parts.join('；')}`)
     }
     catch (error: any) {
       toast.error(error.message || '同步失败')

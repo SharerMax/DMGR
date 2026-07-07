@@ -41,7 +41,7 @@ interface ProviderState {
   createProvider: (data: CreateProviderInput) => Promise<Provider>
   updateProvider: (id: number, data: Partial<CreateProviderInput>) => Promise<Provider>
   deleteProvider: (id: number) => Promise<void>
-  syncDomains: (id: number) => Promise<{ syncedCount: number, domains: any[] }>
+  syncDomains: (id: number) => Promise<{ syncedCount: number, domains: any[], dnsRecordsInserted: number, dnsRecordsDeleted: number }>
 }
 
 export interface CreateProviderInput {

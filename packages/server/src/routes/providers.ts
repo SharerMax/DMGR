@@ -120,7 +120,12 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
 router.post('/:id/sync', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const result = await syncProviderDomains(req.userId!, Number(req.params.id))
-    logger.info({ providerId: Number(req.params.id), syncedCount: result.syncedCount }, 'Domains synced')
+    logger.info({
+      providerId: Number(req.params.id),
+      syncedCount: result.syncedCount,
+      dnsRecordsInserted: result.dnsRecordsInserted,
+      dnsRecordsDeleted: result.dnsRecordsDeleted,
+    }, 'Domains synced')
     return sendSuccess(res, result, '同步成功')
   }
   catch (error) {

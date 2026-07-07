@@ -85,3 +85,60 @@ export async function deleteDNSRecordsByDomainId(domainId: number): Promise<void
     where: { domainId },
   })
 }
+
+export interface SyncDNSRecordInput {
+  type: string
+  name: string
+  value: string
+  ttl?: number
+  priority?: number | null
+}
+
+/**
+ * 将从服务商获取的 DNS 记录与数据库中的记录进行全量同步。
+ * - 不存在的记录会被插入
+ * - 数据库中存在但不在传入列表中的记录会被删除
+ * - 输入的记录将整体替换当前域名下的记录
+ */
+export async function syncDomainDNSRecords(
+  domainId: number,
+  records: SyncDNSRecordInput[],
+): Promise<{ inserted: number, deleted: number }> {
+  const existing = await prisma.dNSRecord.findMany({
+    where: { domainId },
+    select: { id: true, type: true, name: true, value: true, ttl: true, priority: true },
+  })
+
+  const normalize = (r: { type: string, name: string, value: string }) =>
+    `${r.type}|${r.name}|${r.value}`
+
+  const incomingMap = new Map<string, SyncDNSRecordInput>()
+  for (const r of records) {
+    incomingMap.set(normalize(r), r)
+  }
+
+  const existingSet = new Set(existing.map(normalize))
+  const toDelete = existing.filter(e => !incomingMap.has(normalize(e)))
+  const toInsert = records.filter(r => !existingSet.has(normalize(r)))
+
+  if (toDelete.length > 0) {
+    await prisma.dNSRecord.deleteMany({
+      where: { id: { in: toDelete.map(r => r.id) } },
+    })
+  }
+
+  if (toInsert.length > 0) {
+    await prisma.dNSRecord.createMany({
+      data: toInsert.map(r => ({
+        domainId,
+        type: r.type,
+        name: r.name,
+        value: r.value,
+        ttl: r.ttl ?? 3600,
+        priority: r.priority ?? undefined,
+      })),
+    })
+  }
+
+  return { inserted: toInsert.length, deleted: toDelete.length }
+}

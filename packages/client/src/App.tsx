@@ -2,6 +2,7 @@ import { Bell, FileText, Globe, LogOut, Moon, Server, Settings, Sun, SunMoon, Us
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import Logo from '@/components/Logo'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -52,7 +53,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <Globe className="h-6 w-6 text-primary" />
+                <Logo className="h-6 w-6" />
                 <span className="font-bold text-lg">域名管理系统</span>
               </div>
               <nav className="flex gap-1">

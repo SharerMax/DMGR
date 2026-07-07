@@ -1,6 +1,7 @@
 import type { Provider } from '../models/provider.js'
 import type { DomainSyncer } from '../providers/index.js'
 import logger from '@/utils/logger.js'
+import { syncDomainDNSRecords } from '../models/dnsRecord.js'
 import { createDomain, getDomainsByUserId } from '../models/domain.js'
 import {
   createProvider,
@@ -15,6 +16,8 @@ import { BUILT_IN_PROVIDERS, DNSProviderFactory, getProviderConfig } from '../pr
 export interface SyncResult {
   syncedCount: number
   domains: any[]
+  dnsRecordsInserted: number
+  dnsRecordsDeleted: number
 }
 
 export function getSupportedProviderTypes() {
@@ -122,12 +125,51 @@ function parseProviderConfig(provider: Provider): Record<string, string> {
   }
 }
 
+/**
+ * 根据 provider 的 type 构造对应 DomainSyncer 所需的配置对象。
+ * 不同服务商使用不同的字段名保存凭证。
+ */
+function buildSyncerConfig(type: string, parsed: Record<string, any>): Record<string, any> {
+  switch (type) {
+    case 'aliyun':
+      return {
+        accessKeyId: parsed.accessKeyId,
+        accessKeySecret: parsed.accessKeySecret,
+      }
+    case 'tencent':
+      return {
+        secretId: parsed.secretId,
+        secretKey: parsed.secretKey,
+      }
+    case 'cloudflare':
+      return {
+        apiToken: parsed.apiToken,
+        email: parsed.email,
+      }
+    case 'dnspod':
+      return {
+        loginToken: parsed.loginToken,
+      }
+    case 'namecheap':
+      return {
+        apiUser: parsed.apiUser,
+        apiKey: parsed.apiKey,
+        clientIp: parsed.clientIp,
+      }
+    case 'vps8':
+      return {
+        apiKey: parsed.apiKey,
+        apiUrl: parsed.apiUrl,
+      }
+    default:
+      return {}
+  }
+}
+
 function getSyncer(provider: Provider): DomainSyncer | null {
   const config = parseProviderConfig(provider)
-  return DNSProviderFactory.createSyncer(provider.type, {
-    apiKey: config.accessKeyId || config.secretId || config.apiKey || config.apiToken,
-    apiSecret: config.accessKeySecret || config.secretKey || config.apiSecret,
-  })
+  const syncerConfig = buildSyncerConfig(provider.type, config)
+  return DNSProviderFactory.createSyncer(provider.type, syncerConfig)
 }
 
 function generateMockDomains(provider: Provider) {
@@ -167,6 +209,11 @@ async function syncNewDomains(userId: number, providerId: number, domainList: Ar
   return syncedDomains
 }
 
+/**
+ * 同步指定 provider 下所有域名及其 DNS 记录。
+ * - 从服务商获取域名列表，插入本地尚未保存的域名
+ * - 对本地已存在且归属于该 provider 的域名，以及新增的域名，调用 syncer 同步其 DNS 记录
+ */
 export async function syncProviderDomains(userId: number, providerId: number): Promise<SyncResult> {
   const provider = await getProviderById(providerId)
   if (!provider || provider.userId !== userId) {
@@ -178,7 +225,12 @@ export async function syncProviderDomains(userId: number, providerId: number): P
   if (!syncer || !syncer.validateConfig()) {
     const mockDomains = generateMockDomains(provider)
     const syncedDomains = await syncNewDomains(userId, providerId, mockDomains)
-    return { syncedCount: syncedDomains.length, domains: syncedDomains }
+    return {
+      syncedCount: syncedDomains.length,
+      domains: syncedDomains,
+      dnsRecordsInserted: 0,
+      dnsRecordsDeleted: 0,
+    }
   }
 
   const syncResult = await syncer.syncDomains()
@@ -193,6 +245,67 @@ export async function syncProviderDomains(userId: number, providerId: number): P
     autoRenew: provider.supportsAutoRenew,
   }))
 
-  const syncedDomains = await syncNewDomains(userId, providerId, domainList)
-  return { syncedCount: syncedDomains.length, domains: syncedDomains }
+  const newDomains = await syncNewDomains(userId, providerId, domainList)
+
+  // 同步 DNS 记录：覆盖本次从服务商返回的所有域名
+  // 包含新创建的域名以及之前已存在的同名域名
+  const allUserDomains = await getDomainsByUserId(userId)
+  const domainNameToId = new Map<string, number>()
+  for (const d of allUserDomains) {
+    if (d.providerId === providerId || newDomains.some(nd => nd.id === d.id)) {
+      domainNameToId.set(d.name, d.id)
+    }
+  }
+  // 合并新增域名（providerId 在新创建的对象上是正确的）
+  for (const d of newDomains) {
+    domainNameToId.set(d.name, d.id)
+  }
+
+  let totalInserted = 0
+  let totalDeleted = 0
+
+  for (const domain of domainList) {
+    const domainId = domainNameToId.get(domain.name)
+    if (!domainId) {
+      continue
+    }
+    try {
+      const recordsResult = await syncer.syncDomainRecords(domain.name)
+      if (recordsResult.success && recordsResult.data) {
+        const normalized = recordsResult.data.map(r => ({
+          type: r.type,
+          name: r.name,
+          value: r.value,
+          ttl: r.ttl,
+          priority: r.priority ?? null,
+        }))
+        const { inserted, deleted } = await syncDomainDNSRecords(domainId, normalized)
+        totalInserted += inserted
+        totalDeleted += deleted
+        logger.info(
+          { domainId, domain: domain.name, inserted, deleted },
+          'DNS records synced',
+        )
+      }
+      else {
+        logger.warn(
+          { domain: domain.name, error: recordsResult.error },
+          'Failed to sync DNS records for domain',
+        )
+      }
+    }
+    catch (error) {
+      logger.error(
+        { domain: domain.name, error },
+        'Exception while syncing DNS records',
+      )
+    }
+  }
+
+  return {
+    syncedCount: newDomains.length,
+    domains: newDomains,
+    dnsRecordsInserted: totalInserted,
+    dnsRecordsDeleted: totalDeleted,
+  }
 }
