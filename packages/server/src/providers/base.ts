@@ -60,6 +60,15 @@ export interface ProviderField {
 }
 
 /**
+ * 服务商支持的功能集合
+ */
+export interface ProviderFeatures {
+  domainSync: boolean // 域名同步
+  dnsManagement: boolean // DNS 记录管理
+  autoRenew: boolean // 域名自动续期
+}
+
+/**
  * 服务商配置
  */
 export interface ProviderConfig {
@@ -67,9 +76,8 @@ export interface ProviderConfig {
   name: string
   description?: string
   fields: ProviderField[]
-  supportsAutoRenew: boolean
-  maxRenewalDays?: number // 过期前最大可续期天数（仅 supportsAutoRenew=true 时有效）
-  features: string[]
+  features: ProviderFeatures
+  maxRenewalDays?: number // 过期前最大可续期天数（仅 features.autoRenew=true 时有效）
 }
 
 /**

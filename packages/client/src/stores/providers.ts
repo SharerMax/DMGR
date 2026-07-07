@@ -10,14 +10,19 @@ export interface ProviderField {
   description?: string
 }
 
+export interface ProviderFeatures {
+  domainSync: boolean
+  dnsManagement: boolean
+  autoRenew: boolean
+}
+
 export interface ProviderType {
   id: string
   name: string
   description?: string
   fields: ProviderField[]
-  supportsAutoRenew: boolean
+  features: ProviderFeatures
   maxRenewalDays?: number // 过期前最大可续期天数
-  features: string[]
 }
 
 export interface Provider {
@@ -40,7 +45,7 @@ interface ProviderState {
   fetchProviderTypes: () => Promise<void>
   createProvider: (data: CreateProviderInput) => Promise<Provider>
   updateProvider: (id: number, data: Partial<CreateProviderInput>) => Promise<Provider>
-  deleteProvider: (id: number) => Promise<void>
+  deleteProvider: (id: number) => Promise<{ deletedDomainCount: number }>
   syncDomains: (id: number) => Promise<{ syncedCount: number, domains: any[], dnsRecordsInserted: number, dnsRecordsDeleted: number }>
 }
 
@@ -95,10 +100,11 @@ export const useProviderStore = create<ProviderState>(set => ({
   },
 
   deleteProvider: async (id) => {
-    await api.delete(`/providers/${id}`)
+    const response = await api.delete(`/providers/${id}`)
     set(state => ({
       providers: state.providers.filter(p => p.id !== id),
     }))
+    return response.data as { deletedDomainCount: number }
   },
 
   syncDomains: async (id) => {

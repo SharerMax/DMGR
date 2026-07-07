@@ -30,9 +30,8 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: '阿里云 AccessKey Secret',
       },
     ],
-    supportsAutoRenew: true,
-    maxRenewalDays: 30, // 阿里云支持过期前30天内续期
-    features: ['域名同步', 'DNS管理', '自动续期'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: true },
+    maxRenewalDays: 30,
   },
   {
     id: 'tencent',
@@ -56,9 +55,8 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: '腾讯云 SecretKey',
       },
     ],
-    supportsAutoRenew: true,
-    maxRenewalDays: 60, // 腾讯云支持过期前60天内续期
-    features: ['域名同步', 'DNS管理', '自动续期'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: true },
+    maxRenewalDays: 60,
   },
   {
     id: 'cloudflare',
@@ -82,8 +80,7 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: 'Cloudflare 账户邮箱',
       },
     ],
-    supportsAutoRenew: false,
-    features: ['DNS管理'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: false },
   },
   {
     id: 'dnspod',
@@ -99,8 +96,7 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: 'DNSPod API Token，格式: ID,Token',
       },
     ],
-    supportsAutoRenew: false,
-    features: ['DNS管理'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: false },
   },
   {
     id: 'namecheap',
@@ -132,9 +128,8 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: '用于 API 验证的公网 IP',
       },
     ],
-    supportsAutoRenew: true,
-    maxRenewalDays: 90, // Namecheap 支持过期前90天内续期
-    features: ['域名同步', 'DNS管理'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: true },
+    maxRenewalDays: 90,
   },
   {
     id: 'vps8',
@@ -150,43 +145,8 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
         description: 'VPS8 API Key',
       },
     ],
-    supportsAutoRenew: false,
-    features: ['域名同步'],
+    features: { domainSync: true, dnsManagement: true, autoRenew: false },
   },
-  // TODO: 自定义服务商配置, 后期根据需求添加
-  // {
-  //   id: 'custom',
-  //   name: '自定义',
-  //   description: '自定义服务商（使用 API URL）',
-  //   fields: [
-  //     {
-  //       key: 'apiUrl',
-  //       label: 'API 地址',
-  //       type: 'url',
-  //       required: true,
-  //       placeholder: 'https://api.example.com',
-  //       description: '服务商 API 地址',
-  //     },
-  //     {
-  //       key: 'apiKey',
-  //       label: 'API Key',
-  //       type: 'text',
-  //       required: true,
-  //       placeholder: '输入 API Key',
-  //       description: 'API 密钥',
-  //     },
-  //     {
-  //       key: 'apiSecret',
-  //       label: 'API Secret',
-  //       type: 'password',
-  //       required: false,
-  //       placeholder: '输入 API Secret',
-  //       description: 'API 密钥（可选）',
-  //     },
-  //   ],
-  //   supportsAutoRenew: false,
-  //   features: ['域名同步'],
-  // },
 ]
 
 // 根据 ID 获取服务商配置

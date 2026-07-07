@@ -51,6 +51,12 @@ export async function getDomainsByUserId(userId: number): Promise<(Domain & { pr
   })
 }
 
+export async function getDomainsByProviderId(providerId: number): Promise<Domain[]> {
+  return prisma.domain.findMany({
+    where: { providerId },
+  })
+}
+
 export async function getExpiringDomains(
   days: number,
 ): Promise<(Domain & { provider: { name: string } | null })[]> {

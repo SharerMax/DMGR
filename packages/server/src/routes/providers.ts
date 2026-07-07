@@ -104,12 +104,12 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const success = await deleteUserProvider(req.userId!, Number(req.params.id))
-    if (!success) {
+    const result = await deleteUserProvider(req.userId!, Number(req.params.id))
+    if (!result.success) {
       return sendError(res, '服务商不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
-    logger.info({ providerId: Number(req.params.id) }, 'Provider deleted')
-    return res.status(HTTP_STATUS.NO_CONTENT).send()
+    logger.info({ providerId: Number(req.params.id), deletedDomainCount: result.deletedDomainCount }, 'Provider deleted')
+    return sendSuccess(res, { deletedDomainCount: result.deletedDomainCount }, '删除成功')
   }
   catch (error) {
     logger.error({ error }, 'Delete provider error')

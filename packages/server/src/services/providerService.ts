@@ -2,7 +2,7 @@ import type { Provider } from '../models/provider.js'
 import type { DomainSyncer } from '../providers/index.js'
 import logger from '@/utils/logger.js'
 import { syncDomainDNSRecords } from '../models/dnsRecord.js'
-import { createDomain, getDomainsByUserId } from '../models/domain.js'
+import { createDomain, deleteDomain, getDomainsByProviderId, getDomainsByUserId } from '../models/domain.js'
 import {
   createProvider,
   deleteProvider,
@@ -12,6 +12,21 @@ import {
   updateProvider,
 } from '../models/provider.js'
 import { BUILT_IN_PROVIDERS, DNSProviderFactory, getProviderConfig } from '../providers/index.js'
+
+export function providerSupportsAutoRenew(providerType: string): boolean {
+  const config = getProviderConfig(providerType)
+  return config?.features.autoRenew === true
+}
+
+export function providerSupportsDomainSync(providerType: string): boolean {
+  const config = getProviderConfig(providerType)
+  return config?.features.domainSync === true
+}
+
+export function providerSupportsDnsManagement(providerType: string): boolean {
+  const config = getProviderConfig(providerType)
+  return config?.features.dnsManagement === true
+}
 
 export interface SyncResult {
   syncedCount: number
@@ -33,9 +48,8 @@ export function getSupportedProviderTypes() {
       placeholder: f.placeholder,
       description: f.description,
     })),
-    supportsAutoRenew: p.supportsAutoRenew,
-    maxRenewalDays: p.maxRenewalDays,
     features: p.features,
+    maxRenewalDays: p.maxRenewalDays,
   }))
 }
 
@@ -78,7 +92,7 @@ export async function createUserProvider(
     type: data.type,
     name: data.name,
     config: data.config,
-    supportsAutoRenew: providerConfig?.supportsAutoRenew ?? data.supportsAutoRenew,
+    supportsAutoRenew: providerConfig?.features.autoRenew ?? data.supportsAutoRenew,
     userId,
   })
 }
@@ -108,12 +122,21 @@ export async function updateUserProvider(
   return updateProvider(providerId, updateData)
 }
 
-export async function deleteUserProvider(userId: number, providerId: number): Promise<boolean> {
+export async function deleteUserProvider(userId: number, providerId: number): Promise<{ success: boolean, deletedDomainCount: number }> {
   const provider = await getProviderById(providerId)
   if (!provider || provider.userId !== userId) {
-    return false
+    return { success: false, deletedDomainCount: 0 }
   }
-  return deleteProvider(providerId)
+
+  // 删除该服务商下所有域名（DNS 记录和 Reminders 会级联删除）
+  const domains = await getDomainsByProviderId(providerId)
+  for (const domain of domains) {
+    await deleteDomain(domain.id)
+  }
+
+  await deleteProvider(providerId)
+  logger.info({ providerId, deletedDomainCount: domains.length }, 'Provider and associated domains deleted')
+  return { success: true, deletedDomainCount: domains.length }
 }
 
 function parseProviderConfig(provider: Provider): Record<string, string> {
@@ -220,6 +243,10 @@ export async function syncProviderDomains(userId: number, providerId: number): P
     throw new Error('服务商不存在')
   }
 
+  if (!providerSupportsDomainSync(provider.type)) {
+    throw new Error('当前服务商不支持域名同步')
+  }
+
   const syncer = getSyncer(provider)
 
   if (!syncer || !syncer.validateConfig()) {
@@ -247,8 +274,6 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
   const newDomains = await syncNewDomains(userId, providerId, domainList)
 
-  // 同步 DNS 记录：覆盖本次从服务商返回的所有域名
-  // 包含新创建的域名以及之前已存在的同名域名
   const allUserDomains = await getDomainsByUserId(userId)
   const domainNameToId = new Map<string, number>()
   for (const d of allUserDomains) {
@@ -256,49 +281,51 @@ export async function syncProviderDomains(userId: number, providerId: number): P
       domainNameToId.set(d.name, d.id)
     }
   }
-  // 合并新增域名（providerId 在新创建的对象上是正确的）
   for (const d of newDomains) {
     domainNameToId.set(d.name, d.id)
   }
 
+  const supportsDNS = providerSupportsDnsManagement(provider.type)
   let totalInserted = 0
   let totalDeleted = 0
 
-  for (const domain of domainList) {
-    const domainId = domainNameToId.get(domain.name)
-    if (!domainId) {
-      continue
-    }
-    try {
-      const recordsResult = await syncer.syncDomainRecords(domain.name)
-      if (recordsResult.success && recordsResult.data) {
-        const normalized = recordsResult.data.map(r => ({
-          type: r.type,
-          name: r.name,
-          value: r.value,
-          ttl: r.ttl,
-          priority: r.priority ?? null,
-        }))
-        const { inserted, deleted } = await syncDomainDNSRecords(domainId, normalized)
-        totalInserted += inserted
-        totalDeleted += deleted
-        logger.info(
-          { domainId, domain: domain.name, inserted, deleted },
-          'DNS records synced',
+  if (supportsDNS) {
+    for (const domain of domainList) {
+      const domainId = domainNameToId.get(domain.name)
+      if (!domainId) {
+        continue
+      }
+      try {
+        const recordsResult = await syncer.syncDomainRecords(domain.name)
+        if (recordsResult.success && recordsResult.data) {
+          const normalized = recordsResult.data.map(r => ({
+            type: r.type,
+            name: r.name,
+            value: r.value,
+            ttl: r.ttl,
+            priority: r.priority ?? null,
+          }))
+          const { inserted, deleted } = await syncDomainDNSRecords(domainId, normalized)
+          totalInserted += inserted
+          totalDeleted += deleted
+          logger.info(
+            { domainId, domain: domain.name, inserted, deleted },
+            'DNS records synced',
+          )
+        }
+        else {
+          logger.warn(
+            { domain: domain.name, error: recordsResult.error },
+            'Failed to sync DNS records for domain',
+          )
+        }
+      }
+      catch (error) {
+        logger.error(
+          { domain: domain.name, error },
+          'Exception while syncing DNS records',
         )
       }
-      else {
-        logger.warn(
-          { domain: domain.name, error: recordsResult.error },
-          'Failed to sync DNS records for domain',
-        )
-      }
-    }
-    catch (error) {
-      logger.error(
-        { domain: domain.name, error },
-        'Exception while syncing DNS records',
-      )
     }
   }
 

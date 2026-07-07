@@ -10,6 +10,7 @@ import { getDomainById } from '../models/domain.js'
 import { getProviderById } from '../models/provider.js'
 import { DNSProviderFactory } from '../providers/index.js'
 import { logger } from '../utils/index.js'
+import { providerSupportsDnsManagement } from './providerService.js'
 
 function parseConfig(config: string): Record<string, string> {
   try {
@@ -26,6 +27,15 @@ function getProviderConfig(provider: { type: string, config: string }) {
     apiKey: config.accessKeyId || config.secretId || config.apiKey || config.apiToken,
     apiSecret: config.accessKeySecret || config.secretKey || config.apiSecret,
   })
+}
+
+/**
+ * 如果域名关联了 provider 但该 provider 不支持 DNS 管理，抛出错误。
+ */
+function validateProviderDnsFeature(provider: { type: string, userId: number } | null, userId: number) {
+  if (provider && provider.userId === userId && !providerSupportsDnsManagement(provider.type)) {
+    throw new Error('该域名所属的服务商不支持 DNS 记录管理')
+  }
 }
 
 export async function getDomainDNSRecords(userId: number, domainId: number): Promise<DNSRecord[]> {
@@ -60,6 +70,8 @@ export async function createDomainDNSRecord(
   }
 
   const provider = domain.providerId ? await getProviderById(domain.providerId) : null
+  validateProviderDnsFeature(provider, userId)
+
   if (provider && provider.userId === userId) {
     const dnsProvider = getProviderConfig(provider)
     if (dnsProvider && dnsProvider.validateConfig()) {
@@ -103,6 +115,8 @@ export async function updateDomainDNSRecord(
   }
 
   const provider = domain.providerId ? await getProviderById(domain.providerId) : null
+  validateProviderDnsFeature(provider, userId)
+
   if (provider && provider.userId === userId) {
     const dnsProvider = getProviderConfig(provider)
     if (dnsProvider && dnsProvider.validateConfig()) {
@@ -142,6 +156,8 @@ export async function deleteDomainDNSRecord(userId: number, recordId: number): P
   }
 
   const provider = domain.providerId ? await getProviderById(domain.providerId) : null
+  validateProviderDnsFeature(provider, userId)
+
   if (provider && provider.userId === userId) {
     const dnsProvider = getProviderConfig(provider)
     if (dnsProvider && dnsProvider.validateConfig()) {

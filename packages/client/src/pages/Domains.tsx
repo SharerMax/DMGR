@@ -41,6 +41,26 @@ export default function Domains() {
   const { records, fetchRecords, createRecord, updateRecord, deleteRecord } = useDNSRecordStore()
   const { confirm } = useConfirm()
 
+  const supportsDNS = (providerId: number | null | undefined) => {
+    if (!providerId)
+      return true
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider)
+      return false
+    const typeConfig = providerTypes.find(t => t.id === provider.type)
+    return !!typeConfig?.features.dnsManagement
+  }
+
+  const supportsAutoRenew = (providerId: number | null | undefined) => {
+    if (!providerId)
+      return false
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider)
+      return false
+    const typeConfig = providerTypes.find(t => t.id === provider.type)
+    return (provider.supportsAutoRenew || typeConfig?.features.autoRenew) === true
+  }
+
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -102,7 +122,7 @@ export default function Domains() {
       ? providerTypes.find(t => t.id === selectedProvider.type)
       : null
 
-    if (providerType?.supportsAutoRenew && providerType.maxRenewalDays) {
+    if (providerType?.features.autoRenew && providerType.maxRenewalDays) {
       return (
         <div className="space-y-2">
           <Label htmlFor="auto_renew_days">
@@ -131,7 +151,7 @@ export default function Domains() {
       )
     }
 
-    if (formData.providerId && !providerType?.supportsAutoRenew) {
+    if (formData.providerId && !providerType?.features.autoRenew) {
       return (
         <p className="text-sm text-yellow-600">
           当前服务商不支持自动续期
@@ -441,14 +461,16 @@ export default function Domains() {
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => openDNSDialog(domain.id)}
-                                    title="DNS记录"
-                                  >
-                                    <Settings className="h-4 w-4" />
-                                  </Button>
+                                  {supportsDNS(domain.providerId) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openDNSDialog(domain.id)}
+                                      title="DNS记录"
+                                    >
+                                      <Settings className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -522,15 +544,19 @@ export default function Domains() {
                 onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="auto_renew"
-                checked={formData.autoRenew}
-                onCheckedChange={checked => setFormData({ ...formData, autoRenew: checked })}
-              />
-              <Label htmlFor="auto_renew">自动续期</Label>
-            </div>
-            {formData.autoRenew && formData.providerId && renderAutoRenewDaysField()}
+            {supportsAutoRenew(formData.providerId ? Number(formData.providerId) : null) && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="auto_renew"
+                    checked={formData.autoRenew}
+                    onCheckedChange={checked => setFormData({ ...formData, autoRenew: checked })}
+                  />
+                  <Label htmlFor="auto_renew">自动续期</Label>
+                </div>
+                {formData.autoRenew && formData.providerId && renderAutoRenewDaysField()}
+              </>
+            )}
             <div className="space-y-2">
               <Label htmlFor="renewal_price">续期价格（元）</Label>
               <Input

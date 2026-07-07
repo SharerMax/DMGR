@@ -93,7 +93,7 @@ export default function Providers() {
     }
     // 设置默认自动续期
     if (type) {
-      setFormData(prev => ({ ...prev, supportsAutoRenew: type.supportsAutoRenew }))
+      setFormData(prev => ({ ...prev, supportsAutoRenew: type.features.autoRenew }))
     }
   }
 
@@ -147,17 +147,23 @@ export default function Providers() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (provider: Provider) => {
     const confirmed = await confirm({
       title: '删除服务商',
-      description: '确定要删除这个服务商吗？此操作不可撤销。',
+      description: `确定要删除「${provider.name}」吗？该服务商下的所有域名及其 DNS 记录也将被一并删除。此操作不可撤销。`,
       confirmText: '删除',
       destructive: true,
     })
     if (!confirmed)
       return
     try {
-      await deleteProvider(id)
+      const result = await deleteProvider(provider.id)
+      await fetchDomains()
+      const parts = ['服务商已删除']
+      if (result.deletedDomainCount > 0) {
+        parts.push(`同时删除了 ${result.deletedDomainCount} 个关联域名`)
+      }
+      toast.success(parts.join('，'))
     }
     catch (error: any) {
       toast.error(error.message || '删除失败')
@@ -169,18 +175,22 @@ export default function Providers() {
     try {
       const result = await syncDomains(provider.id)
       await fetchDomains()
+      const typeConfig = providerTypes.find(t => t.id === provider.type)
+      const supportsDNS = typeConfig?.features.dnsManagement
       const parts = [`新增 ${result.syncedCount} 个域名`]
-      if (result.dnsRecordsInserted || result.dnsRecordsDeleted) {
-        const changeParts = []
-        if (result.dnsRecordsInserted)
-          changeParts.push(`新增 ${result.dnsRecordsInserted} 条 DNS 记录`)
-        if (result.dnsRecordsDeleted)
-          changeParts.push(`移除 ${result.dnsRecordsDeleted} 条 DNS 记录`)
-        if (changeParts.length)
-          parts.push(changeParts.join('，'))
-      }
-      else {
-        parts.push('DNS 记录无变化')
+      if (supportsDNS) {
+        if (result.dnsRecordsInserted || result.dnsRecordsDeleted) {
+          const changeParts = []
+          if (result.dnsRecordsInserted)
+            changeParts.push(`新增 ${result.dnsRecordsInserted} 条 DNS 记录`)
+          if (result.dnsRecordsDeleted)
+            changeParts.push(`移除 ${result.dnsRecordsDeleted} 条 DNS 记录`)
+          if (changeParts.length)
+            parts.push(changeParts.join('，'))
+        }
+        else {
+          parts.push('DNS 记录无变化')
+        }
       }
       toast.success(`同步成功！${parts.join('；')}`)
     }
@@ -250,7 +260,7 @@ export default function Providers() {
                             )}
                           </div>
                           <div className="flex gap-2">
-                            {typeConfig?.features.includes('域名同步') && (
+                            {typeConfig?.features.domainSync && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -264,7 +274,7 @@ export default function Providers() {
                             <Button variant="outline" size="sm" onClick={() => openEditDialog(provider)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="destructive" size="sm" onClick={() => handleDelete(provider.id)}>
+                            <Button variant="destructive" size="sm" onClick={() => handleDelete(provider)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -274,17 +284,24 @@ export default function Providers() {
                         <div className="space-y-2 text-sm">
                           {typeConfig && (
                             <div className="flex flex-wrap gap-1">
-                              {typeConfig.features.map(feature => (
-                                <span
-                                  key={feature}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                >
-                                  {feature === 'DNS管理' && <Database className="h-3 w-3 mr-1" />}
-                                  {feature === '域名同步' && <Globe className="h-3 w-3 mr-1" />}
-                                  {feature === '自动续期' && <Shield className="h-3 w-3 mr-1" />}
-                                  {feature}
+                              {typeConfig.features.domainSync && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  <Globe className="h-3 w-3 mr-1" />
+                                  域名同步
                                 </span>
-                              ))}
+                              )}
+                              {typeConfig.features.dnsManagement && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  <Database className="h-3 w-3 mr-1" />
+                                  DNS管理
+                                </span>
+                              )}
+                              {typeConfig.features.autoRenew && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  自动续期
+                                </span>
+                              )}
                             </div>
                           )}
                           <p className="flex items-center gap-2">
@@ -292,7 +309,7 @@ export default function Providers() {
                               {provider.supportsAutoRenew ? '✓ 支持自动续期' : '✗ 不支持自动续期'}
                             </span>
                           </p>
-                          {typeConfig?.supportsAutoRenew && typeConfig.maxRenewalDays && (
+                          {typeConfig?.features.autoRenew && typeConfig.maxRenewalDays && (
                             <p className="text-sm text-gray-600">
                               可续期时间: 过期前
                               {' '}
