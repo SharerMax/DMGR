@@ -1,185 +1,271 @@
+# Domain Manager 开发工作流 Skill
+
+> 面向 AI Agent 的项目命令与开发模式速查。涉及前后端的日常命令、依赖管理、数据库操作、API 约定等。
+
 ---
-name: "domain-manager-dev"
-description: "Development workflow, commands, and API patterns for Domain Manager. Invoke when setting up environment, running dev/build/lint commands, creating API routes, or working with Prisma operations."
----
 
-# Domain Manager Development
-
-pnpm monorepo: `packages/server` (Express+Prisma+SQLite) + `packages/client` (React+Vite+shadcn/ui)
-
-## Commands
+## 1. 启动开发环境
 
 ```bash
-pnpm install --no-frozen-lockfile  # 安装依赖（lockfile 可能不匹配时用此命令）
-pnpm update --latest               # 升级所有依赖到范围最新（受 pnpm 默认 minimumReleaseAge 策略保护：新发布的版本在特定时间窗口内不会被采用，以防御供应链攻击）
-pnpm dev:server                     # 后端 http://localhost:3001
-pnpm dev:client                     # 前端 http://localhost:3000
-pnpm build                          # 构建
-pnpm lint / pnpm lint:fix           # 检查/修复
-pnpm typecheck                      # 类型检查（前后端同时）
+# 同时启动前后端（推荐，使用 npm-run-all）
+pnpm dev
+
+# 单独启动
+pnpm dev:server   # 后端 API: http://localhost:3001
+pnpm dev:client   # 前端 SPA: http://localhost:3000
 ```
 
-**依赖管理说明**:
-- 依赖版本集中在 `pnpm-workspace.yaml` 的 `catalog` 字段声明，各工作区的 `package.json` 中使用 `"<pkg>": "catalog:"`
-- 升级依赖时用 `pnpm update --latest`，它会把 catalog 内版本范围推到 npm 上的最新大版本
-- pnpm 默认启用 `minimumReleaseAge` 安全策略：发布时间早于阈值的版本才会被解析为候选。**不要绕过**该策略（如设置为 0 或排除特定包）。如果某个版本因策略被拒，要么等待时间窗口，要么手工在 catalog 中写入稍旧且安全的版本
+---
 
-## Prisma Commands
+## 2. 测试账号
+
+首次启动后执行数据库迁移和种子数据：
+
+```bash
+# 迁移（如已迁移可跳过）
+cd packages/server
+pnpm prisma migrate dev
+
+# 写入种子数据（创建管理员账号）
+pnpm prisma db seed
+```
+
+**账号**：
+- 用户名：`admin`
+- 密码：`password123`
+- 邮箱：`admin@example.com`
+
+---
+
+## 3. 代码质量检查（提交前必须执行）
+
+```bash
+# 前后端同时检查
+pnpm lint          # ESLint 检查（无错误才能提交）
+pnpm typecheck     # TypeScript 类型检查（无错误才能提交）
+
+# 后端生产构建（确保生产环境可用）
+cd packages/server && pnpm build
+
+# 前端生产构建
+cd packages/client && pnpm build
+```
+
+---
+
+## 4. 依赖管理（pnpm + catalog）
+
+### 4.1 版本范围声明位置
+
+所有依赖版本集中在**项目根目录的 `pnpm-workspace.yaml`** 的 `catalog:` 字段，按字母序。每个 workspace 的 `package.json` 中以 `"pkg": "catalog:"` 引用。
+
+### 4.2 添加新依赖
+
+```bash
+# 给前端 workspace 添加依赖
+pnpm --filter client add <package>
+
+# 给后端 workspace 添加依赖
+pnpm --filter server add <package>
+
+# 然后在 pnpm-workspace.yaml 中更新 catalog 版本
+# 或将新版本推到 catalog: pnpm update --latest
+```
+
+### 4.3 升级依赖
+
+```bash
+# 升级所有依赖到最新版本（同时更新 catalog 范围）
+pnpm update --latest
+
+# 升级特定包
+pnpm update <package> --latest
+```
+
+### 4.4 重新解析（解决 ERR_PNPM_LOCKFILE_CONFIG_MISMATCH）
+
+```bash
+pnpm install --no-frozen-lockfile
+```
+
+### 4.5 minimumReleaseAge 策略
+
+pnpm 对新发布的包设置了 "冷静期"。如果某个包因版本太新被挡下，等待时间窗口或在 catalog 中手动指定一个稍旧但安全的版本范围。**不要绕过该策略**。
+
+---
+
+## 5. 数据库操作（Prisma + SQLite）
 
 ```bash
 cd packages/server
-pnpm prisma generate            # 生成 Client（schema 变更后必须执行）
-pnpm prisma migrate dev --name <name>  # 创建迁移
-pnpm prisma db seed             # 种子数据
-pnpm prisma studio              # 数据库 GUI
+
+# 修改 schema.prisma 后执行：创建并应用迁移
+pnpm prisma migrate dev --name <描述性名称>
+# 示例: pnpm prisma migrate dev --name add_notes_field_to_domain
+
+# 重新生成 Prisma Client TypeScript 类型
+pnpm prisma generate
+
+# 写入种子数据
+pnpm prisma db seed
+
+# 打开数据库可视化工具
+pnpm prisma studio
+
+# 清理脏数据（孤立 DNS 记录、无 provider 的域名等）
+pnpm tsx src/prisma/cleanup.ts
 ```
 
-Schema 路径: `packages/server/src/prisma/schema.prisma`（注意不是 `prisma/schema.prisma`）
-Client 输出: `./generated`
+---
 
-## API 开发模式
+## 6. 后端 API 开发模式
 
-路由文件在 `packages/server/src/routes/`，在 `src/index.ts` 中注册。
+### 6.1 统一响应格式
 
-**重要：路由层只能调用 services/，禁止直接导入 models/ 或 prisma。**
+所有接口必须返回：
 
 ```typescript
+{ code: number, message: string, data?: any }
+// code === 0 表示成功
+// code !== 0 表示失败
+```
+
+### 6.2 路由定义模板
+
+```typescript
+// packages/server/src/routes/domains.ts
 import { Router } from 'express'
+import { sendSuccess, sendError, HTTP_STATUS } from '@/utils/response.js'
 import { z } from 'zod'
-import { authMiddleware, type AuthRequest } from '../middleware/index.js'
-import { getUserDomains, createUserDomain } from '../services/domainService.js'
-import { sendSuccess, sendError, HTTP_STATUS } from '../utils/response.js'
-import { logger } from '../utils/index.js'
+import { authMiddleware, AuthenticatedRequest } from '@/middleware/index.js'
+import { domainService } from '@/services/domainService.js'
 
 const router = Router()
+router.use(authMiddleware)
 
-// 列表查询
-router.get('/', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const items = await getUserDomains(req.userId!)
-    return sendSuccess(res, items)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
-    }
-    logger.error({ error }, 'Get domains error')
-    return sendError(res, '获取失败', 1, HTTP_STATUS.INTERNAL_ERROR)
-  }
+const createSchema = z.object({
+  name: z.string().min(1, '域名不能为空').max(255, '域名过长'),
+  providerId: z.coerce.number().int().positive().nullable().optional(),
 })
 
-// 创建
-const createSchema = z.object({ name: z.string(), expiryDate: z.string() })
-router.post('/', authMiddleware, async (req: AuthRequest, res) => {
+router.post('/', async (req: AuthenticatedRequest, res) => {
+  const parse = createSchema.safeParse(req.body)
+  if (!parse.success) {
+    const messages = parse.error.issues.map((i) => i.message).join('; ')
+    sendError(res, messages, 1, HTTP_STATUS.BAD_REQUEST)
+    return
+  }
   try {
-    const data = createSchema.parse(req.body)
-    const item = await createUserDomain(req.userId!, data)
-    logger.info({ id: item.id }, 'Domain created')
-    return sendSuccess(res, item, '创建成功', HTTP_STATUS.CREATED)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
-    }
-    logger.error({ error }, 'Create domain error')
-    return sendError(res, '创建失败', 1, HTTP_STATUS.INTERNAL_ERROR)
-  }
-})
-
-// 删除
-router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const success = await deleteUserDomain(req.userId!, +req.params.id)
-    if (!success) {
-      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
-    }
-    return res.status(HTTP_STATUS.NO_CONTENT).send()
-  }
-  catch (error) {
-    logger.error({ error }, 'Delete domain error')
-    return sendError(res, '删除失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+    const result = await domainService.createDomain(req.user!.userId, parse.data)
+    sendSuccess(res, result, '创建成功', HTTP_STATUS.CREATED)
+  } catch (error: any) {
+    sendError(res, error.message || '创建失败', 1, HTTP_STATUS.INTERNAL_SERVER_ERROR)
   }
 })
 
 export default router
 ```
 
-注册: `app.use('/api/new', newRoutes)` (在 index.ts 中)
-
-## Prisma 查询模式
+### 6.3 在主入口挂载路由
 
 ```typescript
-import { prisma } from '../db/index.js'
-
-// 基础 CRUD
-await prisma.domain.findMany({ where: { userId }, include: { provider: true } })
-await prisma.domain.create({ data: { ...input, userId } })
-await prisma.domain.update({ where: { id }, data: input })
-await prisma.domain.delete({ where: { id } })
-
-// 关联查询
-await prisma.domain.findUnique({
-  where: { id },
-  include: { provider: true, reminders: true, dnsRecords: true }
-})
-
-// 即将过期
-await prisma.domain.findMany({
-  where: { userId, expiryDate: { lte: new Date(Date.now() + 30*24*60*60*1000) } }
-})
+// packages/server/src/index.ts
+import domainRoutes from '@/routes/domains.js'
+app.use('/api/domains', domainRoutes)
 ```
 
-## 前端 API 调用模式
+---
+
+## 7. 前端 API 调用模式
+
+前端 Axios 实例已在 `lib/api.ts` 中封装了以下约定：
+
+- 自动附带 `Authorization: Bearer <token>`（从 `auth` store 获取）
+- 401 响应自动跳转 `/login` 并清除本地 token
+- 成功响应自动提取 `res.data.data`
+- 错误时 `error.message` 即为后端返回的可读消息
 
 ```typescript
 import api from '@/lib/api'
 
 // GET
 const res = await api.get<Domain[]>('/domains')
-const domains = res.data  // response.data 已自动提取（后端 {code,message,data} → data）
+const domains = res.data
 
 // POST
-const res = await api.post<Domain>('/domains', data)
+const res = await api.post<Domain>('/domains', payload)
 const newDomain = res.data
 
-// 错误处理
-try {
-  await api.post('/domains', data)
-} catch (error: any) {
-  alert(error.message || '操作失败')  // error.message 是后端返回的消息
+// PUT
+await api.put<Domain>(`/domains/${id}`, payload)
+
+// DELETE
+await api.delete(`/domains/${id}`)
+
+// 带查询参数
+const res = await api.get<Domain[]>('/domains', {
+  params: { providerId, status },
+})
+```
+
+---
+
+## 8. Provider 能力检查约定
+
+服务商的能力由后端 `providers/config.ts` 的 `BUILT_IN_PROVIDERS` 声明：
+
+```typescript
+interface ProviderFeatures {
+  domainSync: boolean
+  dnsManagement: boolean
+  autoRenew: boolean
 }
 ```
 
-## 关键约定
+**在 service 层的操作前必须校验能力**：
 
-1. 只用 `pnpm`，不用 npm/yarn
-2. 代码变更后：格式化 → 构建 → 类型检查
-3. Server 导入必须用 `.js` 扩展名: `import { x } from './db/index.js'`
-4. 配置字段 (Provider.config, NotificationChannel.config) 存 JSON 字符串
-5. Schema 变更后必须 `prisma generate` + `prisma migrate dev`
-6. **后端统一响应格式**: `{ code, message, data }`，用 `sendSuccess/sendError`
-7. **后端统一日志**: 用 `logger` (Pino)，禁止 `console.*`
-8. **后端认证**: 用 `middleware/auth.ts` 的 `authMiddleware`，挂载 `req.userId`
-9. **分层架构**: routes → services → models → db/prisma，禁止跨层调用
-10. **路由层禁止直接导入 models/ 或 prisma**：必须通过 services/ 访问数据
-11. **路由顺序**: 通配路由 `/:id` 必须放在所有具体路径路由（`/config`、`/stats/summary` 等）之后，否则具体路径会被 `:id` 捕获
-12. **providers 目录按服务商拆分**: 每个服务商一个子目录
-13. **components/ui/ 只放 shadcn/ui 组件**: 自定义组件放 components/ 根目录
-14. **三方集成**: 域名/DNS 操作会同步到服务商 API，失败不阻塞本地操作，仅记录 warn
-15. **Renew 实现下沉**: 续期逻辑在 `providers/<name>/renewer.ts`，`autoRenewService.ts` 只做调度
-16. **DNSProviderFactory**: 统一创建 provider/syncer/renewer 实例，禁止手动 switch/case
-17. **依赖版本集中管理**: 依赖版本写在 `pnpm-workspace.yaml` 的 `catalog` 字段；各 workspace 用 `"catalog:"` 引用。升级时用 `pnpm update --latest`；不要绕过 `minimumReleaseAge` 策略
-18. **生产环境日志写入文件**: 使用 `rotating-file-stream` 按天轮转，保留 30 天，gzip 压缩，支持 `LOG_DIR` 环境变量
+```typescript
+import { BUILT_IN_PROVIDERS } from '@/providers/config.js'
 
-## 环境变量
+const builtin = BUILT_IN_PROVIDERS[provider.type]
+if (!builtin?.features.domainSync) {
+  throw new Error('该服务商不支持域名同步')
+}
+```
 
-- `PORT`: 3001 (默认)
-- `JWT_SECRET`: JWT 密钥（生产必须设置）
-- `RENEWAL_CRON_EXPRESSION`: 自动续期 cron（默认 `0 2 * * *`）
-- `LOG_LEVEL`: 日志级别（默认 `info`）
-- `LOG_DIR`: 日志文件目录（生产环境，默认 `./logs`）
+---
 
-## 测试账号
+## 9. 环境变量
 
-- 用户名: `admin` / 密码: `password123`
-- 邮箱: `admin@example.com` / 密码: `password123`（也支持邮箱登录）
+在 `packages/server/` 下创建 `.env` 文件（.gitignore 已排除）：
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `PORT` | `3001` | 后端端口 |
+| `JWT_SECRET` | `dev-secret-change-me` | JWT 签名密钥（生产必须修改） |
+| `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron（默认每天凌晨 2 点） |
+| `LOG_LEVEL` | `info` | Pino 日志级别（`debug` / `info` / `warn` / `error`） |
+| `DATABASE_URL` | `file:./dev.db` | SQLite 文件路径 |
+
+前端环境变量在 `packages/client/` 下的 `.env` 文件：
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `VITE_API_BASE_URL` | `http://localhost:3001/api` | 后端 API 基础 URL |
+
+---
+
+## 10. 快速反模式检查清单
+
+- ✅ `pnpm install --no-frozen-lockfile` 无报错
+- ✅ `pnpm lint` 无错误
+- ✅ `pnpm typecheck` 前后端无类型错误
+- ✅ 后端 `pnpm build` 成功
+- ✅ 前端 `pnpm build` 成功
+- ✅ 所有路由的 POST/PUT 请求使用 Zod 参数校验
+- ✅ 所有查询包含 userId 过滤（用户数据隔离）
+- ✅ 前端表单使用 react-hook-form + toast 反馈
+- ✅ 删除等危险操作使用 useConfirm 对话框
+- ✅ Provider 操作前校验 ProviderFeatures 能力
+- ✅ 没有硬编码的 API URL / Token / 密钥
+- ✅ 没有 `console.log` / `console.error` / `alert()` 遗留在生产代码

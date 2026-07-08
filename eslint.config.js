@@ -4,6 +4,7 @@ export default antfu(
   {
     vue: false,
     react: true,
+    markdown: false,
     typescript: true,
     ignores: [
       'node_modules',

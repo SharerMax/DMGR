@@ -1,27 +1,60 @@
 # AGENTS.md — Domain Manager 项目指南
 
-> 面向 AI Agent 的项目架构、技术栈与开发规范速查手册。
-> 任何人（或 AI）阅读本文件后，都应该能迅速地在此代码库中完成一次高质量的代码变更。
+> **面向 AI Agent 的项目架构、技术栈与开发规范速查手册。**
+> 阅读本文件后，你应该能迅速地在这个代码库中完成一次高质量的代码变更。
+
+---
+
+## 0. 快速决策路径（开始前必读）
+
+根据你的任务类型，按以下路径找到对应的规范与技能文档：
+
+```
+你的任务是什么？
+│
+├─ 修改 前端 React 代码（页面/组件/表单/Store）
+│   └─ 必读：.trae/rules/frontend.md + .trae/skills/domain-manager-frontend/SKILL.md
+│
+├─ 修改 后端 Express 代码（API/Service/Model/Provider）
+│   └─ 必读：.trae/rules/backend.md + .trae/skills/domain-manager-backend/SKILL.md
+│
+├─ 配置 / 命令 / 依赖 / 迁移 / 开发流程问题
+│   └─ 必读：.trae/skills/domain-manager-dev/SKILL.md
+│
+├─ 遇到 Bug / 错误 / 问题排查
+│   └─ 必读：.trae/skills/domain-manager-debug/SKILL.md
+│
+├─ 代码审查 / 质量检查 / 提交前自检
+│   └─ 必读：.trae/skills/domain-manager-review/SKILL.md
+│
+└─ 通用规范（代码风格、Git、目录命名、安全等）
+    └─ 必读：.trae/rules/project.md
+            + .trae/rules/local.md （Windows 环境相关）
+```
+
+> **原则**：`rules/` 是「必须遵守的规范」，`skills/` 是「怎么做的实操指南」。如果两者有冲突，以 `rules/` 为准。
 
 ---
 
 ## 1. 项目概览
 
-**Domain Manager** — 一个用于集中管理多服务商域名与 DNS 记录的单页应用（SPA）。后端 Express + Prisma (SQLite)，前端 React + Vite + shadcn/ui + Tailwind CSS + Zustand。
+**Domain Manager** — 一个用于集中管理多服务商域名与 DNS 记录的单页应用（SPA）。
 
-- 仓库根目录：`<项目根>`（以下所有路径均相对于项目根目录）
-- 技术栈：Node.js `>=22.21`、pnpm `11.9.0`、TypeScript、ESM
-- 包管理：**仅使用 pnpm**；依赖版本集中在 `pnpm-workspace.yaml` 的 `catalog` 字段声明，各 workspace 的 `package.json` 中以 `"pkg": "catalog:"` 引用
+- 后端：Express.js 5.2 + TypeScript + Prisma + SQLite + Zod + Pino logger
+- 前端：React 19 + TypeScript + Vite + shadcn/ui + Tailwind CSS v4 + Zustand + react-hook-form + sonner + Axios
+- Node.js：`>=22.21`（本项目使用 ESM，所有后端 import 必须带 `.js` 扩展名）
+- 包管理：**仅使用 pnpm**；依赖版本集中在 `pnpm-workspace.yaml` 的 `catalog` 字段声明，各 workspace 的 `package.json` 以 `"pkg": "catalog:"` 引用
 - Monorepo 结构：`packages/client` + `packages/server`
 
 ### 1.1 核心能力
 
 | 能力 | 说明 |
 |------|------|
-| 多服务商域名管理 | 接入阿里云 / 腾讯云 / Cloudflare / DNSPod / Namecheap / VPS8 |
+| 多服务商域名管理 | 阿里云 / 腾讯云 / Cloudflare / DNSPod / Namecheap / VPS8 |
 | DNS 记录管理 | 每个域名下增删改查各类 DNS 记录 |
 | 自动续期调度 | 由 `autoRenewService.ts` 按 cron 表达式定时执行续期任务 |
 | 通知渠道 | 配置通知渠道，用于域名过期、续期结果等消息推送 |
+| 服务商能力声明 | 通过 `ProviderFeatures` 对象声明各服务商支持的能力 |
 
 ### 1.2 启动与常用命令
 
@@ -29,9 +62,12 @@
 # 依赖安装
 pnpm install --no-frozen-lockfile
 
-# 启动开发服务器
-pnpm dev:server   # 后端：http://localhost:3001
-pnpm dev:client   # 前端：http://localhost:3000
+# 启动开发服务器（分别启动）
+pnpm dev:server   # 后端 API：http://localhost:3001
+pnpm dev:client   # 前端 SPA：http://localhost:3000
+
+# 或同时启动前后端
+pnpm dev
 
 # 类型检查（前后端同时）
 pnpm typecheck
@@ -45,10 +81,12 @@ cd packages/server
 pnpm prisma generate          # schema.prisma 变更后必须执行
 pnpm prisma migrate dev       # 创建并应用迁移
 pnpm prisma db seed           # 写入种子数据
+pnpm tsx src/prisma/cleanup.ts  # 清理脏数据（孤立记录、测试数据）
 ```
 
 ### 1.3 测试账号
 
+执行 `pnpm prisma db seed` 后可用：
 - 用户名：`admin`，密码：`password123`
 - 邮箱：`admin@example.com`，密码：`password123`
 
@@ -59,308 +97,288 @@ pnpm prisma db seed           # 写入种子数据
 ```
 DMGR/
 ├── .trae/
-│   ├── documents/            # 历史技术方案（不随代码自动更新，仅作参考）
-│   ├── rules/                # 项目规则（project / frontend / backend / local）
-│   └── skills/               # 项目技能（Agent 应优先加载 domain-manager-* 技能）
+│   ├── rules/                 # 项目规则（必须遵守）
+│   │   ├── project.md         # 通用：包管理、提交、分层、安全
+│   │   ├── frontend.md        # 前端：表单、组件、状态管理
+│   │   ├── backend.md         # 后端：API、分层、数据库
+│   │   └── local.md           # 本地环境：Windows、命令
+│   └── skills/                # 项目技能（实操指南）
+│       ├── domain-manager-backend/SKILL.md   # 后端开发指南
+│       ├── domain-manager-frontend/SKILL.md  # 前端开发指南
+│       ├── domain-manager-dev/SKILL.md       # 开发流程 / 命令速查
+│       ├── domain-manager-debug/SKILL.md     # 问题排查 / 快速修复
+│       └── domain-manager-review/SKILL.md    # 代码审查 / 提交前自检
 ├── packages/
-│   ├── client/               # 前端 (React + Vite + shadcn/ui + Zustand)
+│   ├── client/               # 前端 (React 19 + Vite + shadcn/ui + Zustand + react-hook-form)
 │   │   └── src/
-│   │       ├── components/   # UI 组件（ui/ 目录仅存 shadcn CLI 组件，不手动修改）
-│   │       ├── hooks/        # 自定义 Hooks
-│   │       ├── lib/          # api.ts（Axios 实例）、utils.ts（cn 等）
-│   │       ├── pages/        # 页面组件（按路由命名）
-│   │       ├── stores/       # Zustand 状态管理（按领域拆分）
-│   │       ├── App.tsx       # 路由 + 布局 + 主题包裹
+│   │       ├── components/   # 自定义 UI 组件（Logo、DatePicker、Pagination、DomainFilter）
+│   │       │   └── ui/       # shadcn/ui CLI 生成的标准组件（不手动修改）
+│   │       ├── hooks/        # useConfirm 等自定义 Hooks
+│   │       ├── lib/          # api.ts（Axios 实例）、utils.ts
+│   │       ├── pages/        # Login / Domains / Providers / NotificationChannels / Profile / RenewalLogs / AutoRenewConfig
+│   │       ├── stores/       # Zustand Stores（按领域拆分：auth/domains/providers/dnsRecords/notificationChannels/renewalLogs/theme）
+│   │       ├── App.tsx       # 路由 + 布局 + 主题 + Toaster
 │   │       └── main.tsx
-│   └── server/               # 后端 (Express 5 + Prisma + SQLite)
+│   └── server/               # 后端 (Express 5 + Prisma + SQLite + Zod + Pino)
 │       └── src/
-│           ├── db/           # Prisma Client 初始化（index.ts）
-│           ├── middleware/   # auth.ts（JWT 鉴权）、index.ts（导出聚合）
-│           ├── models/       # 纯 CRUD 封装层（无业务逻辑）
-│           ├── prisma/       # schema.prisma + seed.ts + migrations/ + generated/
-│           ├── providers/    # DNS 服务商适配层（按服务商拆分子目录）
-│           │   ├── base.ts   # DNSProvider / DomainSyncer / DomainRenewer 抽象基类
-│           │   ├── config.ts # 内置服务商配置（fields 驱动前端动态表单）
+│           ├── db/           # Prisma Client 初始化
+│           ├── middleware/   # auth.ts（JWT 鉴权）、index.ts（聚合导出）
+│           ├── models/       # 纯 CRUD（user / provider / domain / dnsRecord / notificationChannel / renewalLog）
+│           ├── prisma/       # schema.prisma + seed.ts + cleanup.ts + migrations
+│           ├── providers/    # 第三方服务商适配层（按服务商拆分子目录）
+│           │   ├── base.ts   # DNSProvider / DomainSyncer / DomainRenewer 抽象基类 + ProviderFeatures
+│           │   ├── config.ts # 内置服务商配置（fields 驱动前端动态表单 + features 声明能力）
 │           │   ├── aliyun/ tencent/ cloudflare/ dnspod/ namecheap/ vps8/
-│           │   │   ├── apiClient.ts   # 封装该服务商的官方 SDK / HTTP 调用
-│           │   │   ├── provider.ts    # 继承 DNSProvider
-│           │   │   ├── syncer.ts      # 继承 DomainSyncer
-│           │   │   ├── renewer.ts     # 继承 DomainRenewer（可选，仅支持自动续期的服务商）
-│           │   │   └── index.ts       # 注册到 DNSProviderFactory
-│           │   └── index.ts  # 统一导出（按字母序，符合 perfectionist/sort-exports）
-│           ├── routes/       # 控制器层：仅做参数校验、调用 service、返回响应
+│           │   │   ├── apiClient.ts / provider.ts / syncer.ts / renewer.ts / index.ts
+│           │   └── index.ts  # DNSProviderFactory + 统一导出
+│           ├── routes/       # 控制器层：Zod 参数校验 + 调用 service + sendSuccess/sendError
 │           ├── services/     # 业务服务层：业务逻辑 + 权限校验 + 多表协调
-│           ├── utils/        # logger.ts（Pino）、requestLogger.ts、response.ts、index.ts
-│           └── index.ts      # 服务器入口（路由注册 + 中间件 + 启动）
+│           ├── utils/        # logger.ts / requestLogger.ts / response.ts / index.ts
+│           └── index.ts      # 服务器入口
 ├── pnpm-workspace.yaml       # catalog 依赖版本声明
-├── skills-lock.json          # 项目技能锁定文件（由 skill CLI 管理）
-├── .gitignore
-├── .gitattributes
+├── skills-lock.json          # 项目技能锁定文件
 └── package.json              # 根 workspace：pnpm typecheck / lint 等聚合脚本
 ```
 
 ---
 
-## 3. 分层架构与调用链
+## 3. 分层架构与调用链（核心原则）
 
 ```
-前端 React 页面
+前端 React 页面（react-hook-form 校验 + sonner toast）
      │
      ▼
-  Zustand Store ──► lib/api.ts (Axios, JWT) ──────► 后端 API
-                                               (HTTP + JSON, code/message/data 统一响应)
+  Zustand Store ──► lib/api.ts (Axios + JWT) ──► 后端 API
+                                                  (HTTP + JSON, code/message/data 统一响应)
                                                           │
                                                           ▼
-                                                   routes/* (控制器层)
+                                                   routes/*（控制器层：Zod 校验 + authMiddleware + send*）
                                                           │
                                                           ▼
-                                                   services/* (业务层) ─► providers/* (三方 SDK 适配)
+                                                   services/*（业务层：逻辑 + 权限 + 多表协调 + provider 调用）
                                                           │
                                                           ▼
-                                                   models/* (数据层，纯 CRUD)
+                                                   models/*（数据层：纯 CRUD + userId 隔离）
                                                           │
                                                           ▼
                                                    db/index.ts (Prisma Client) ─► SQLite
 ```
 
-**分层职责要点（不要破坏）：**
+**严格的单向调用，禁止跨层**：
 
 | 层 | 可以做 | 禁止做 |
 |----|--------|--------|
-| `routes/` | 参数校验（Zod）、authMiddleware、调用 service、用 `sendSuccess/sendError` 包装响应 | 直接调用 `models/` 或 `prisma.*`、直接调用三方 API |
-| `services/` | 业务逻辑、权限校验（userId 过滤）、多表协调、调用三方 provider | 直接构造 HTTP 响应、直接操作 prisma（要走 models） |
+| `routes/` | 参数校验（Zod）、鉴权中间件、调用 service、用 `sendSuccess/sendError` 返回统一响应 | 直接调用 `models/` 或 `prisma.*`、直接调用三方 API |
+| `services/` | 业务逻辑、权限校验（userId 过滤）、多表协调、事务、调用 models/providers | 直接构造 HTTP 响应、直接调用 prisma |
 | `providers/<name>/` | 封装官方 SDK / 签名算法 / HTTP 请求、解析业务响应、暴露领域方法 | 访问数据库、写业务判断 |
-| `models/` | 纯 CRUD（`get`/`create`/`update`/`delete`/`listByUserId` 等） | 包含业务逻辑、鉴权 |
+| `models/` | 纯 CRUD（`getById`/`create`/`updateMany`/`deleteMany`/`listByUserId` 等） | 包含业务逻辑、鉴权 |
 
-**关键导入规则**
-
+**关键导入规则**：
 - 后端统一使用 ESM `import`，**必须带上 `.js` 扩展名**
-- logger 用 `pino`：`import logger from '@/utils/logger.js'`，**禁止使用 `console.log` / `console.error`**
-- JWT 认证逻辑集中在 `src/middleware/auth.ts`，包括 `JWT_SECRET` 读取、`authMiddleware`、`verifyToken`、`generateToken`
-- API 响应统一格式：`{ code: number, message: string, data?: any }`
-  - `code === 0` 表示成功
-  - 由 `utils/response.ts` 提供 `sendSuccess(res, data, message?)` 和 `sendError(res, message, code?, status?)`
+- 后端日志使用 Pino：`import { logger } from '@/utils/index.js'`，**禁止 `console.log` / `console.error`**
+- 前端通知使用 sonner toast，**禁止使用 `alert()`**
+- JWT 认证逻辑集中在 `packages/server/src/middleware/auth.ts`
+- API 响应统一格式：`{ code: number, message: string, data?: any }`（code === 0 表示成功）
+  - 由 `utils/response.ts` 提供 `sendSuccess(res, data, message?, status?)` 和 `sendError(res, message, code?, status?)`
 
 ---
 
-## 4. DNS Provider 系统
+## 4. 表单验证规范（前端核心）
 
-### 4.1 服务商列表
+**所有表单必须使用 react-hook-form**，禁止手写 `useState` + `onChange` 校验。
 
-| 代码名称 | SDK / 客户端 | 认证方式 | provider / syncer / renewer |
-|----------|-------------|---------|----------------------------|
-| `aliyun` | `@alicloud/pop-core` | AccessKeyId / AccessKeySecret（签名由 SDK 内部处理） | ✔ provider / ✔ syncer / ✔ renewer |
-| `tencent` | `tencentcloud-sdk-nodejs-dnspod` + `tencentcloud-sdk-nodejs-domain` | SecretId / SecretKey（TC3-HMAC-SHA256） | ✔ provider / ✔ syncer / ✔ renewer |
-| `cloudflare` | `cloudflare`（官方 TS SDK） | API Token（Bearer） | ✔ provider / ✔ syncer |
-| `dnspod` | `fetch` + 表单 POST | Login Token（`ID,Token`） | ✔ provider / ✔ syncer |
-| `namecheap` | `fast-xml-parser` + `fetch` | ApiUser / ApiKey / ClientIp（HMAC-SHA1 签名） | ✔ provider / ✔ syncer / ✔ renewer |
-| `vps8` | `fetch` | Basic Auth（base64(username:password)） | ✔ provider / ✔ syncer |
+### 4.1 标准模式
 
-**不再存在 `BaseApiClient` 抽象基类**。每个服务商的 `apiClient.ts` 直接封装该服务商 SDK，并在内部暴露业务化的方法（如 `describeRecordList`、`createRecord`、`renewDomain` 等）。
+```tsx
+import { useForm, Controller } from 'react-hook-form'
+import { toast } from 'sonner'
 
-### 4.2 DNSProviderFactory
+const { register, control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormInput>({
+  defaultValues: { name: '', email: '' },
+})
+
+const onSubmit = handleSubmit(async (data) => {
+  try {
+    await createEntity(data)
+    toast.success('操作成功')
+    reset()
+  } catch (error: any) {
+    toast.error(error.message || '操作失败')
+  }
+})
+
+// 原生 Input: register 绑定
+<Input {...register('name', { required: '名称必填', maxLength: { value: 50, message: '最多 50 字符' } })} />
+{errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+
+// shadcn/ui Select / Switch: 必须使用 Controller
+<Controller
+  control={control}
+  name="type"
+  rules={{ required: '请选择类型' }}
+  render={({ field }) => (
+    <Select value={field.value} onValueChange={field.onChange}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="aliyun">阿里云</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+/>
+{errors.type && <p className="text-xs text-red-500">{errors.type.message}</p>}
+```
+
+### 4.2 必填字段标识
+
+在 `Label` 文本后添加红色 `*`：
+
+```tsx
+<Label htmlFor="name">
+  名称
+  <span className="text-red-500 ml-1">*</span>
+</Label>
+<Input id="name" {...register('name', { required: '名称必填' })} />
+{errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+```
+
+---
+
+## 5. ProviderFeatures 能力声明系统
+
+每个服务商通过 `providers/config.ts` 的 `BUILT_IN_PROVIDERS` 配置声明其支持的能力：
+
+```typescript
+interface ProviderFeatures {
+  domainSync: boolean     // 支持域名同步（从服务商拉取域名列表）
+  dnsManagement: boolean  // 支持 DNS 记录管理（增删改查 DNS 记录）
+  autoRenew: boolean      // 支持自动续期
+}
+```
+
+**各服务商能力矩阵**：
+
+| 服务商 | domainSync | dnsManagement | autoRenew |
+|--------|-----------|---------------|-----------|
+| `aliyun` | ✅ | ✅ | ✅ |
+| `tencent` | ✅ | ✅ | ✅ |
+| `cloudflare` | ✅ | ✅ | ❌ |
+| `dnspod` | ✅ | ✅ | ❌ |
+| `namecheap` | ✅ | ✅ | ✅ |
+| `vps8` | ✅ | ✅ | ❌ |
+
+**能力校验规则**：
+- 前端根据 `features` 决定是否显示同步按钮、DNS 管理入口
+- 后端 `providerService` 在执行操作前校验对应能力字段
+- 能力不匹配时返回清晰的错误消息（如："该服务商不支持自动续期"）
+
+### 5.1 DNSProviderFactory
 
 统一通过工厂创建实例：
 
 ```typescript
-import { DNSProviderFactory } from '../providers/index.js'
+import { DNSProviderFactory } from '@/providers/index.js'
 
-const dns = DNSProviderFactory.createProvider('aliyun', { accessKeyId, accessKeySecret })
-const syncer = DNSProviderFactory.createSyncer('aliyun', { accessKeyId, accessKeySecret })
-const renewer = DNSProviderFactory.createRenewer('aliyun', { accessKeyId, accessKeySecret })
+const config = JSON.parse(provider.config)
+const dns = DNSProviderFactory.createProvider(provider.type, config)
+const syncer = DNSProviderFactory.createSyncer(provider.type, config)
+const renewer = DNSProviderFactory.createRenewer(provider.type, config)
 ```
-
-添加新服务商的步骤：
-
-1. 在 `providers/<name>/` 下创建 `apiClient.ts` / `provider.ts` / `syncer.ts` /（可选）`renewer.ts` / `index.ts`
-2. 在 `providers/config.ts` 的 `BUILT_IN_PROVIDERS` 中追加配置（`fields` 驱动前端动态表单）
-3. 在 `providers/index.ts` 中 `import './<name>/index.js'` 触发注册
-
-### 4.3 自动续期调度
-
-- 配置项：`RENEWAL_CRON_EXPRESSION`（默认 `0 2 * * *`，每天凌晨 2 点）
-- 调度器：`services/autoRenewService.ts` → `node-cron`
-- 实际续期逻辑下沉至各服务商的 `providers/<name>/renewer.ts`
-- 续期结果写入 `renewalLogs` 表（`models/renewalLog.ts`）
 
 ---
 
-## 5. 前端开发规范
+## 6. 用户数据隔离（核心安全原则）
 
-### 5.1 UI 组件
+- 所有数据库查询**必须包含 `userId` 过滤条件**
+- 使用 `findFirstOrThrow({ where: { id, userId } })` 代替 `findUnique({ where: { id } })`
+- 使用 `updateMany({ where: { id, userId }, data })` 代替 `update()`
+- 使用 `deleteMany({ where: { id, userId } })` 代替 `delete()`
+- 列表查询使用 `findMany({ where: { userId } })`
+- `userId` 从 JWT token 解析（`req.user.userId`），**不可信任客户端传递的 userId**
 
-- **`components/ui/` 目录仅存放 shadcn/ui CLI 生成的标准组件**，不要手动修改；修改会被后续 `pnpm dlx shadcn@latest add` 覆盖
-- 使用官方 `pnpm dlx shadcn@latest add <component>` 添加组件
-- 自定义业务组件放在 `components/` 根目录（例如 `DatePicker.tsx`、`Pagination.tsx`、`DomainFilter.tsx`）
-- UI 风格使用 `shadcn/ui` 的 `Vega` 样式
+---
 
-### 5.2 状态管理（Zustand）
+## 7. 数据库模型速查
 
-每个领域一个 store：`auth` / `domains` / `providers` / `dnsRecords` / `notificationChannels` / `renewalLogs` / `theme`。
+| Model | 关键字段 | 说明 |
+|-------|---------|------|
+| `User` | `id`、`username`、`password`（bcrypt 哈希）、`email?` | 用户账号 |
+| `Provider` | `id`、`type`、`name`、`config`（JSON 字符串）、`supportsAutoRenew`、`features`（JSON）、`userId` | 服务商配置 |
+| `Domain` | `id`、`name`、`providerId?`、`expiryDate?`、`renewalPrice?`、`notes?`、`autoRenew`、`autoRenewDays?`、`status`、`userId` | 域名 |
+| `DNSRecord` | `id`、`domainId`、`type`、`name`、`value`、`ttl`、`priority?` | DNS 记录 |
+| `NotificationChannel` | `id`、`type`、`name`、`config`（JSON 字符串）、`defaultDays`、`isActive`、`userId` | 通知渠道 |
+| `RenewalLog` | `id`、`domainId`、`status`、`message?`、`error?`、`renewedAt?`、`createdAt` | 续期日志 |
+| `Reminder` | `id`、`domainId`、`daysBefore`、`notified`、`notifyDate?`、`createdAt` | 提醒记录 |
+| `NotificationLog` | `id`、`userId`、`domainId?`、`type`、`content`、`channel`、`sentAt` | 通知发送日志 |
 
-store 中通过 `@/lib/api.ts` 发起 HTTP 请求，错误时用 `alert(error.message)` 提示用户（后端返回的 `message` 字段）。
+**级联关系**：
+- `Provider → Domain`：手动级联（删除服务商时由 service 层显式删除关联域名），DB 层为 `SetNull`
+- `Domain → DNSRecord / Reminder / RenewalLog`：DB 层 `onDelete: Cascade`
 
-### 5.3 API 交互
+**脏数据清理**：执行 `pnpm tsx packages/server/src/prisma/cleanup.ts` 清理孤立记录
 
-`lib/api.ts` 暴露 Axios 实例，统一约定：
+---
 
-- 请求头自动附带 `Authorization: Bearer <token>`（从 `auth` store 获取）
+## 8. 删除操作规范
+
+### 8.1 删除 Provider
+
+删除服务商时，必须同时删除其下的所有域名（级联删除 DNS 记录/提醒/续期日志）。
+使用 Prisma 事务保证原子性：
+
+```typescript
+await prisma.$transaction(async (tx) => {
+  await tx.domain.deleteMany({ where: { providerId, userId } })
+  await tx.provider.deleteMany({ where: { id: providerId, userId } })
+})
+```
+
+前端必须使用 `useConfirm` 对话框二次确认，确认文案明确描述级联删除。
+
+### 8.2 删除 Domain
+
+由数据库层自动级联删除 DNS 记录、Reminder、RenewalLog。
+前端同样使用 `useConfirm` 对话框确认。
+
+---
+
+## 9. 统一 API 响应格式（前后端契约）
+
+```typescript
+// 所有响应都使用以下格式
+{ code: number, message: string, data?: any }
+
+// code === 0  → 成功
+// code !== 0  → 失败，message 为用户可读的错误信息
+```
+
+### 9.1 后端发送
+
+```typescript
+import { sendSuccess, sendError, HTTP_STATUS } from '@/utils/response.js'
+
+sendSuccess(res, data, '创建成功', HTTP_STATUS.CREATED)  // 201
+sendSuccess(res, data)                                    // 200 OK
+sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)    // 400
+sendError(res, '未授权', 1, HTTP_STATUS.UNAUTHORIZED)     // 401
+sendError(res, '资源不存在', 1, HTTP_STATUS.NOT_FOUND)    // 404
+```
+
+### 9.2 前端 Axios 拦截器自动处理
+
+`lib/api.ts` 已内置拦截器，自动：
+- 附带 `Authorization: Bearer <token>`
 - 401 响应自动跳转 `/login` 并清除本地 token
 - 成功响应自动提取 `res.data.data`
-- 失败时 `error.message` 即为后端返回的 `message`
+- 失败时 `error.message` 即为后端返回的可读 message
 
-页面中的模式：
+使用方式：
 
 ```typescript
 import api from '@/lib/api'
 
-// GET
 const res = await api.get<Domain[]>('/domains')
-const domains = res.data.data
-
-// POST
-const res = await api.post<Domain>('/domains', payload)
-const newDomain = res.data.data
+const domains = res.data  // 已是后端响应的 data 字段
 ```
-
-### 5.4 主题与暗色模式
-
-由 `stores/theme.ts` 管理 `'light' | 'dark' | 'system'`。
-通过在 `<html>` 切换 `.dark` class 生效（Tailwind CSS v4 配合 `tw-animate-css`）。
-
----
-
-## 6. 依赖管理与安全
-
-### 6.1 catalog 与版本管理
-
-- 依赖版本集中写在 `pnpm-workspace.yaml` 顶层 `catalog:` 字段
-- 各 workspace `package.json` 以 `"pkg": "catalog:"` 引用
-- 升级依赖使用 `pnpm update --latest`，这会同时推高 catalog 中的版本范围并写入 lockfile
-
-### 6.2 minimumReleaseAge 安全策略
-
-pnpm 默认启用 `minimumReleaseAge`（新发布的包在一段时间内不会被解析，用于防御供应链攻击）。
-
-- **不要绕过**该策略（例如不要设置 `minimumReleaseAge: 0` 或添加排除项）
-- 如果某个包被策略挡下且确实需要新版本，可在 `pnpm-workspace.yaml` 中 `catalog:` 显式指定一个已过最小发布年龄的版本范围
-
-### 6.3 更新第三方 skills
-
-- 项目技能锁定文件：`skills-lock.json`（由 skill CLI 管理，git 纳入版本控制）
-- 自定义项目技能存放在 `.trae/skills/domain-manager-*/SKILL.md`，文件名需以 `domain-manager-` 开头
-- 当远端技能内容变化时，需要执行 `pnpm dlx skills@latest sync` 或类似命令同步 hash
-
----
-
-## 7. 数据库 (Prisma + SQLite)
-
-- Schema 文件：`packages/server/src/prisma/schema.prisma`
-- Generated Client：`packages/server/src/prisma/generated/`（由 `prisma generate` 输出，被 `.gitignore` 的部分除外）
-- SQLite 数据库文件位置：由 Prisma 配置决定，默认在 `packages/server/src/prisma/dev.db`
-- 种子数据：`packages/server/src/prisma/seed.ts`（包含管理员用户 `admin` / `password123`）
-
-**关键数据模型**
-
-| Model | 作用 | 关键字段 |
-|-------|------|---------|
-| `User` | 用户 | `username`, `email`, `passwordHash` |
-| `Provider` | 服务商配置 | `type`（aliyun/tencent/cloudflare/dnspod/namecheap/vps8）、`config`（JSON 字符串，包含 apiKey/secret/token 等）、`supportsAutoRenew` |
-| `Domain` | 域名 | `name`, `providerId`, `expiryDate`, `autoRenew`, `autoRenewDays`, `status` |
-| `DNSRecord` | DNS 记录 | `domainId`, `type`, `name`, `value`, `ttl`, `priority`, `providerRecordId` |
-| `NotificationChannel` | 通知渠道 | `type`（email/webhook 等）、`config`（JSON 字符串）、`defaultDays` |
-| `RenewalLog` | 续期日志 | `domainId`, `status`, `message`, `providerResponse`（JSON） |
-| `Reminder` | 提醒 | `domainId`, `daysBefore`, `sentAt` |
-
-**修改 schema 后的流程**
-
-```bash
-cd packages/server
-pnpm prisma migrate dev --name <descriptive-name>   # 生成 + 应用迁移
-pnpm prisma generate                                  # 重新生成 Prisma Client TypeScript 类型
-# 必要时 pnpm prisma db seed
-```
-
----
-
-## 8. 代码质量与提交规范
-
-### 8.1 代码格式化与检查
-
-在提交代码之前：
-
-1. **代码风格**：`pnpm lint`；可自动修复的用 `pnpm lint:fix`
-2. **类型检查**：`pnpm typecheck`（先后端再前端，任一失败需修复）
-3. **后端构建**：如改动涉及后端，运行 `pnpm build` 确保生产构建通过
-
-如果 lint 失败但 `--fix` 无法修复，需要手动按以下原则修正：
-
-- 不要使用 `any`，尤其在跨文件接口处；使用泛型或 `unknown` + 类型断言
-- React 组件中避免多余的 state（如可由其他 state 推导出来的），遵循 `set-state-in-effect` 原则
-- 字符串比较、日期处理优先使用 `date-fns` 或原生 `Intl`，避免 moment
-
-### 8.2 Git 提交信息（Conventional Commits）
-
-```
-<type>(<scope>): <subject>
-<BLANK LINE>
-<body>
-<BLANK LINE>
-<footer>
-```
-
-常用 type：
-
-| type | 含义 |
-|------|------|
-| `feat` | 新增功能 |
-| `fix` | 修复 Bug |
-| `refactor` | 代码重构（非新功能 / 非修复） |
-| `chore` | 杂项（依赖升级、配置改动、脚本更新） |
-| `docs` | 文档 |
-| `style` | 格式（非逻辑改动，如空格、分号、引号） |
-| `test` | 测试 |
-| `perf` | 性能优化 |
-| `build` | 构建系统或 CI |
-
-scope 建议：`server` / `client` / `providers` / `db` / `skills` 等。
-
-示例：
-
-```
-feat(server): add domain auto-renew cron scheduler
-
-- 由 node-cron 按环境变量 RENEWAL_CRON_EXPRESSION 定时触发
-- 每个支持自动续期的 provider 依次执行 renewer 并写入 renewal_logs
-- JWT 过期时 authMiddleware 自动拒绝请求，前端跳转登录
-```
-
-### 8.3 文件命名与导出顺序
-
-- 目录、文件一律 `kebab-case` 或 `snake_case`（TypeScript 源文件使用 `camelCase` 文件名更常见，但本项目使用 `camelCase.ts`）
-- `pnpm-workspace.yaml` 的 `catalog:` 字段按字母序
-- `providers/index.ts` 的导出按字母序（符合 `perfectionist/sort-exports`）
-
----
-
-## 9. 调试与问题排查速查
-
-### 9.1 常见问题
-
-| 现象 | 排查方向 |
-|------|---------|
-| 前端页面白屏 / 控制台报错 401 | 检查 `auth` store 的 token 是否过期、`JWT_SECRET` 是否一致 |
-| 后端 `Prisma Client could not be found` | 执行 `pnpm prisma generate` |
-| 域名同步不到三方数据 | 检查 provider 的 `config` JSON 字段是否正确，再查 Pino 日志 |
-| 三方 API 调用失败 | 确认服务商凭证有效，检查 `providers/<name>/apiClient.ts` 的签名参数与版本字段 |
-| pnpm install 报 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` | 运行 `pnpm install --no-frozen-lockfile` 重新解析 |
-| 解析到的包版本因 `minimumReleaseAge` 被拒 | 等待时间窗口；或在 `catalog:` 中手动指定一个稍旧但安全的版本 |
-
-### 9.2 日志查看
-
-- 后端 stdout：Pino 结构化日志（可 `pnpm dev:server | pnpm pino-pretty`）
-- 请求日志中间件 `utils/requestLogger.ts` 输出 `[timestamp] METHOD path status duration`
-- 关键错误通过 `logger.error({ error })` 附带错误字段
 
 ---
 
@@ -372,44 +390,102 @@ feat(server): add domain auto-renew cron scheduler
 |------|------|------|
 | `PORT` | `3001` | 后端端口 |
 | `JWT_SECRET` | `dev-secret-change-me` | JWT 签名密钥（生产必须修改） |
-| `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron |
-| `LOG_LEVEL` | `info` | Pino 日志级别 |
+| `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron（默认每天凌晨 2 点） |
+| `LOG_LEVEL` | `info` | Pino 日志级别（`debug` / `info` / `warn` / `error`） |
 
 ---
 
-## 11. 推荐的工作流
+## 11. 代码变更工作流（最小闭环）
 
-在你准备执行一次变更时，建议遵循以下最小闭环：
+每次代码变更遵循以下流程：
 
-1. **读文档**：先浏览 `.trae/rules/project.md` / `frontend.md` / `backend.md`、以及 `.trae/skills/` 中对应的 `domain-manager-*` 技能文件
-2. **实现**：按分层架构实现代码，provider 相关改动必须在 `providers/<name>/` 目录内完成
-3. **校验**：
-   - `pnpm lint:fix` 自动修复可自动修复的风格问题
+1. **读文档**：根据变更类型，阅读 `.trae/rules/<type>.md` 中的规范 + `.trae/skills/domain-manager-<topic>/SKILL.md` 中的实操指南
+2. **实现**：严格按分层架构实现代码
+   - 前端表单：`react-hook-form` + `sonner toast`
+   - 危险操作：前端 `useConfirm` + 后端 `userId` 隔离
+   - Provider 相关：在 `providers/<name>/` 目录内完成，能力声明在 `providers/config.ts`
+3. **质量检查**（失败不得提交）：
+   - `pnpm lint:fix` 自动修复风格问题
    - `pnpm lint` 确认 0 errors
    - `pnpm typecheck` 确认前后端类型无误
-   - 后端 `pnpm build` 确认生产构建通过
-4. **提交**：使用 conventional commit 提交
-5. **如需调整**：通过 `git commit --amend` 或 rebase 保持提交历史干净
+   - 后端 `pnpm build:server` 确认生产构建通过
+   - 前端 `pnpm build:client` 确认生产构建通过
+4. **代码审查**：参考 `.trae/skills/domain-manager-review/SKILL.md` 的审查清单进行自检
+5. **提交**：使用 Conventional Commits 格式
+
+```
+<type>(<scope>): <subject>
+```
+
+常用 type：`feat` / `fix` / `refactor` / `chore` / `docs` / `style` / `test` / `perf` / `build`
+常用 scope：`server` / `client` / `providers` / `db` / `skills`
 
 ---
 
-## 12. 相关文件速查（路径均相对于项目根目录）
+## 12. 反模式清单（以下行为是错误的）
 
-- `pnpm-workspace.yaml` — catalog 版本
-- `packages/server/package.json` — 后端脚本 + 依赖
-- `packages/server/src/index.ts` — 后端入口
-- `packages/server/src/prisma/schema.prisma` — Prisma schema
-- `packages/server/src/providers/base.ts` — Provider 抽象基类
-- `packages/server/src/providers/config.ts` — 内置服务商配置
-- `packages/server/src/providers/index.ts` — Provider 聚合导出
+以下模式在本项目中是**禁止的**，如果在代码中发现，请一并修复：
+
+| ❌ 禁止 | ✅ 正确 |
+|--------|--------|
+| 后端 import 不带 `.js` 扩展名 | `import { xxx } from '@/utils/index.js'` |
+| `routes/` 层直接调用 `prisma.*` | 走 `routes → services → models → prisma` |
+| 数据库查询不包含 `userId` 过滤 | 使用 `findFirst({ where: { id, userId } })` |
+| 前端手写 `useState` 管理表单 | 使用 `react-hook-form` 的 `useForm` |
+| shadcn/ui Select 用 `register` 绑定 | 必须用 `Controller` 包裹 |
+| 使用 `alert()` 通知用户 | 使用 `toast.success/error/info` |
+| 使用 `console.log` / `console.error` | 后端用 `logger.info/warn/error`，前端调试后删除 |
+| `components/ui/` 下手动修改组件 | 通过 `pnpm dlx shadcn@latest add` 添加组件 |
+| Provider 层访问数据库 | Provider 层只负责封装三方 SDK/API |
+| 手动管理 token/auth | 使用 `middleware/auth.ts` 的 `authMiddleware` |
+| 在 `pnpm-workspace.yaml` 外声明依赖版本 | 统一使用 `catalog:` 字段管理 |
+| 设置 `minimumReleaseAge: 0` | 等待时间窗口或指定已过年龄的版本 |
+
+---
+
+## 13. 相关文件速查（路径均相对于项目根目录）
+
+**项目配置**
+- `pnpm-workspace.yaml` — catalog 版本管理
+
+**规则文档**
+- `.trae/rules/project.md` — 项目通用规范
+- `.trae/rules/frontend.md` — 前端开发规范
+- `.trae/rules/backend.md` — 后端开发规范
+- `.trae/rules/local.md` — 本地环境（Windows）规范
+
+**技能文档**
+- `.trae/skills/domain-manager-backend/SKILL.md` — 后端开发实操指南
+- `.trae/skills/domain-manager-frontend/SKILL.md` — 前端开发实操指南
+- `.trae/skills/domain-manager-dev/SKILL.md` — 开发流程 / 命令速查
+- `.trae/skills/domain-manager-debug/SKILL.md` — 问题排查 / 快速修复
+- `.trae/skills/domain-manager-review/SKILL.md` — 代码审查 / 提交前自检
+
+**后端核心**
+- `packages/server/src/index.ts` — 后端入口（路由注册 + 中间件 + 启动）
+- `packages/server/src/prisma/schema.prisma` — Prisma schema（9 个模型）
+- `packages/server/src/prisma/seed.ts` — 种子数据
+- `packages/server/src/prisma/cleanup.ts` — 脏数据清理脚本
 - `packages/server/src/middleware/auth.ts` — JWT 鉴权中间件
+- `packages/server/src/utils/response.ts` — 统一 API 响应格式工具
+- `packages/server/src/utils/logger.ts` — Pino logger 封装
+
+**Provider 系统**
+- `packages/server/src/providers/base.ts` — Provider 抽象基类 + ProviderFeatures
+- `packages/server/src/providers/config.ts` — 内置服务商配置（fields 驱动前端动态表单 + features）
+- `packages/server/src/providers/index.ts` — Provider 聚合导出（DNSProviderFactory）
+- `packages/server/src/services/providerService.ts` — 服务商业务逻辑（能力校验 + 级联删除）
 - `packages/server/src/services/autoRenewService.ts` — 自动续期调度
-- `packages/server/src/utils/response.ts` — 统一 API 响应格式
-- `packages/client/src/App.tsx` — 前端路由 + 布局
-- `packages/client/src/lib/api.ts` — 前端 Axios 实例（统一鉴权/错误处理）
-- `.trae/rules/project.md` — 项目规则
-- `.trae/rules/frontend.md` — 前端规则
-- `.trae/skills/domain-manager-backend/SKILL.md` — 后端开发技能
-- `.trae/skills/domain-manager-frontend/SKILL.md` — 前端开发技能
-- `.trae/skills/domain-manager-dev/SKILL.md` — 开发流程技能
-- `.trae/skills/domain-manager-debug/SKILL.md` — 调试技能
+
+**前端核心**
+- `packages/client/src/App.tsx` — 路由 + 布局 + 主题 + Toaster
+- `packages/client/src/main.tsx` — 前端入口
+- `packages/client/src/lib/api.ts` — Axios 实例（统一鉴权/错误处理）
+- `packages/client/src/hooks/useConfirm.tsx` — 确认对话框 Hook
+- `packages/client/src/components/Logo.tsx` — 自定义品牌 Logo
+- `packages/client/src/components/DatePicker.tsx` — 日期选择器
+- `packages/client/src/pages/Login.tsx` — 登录/注册表单
+- `packages/client/src/pages/Providers.tsx` — 服务商管理
+- `packages/client/src/pages/Domains.tsx` — 域名管理
+- `packages/client/src/stores/auth.ts` — 认证状态
+- `packages/client/src/stores/theme.ts` — 主题状态

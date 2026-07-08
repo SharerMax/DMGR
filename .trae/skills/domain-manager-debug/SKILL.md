@@ -1,113 +1,303 @@
+# Domain Manager 调试 Skill
+
+> 面向 AI Agent 的问题排查与快速修复指南。遇到问题时按以下步骤排查。
+
 ---
-name: "domain-manager-debug"
-description: "Debugs Domain Manager application issues. Invoke when user reports bugs, errors, unexpected behavior, or needs help troubleshooting problems in frontend or backend."
----
 
-# Domain Manager Debugger
-
-## 调试流程
-
-1. 收集信息 → 2. 复现 → 3. 定位 → 4. 修复 → 5. 验证
-
-## 常见问题速查
-
-### 前端
-
-| 问题 | 排查 |
-|------|------|
-| API 调用失败 | 后端是否运行？API URL 是否正确？JWT 是否过期？浏览器 Network 面板看实际错误 |
-| 状态不更新 | Store action 是否调用？Zustand 状态是否正确更新？组件是否订阅了 store？ |
-| 暗色模式异常 | `<html>` 是否有 `.dark` class？`stores/theme.ts` 是否初始化？localStorage 偏好？ |
-| Dialog 问题 | 状态是否正确管理？`ConfirmDialog` 是否渲染？z-index 冲突？ |
-| 错误消息不显示 | 是否用 `error.message` 获取错误？Axios 拦截器是否正确处理？ |
-
-### 后端
-
-| 问题 | 排查 |
-|------|------|
-| 数据库连接错误 | `pnpm prisma generate && pnpm prisma db push` |
-| Prisma 错误 | `pnpm prisma studio` 查看数据，`pnpm prisma validate` 验证 schema |
-| 401 未授权 | JWT token 是否发送？是否过期？`middleware/auth.ts` 的 `authMiddleware` 是否应用？ |
-| Provider 同步失败 | 凭证是否正确？API 是否可达？查看 Pino 日志 |
-| 接口返回格式不对 | 是否使用 `sendSuccess/sendError`？返回是否为 `{ code, message, data }` 格式？ |
-| 数据查询问题 | 从 routes → services → models 逐层排查，先确认 service 层返回是否正确 |
-| 权限问题 | service 层是否做了 userId 校验？`getUserXxx` 方法是否验证所有权？ |
-| 路由 404/匹配错误 | 检查路由顺序：通配路由 `/:id` 是否放在了具体路径路由（`/config`、`/stats` 等）之前？Express 按定义顺序匹配 |
-| PrismaClientValidationError | 检查传入 Prisma 的参数类型是否正确（如 `id: NaN` 会触发此错误） |
-
-## 日志查看
-
-后端使用 Pino 日志：
-- 请求日志自动输出：`[timestamp] METHOD path status duration`
-- 错误日志带 `err` 字段
-- 可通过 `LOG_LEVEL` 环境变量调整级别
-- **生产环境**：日志写入文件（`LOG_DIR` 目录，默认 `./logs`），按天轮转，gzip 压缩
-- **开发环境**：日志输出到控制台（pino-pretty 美化）
-
-## 诊断命令
+## 1. 调试第一步：确认开发环境
 
 ```bash
-# 前端
-pnpm --filter client exec tsc --noEmit   # 类型检查
-pnpm --filter client exec vite build     # 构建检查
+# 确认 Node.js 版本 >= 22.21
+node --version
 
-# 后端
-pnpm --filter server exec tsc --noEmit   # 类型检查
-cd packages/server && pnpm prisma validate  # Schema 验证
+# 确认 pnpm 版本
+pnpm --version
+
+# 确认依赖已安装
+ls -la node_modules/ | head -5
+
+# 确认数据库文件存在
+ls -la packages/server/src/prisma/
 ```
 
-## 快速修复
+---
+
+## 2. 常见前端问题
+
+### 2.1 前端页面白屏或控制台报错 401
+
+**症状**：打开 http://localhost:3000 后页面空白，或控制台报 401 Unauthorized
+
+**排查步骤**：
+1. 检查 auth store 的 token 是否有效（localStorage）
+2. 确认后端在 `http://localhost:3001` 正常运行
+3. 检查 `JWT_SECRET` 是否在前后端一致
+
+**快速修复**：
+- 重新登录获取新 token
+- 检查 `packages/client/src/lib/api.ts` 中的 baseURL 配置
+
+### 2.2 表单提交无反应 / 验证不触发
+
+**症状**：点击提交按钮后无任何反馈，必填字段无红色错误提示
+
+**排查步骤**：
+1. 检查是否使用了 `react-hook-form` 而非手写 `useState`
+2. 确认 `handleSubmit` 正确绑定到 `<form onSubmit={...}>`
+3. 确认 `register` 正确绑定到字段，或 `Controller` 正确包裹非原生组件
+4. 检查 `errors` 是否在字段下方有条件渲染
+
+**常见原因**：
+- ❌ shadcn/ui 的 `Select` / `Switch` 使用了 `register` 而不是 `Controller`
+- ❌ 提交按钮没有写 `type="submit"`（按钮默认是 submit，但要确认）
+- ❌ `onSubmit` 中写了 `alert(error)` 而不是 `toast.error(error.message)`
+
+### 2.3 API 请求返回 undefined
+
+**症状**：`res.data` 是 undefined 或数据结构不符合预期
+
+**排查**：
+- 检查后端响应是否为 `{ code, message, data }` 格式
+- 检查前端 Axios 拦截器是否正确提取了 `res.data.data`
+- 在浏览器 Network 面板查看实际响应
+
+---
+
+## 3. 常见后端问题
+
+### 3.1 "Prisma Client could not be found" 错误
+
+**修复**：
+```bash
+cd packages/server
+pnpm prisma generate
+```
+
+### 3.2 Null constraint violation on `expiryDate` / 其他可空字段
+
+**原因**：Schema 中字段声明为 `DateTime?` 但数据库列仍为 NOT NULL，或迁移未执行
+
+**修复**：
+```bash
+cd packages/server
+pnpm prisma migrate dev
+pnpm prisma generate
+```
+
+### 3.3 Provider 同步失败
+
+**排查步骤**：
+1. 检查 provider 的 `config` 字段（JSON 字符串）是否正确解析
+2. 确认 AccessKey / Token 是否有效
+3. 查看 Pino 日志：
 
 ```bash
-# 重置数据库
-cd packages/server && rm prisma/dev.db && pnpm prisma migrate dev && pnpm prisma db seed
-
-# 重装依赖（lockfile 不匹配时）
-pnpm install --no-frozen-lockfile
-
-# 清除 Vite 缓存
-rm -rf packages/client/node_modules/.vite
+cd packages/server
+pnpm dev   # 观察控制台 Pino 日志输出
 ```
 
-## API 响应调试
+日志中应包含类似：
+```
+[2024-01-01T12:00:00.000Z] INFO: Syncing domains for provider aliyun
+[2024-01-01T12:00:01.000Z] ERROR: Failed to sync domains - InvalidAccessKeyId
+```
 
-后端统一返回 `{ code, message, data }`：
-- `code === 0` 成功
-- `code !== 0` 失败
+### 3.4 API 返回 401 Unauthorized
 
-前端 Axios 拦截器：
-- 成功：自动提取 `data` 字段，`response.data` 即为实际数据
-- 失败：`error.message` 即为后端返回的错误消息
+**排查**：
+- 检查请求头是否包含 `Authorization: Bearer <token>`
+- 检查 token 是否过期（JWT 默认有效期）
+- 检查 `JWT_SECRET` 是否与签发 token 时一致
+- 检查 `routes/` 是否正确应用了 `authMiddleware`
 
-调试时检查：
-1. 后端返回的响应体是否符合格式
-2. 前端拦截器是否正确提取
-3. 错误是否被正确抛出和捕获
+### 3.5 API 返回 400 Bad Request
 
-## 三方集成调试
+**排查**：
+- 检查 Zod schema 验证是否过于严格
+- 检查前端发送的字段名是否与 schema 匹配
+- 检查 `z.coerce.number()` 是否在处理字符串数字时报错
 
-### DNS 记录不同步
-1. 检查 Pino 日志中是否有 `DNS provider error` 或 `warn` 级日志
-2. 确认 Provider 配置（config JSON 字段）是否完整（accessKeyId/secretId 等）
-3. 检查 `providers/<name>/provider.ts` 中方法实现是否正确映射
-4. 本地操作成功但三方失败时，service 层只记 warn 不报错，需查日志
+### 3.6 数据库中存在脏数据
 
-### 自动续期不执行
-1. 检查 `autoRenewService.ts` 调度器是否启动（看启动日志 `Auto renewal scheduler started`）
-2. 检查域名的 `autoRenew` 是否为 true，`expiryDate` 是否在续期窗口内
-3. 检查 Provider 的 `supportsAutoRenew` 是否为 true
-4. 检查 `providers/<name>/renewer.ts` 是否正确注册到 `DNSProviderFactory`
-5. 续期结果写入 `renewalLogs` 表，可查记录看状态和错误信息
+**症状**：删除 provider 后某些域名仍存在，或孤立的 DNS 记录
 
-### Provider 工厂找不到实现
-1. 检查 `providers/config.ts` 是否注册了该服务商
-2. 检查对应服务商目录的 `index.ts` 是否调用了 `DNSProviderFactory.registerXxx`
-3. 检查 `providers/index.ts` 是否导入了该服务商模块（触发注册）
-4. 类型名拼写是否一致（aliyun / vps8 / cloudflare 等）
+**修复**：
+```bash
+cd packages/server
+pnpm tsx src/prisma/cleanup.ts
+```
 
-### ApiClient 调用异常
-1. 检查 `providers/<name>/apiClient.ts` 是否正确使用了对应服务商的官方 SDK（如 `@alicloud/pop-core`、`tencentcloud-sdk-nodejs-*`、`cloudflare`），或正确拼接了认证参数（如 DNSPod Login Token、Namecheap HMAC-SHA1 + Timestamp + ClientIp）
-2. 检查 `provider.ts` / `syncer.ts` / `renewer.ts` 是否直接从 `./apiClient` 导入并实例化（**不再继承 `BaseApiClient`**）
-3. 对于使用官方 SDK 的服务商（aliyun / tencent / cloudflare），签名由 SDK 内部处理；如报签名错误，先确认 AccessKey / SecretId / Token 本身是否正确
-4. 对于手写签名的服务商（namecheap / vps8 / dnspod），核对签名算法、参数排序、时间戳、nonce 等
-5. 可在 apiClient 方法中加 logger 输出实际请求参数和响应 body
+### 3.7 TypeScript 编译报错
+
+**症状**：`pnpm typecheck` 有错误输出
+
+**常见原因**：
+1. `import` 语句缺少 `.js` 扩展名 → 修复为 `import { xxx } from '@/path/file.js'`
+2. `findUnique` 调用应改为 `findFirst({ where: { id, userId } })`（用户数据隔离）
+3. Prisma 类型不匹配 → 执行 `pnpm prisma generate`
+4. Zod schema 中使用了不存在的字段 → 对照数据库 schema 检查
+
+---
+
+## 4. 日志查看
+
+### 4.1 后端 Pino 日志
+
+```bash
+cd packages/server
+pnpm dev   # 直接查看控制台输出
+```
+
+或使用 pino-pretty 格式化：
+```bash
+pnpm dev | pnpm pino-pretty
+```
+
+### 4.2 前端浏览器控制台
+
+- 打开浏览器 DevTools → Console 查看
+- API 请求在 Network 面板查看
+- React 组件状态在 Components 面板查看
+
+---
+
+## 5. 快速修复速查表
+
+| 问题 | 修复命令 / 操作 |
+|------|----------------|
+| 依赖锁文件冲突 | `pnpm install --no-frozen-lockfile` |
+| Prisma Client 类型不匹配 | `cd packages/server && pnpm prisma generate` |
+| 数据库表结构不匹配 | `cd packages/server && pnpm prisma migrate dev` |
+| 脏数据 | `cd packages/server && pnpm tsx src/prisma/cleanup.ts` |
+| 前端热更新不工作 | 重启 `pnpm dev:client` |
+| 端口占用 (3000/3001) | Windows: `netstat -ano \| findstr :3001` 然后 `taskkill /PID <id> /F` |
+| Token 过期 | 重新登录，或延长 `middleware/auth.ts` 中的有效期 |
+| 表单验证不触发 | 确认用 `useForm` + `register` / `Controller` |
+| Toast 不显示 | 检查 `App.tsx` 中是否挂载了 `<Toaster />`，以及是否使用了 `sonner` 的 `toast` |
+
+---
+
+## 6. API 响应调试
+
+### 6.1 检查统一响应格式
+
+**正确格式**（前端 Axios 拦截器依赖）：
+```typescript
+{ code: 0, message: '操作成功', data: [... ] }  // 成功
+{ code: 1, message: '参数错误', data: null }     // 失败
+```
+
+### 6.2 在 route 层添加临时调试日志
+
+```typescript
+// 临时调试：打印请求参数
+logger.info({ params: req.params, body: req.body }, 'Debug: request')
+
+// 然后检查终端输出
+```
+
+**注意**：调试完成后务必删除这些临时日志！
+
+---
+
+## 7. Provider 第三方集成调试
+
+### 7.1 阿里云 DNS API 失败
+
+1. 确认 `accessKeyId` 和 `accessKeySecret` 是否正确
+2. 检查 RAM 用户是否有 DNS 相关权限
+3. 查看 Pino 日志中的错误信息（包含阿里云 SDK 原始错误）
+
+### 7.2 腾讯云 DNS API 失败
+
+1. 确认 `SecretId` 和 `SecretKey` 是否正确
+2. 检查 CAM 策略是否有 `dnspod:*` 权限
+3. 可能需要在腾讯云控制台开启 API 访问
+
+### 7.3 Cloudflare API 失败
+
+1. 确认 API Token 是否有 `Zone.DNS` 权限
+2. 在 Cloudflare Dashboard → My Profile → API Tokens 验证 Token
+
+### 7.4 Namecheap / DNSPod / VPS8
+
+- 检查各服务商文档，确认凭证格式与权限要求
+- 查看 `providers/<name>/apiClient.ts` 中的请求封装是否正确
+
+---
+
+## 8. 表单验证调试
+
+### 8.1 确认 react-hook-form 正确初始化
+
+```tsx
+// 打印 errors 观察验证状态
+console.log('errors:', errors)  // 开发调试（提交前删除）
+```
+
+### 8.2 动态字段（Provider config）验证不生效
+
+**原因**：嵌套字段 `config.xxx` 的 errors 路径较深，可能未正确访问
+
+**检查**：
+```tsx
+// 确认 errors.config 存在
+{(errors as any)?.config?.[field.key] && (
+  <p className="text-xs text-red-500">
+    {(errors as any).config[field.key].message}
+  </p>
+)}
+```
+
+### 8.3 Controller 包裹的组件状态不同步
+
+**检查**：
+```tsx
+<Controller
+  control={control}
+  name="type"
+  rules={{ required: '请选择服务商类型' }}  // ✅ rules 必须写在 Controller 里
+  render={({ field }) => (
+    <Select value={field.value} onValueChange={field.onChange}>
+      {/* ... */}
+    </Select>
+  )}
+/>
+```
+
+---
+
+## 9. 生产构建错误排查
+
+### 9.1 TypeScript 错误
+
+```bash
+# 定位具体是哪个文件有问题
+pnpm typecheck  # 完整输出，搜索 error 所在行
+
+# 常见问题：
+# - .js 扩展名缺失
+# - 类型不匹配（如 findUnique vs findFirst）
+# - import 路径错误
+```
+
+### 9.2 ESLint 错误
+
+```bash
+# 自动修复可修复的问题
+pnpm lint:fix
+
+# 查看不可自动修复的问题
+pnpm lint
+```
+
+---
+
+## 10. 调试后清理清单
+
+- ✅ 删除了所有临时的 `console.log` / `console.error`
+- ✅ 删除了所有临时的调试日志
+- ✅ 代码格式化：`pnpm lint:fix`
+- ✅ 类型检查通过：`pnpm typecheck`
+- ✅ 构建通过：`pnpm build`
+- ✅ 未修改 `components/ui/` 目录下的文件
