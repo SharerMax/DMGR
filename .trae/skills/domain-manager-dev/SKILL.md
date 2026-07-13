@@ -171,7 +171,9 @@ export default router
 ```typescript
 // packages/server/src/index.ts
 import domainRoutes from '@/routes/domains.js'
+import syncLogRoutes from '@/routes/syncLogs.js'
 app.use('/api/domains', domainRoutes)
+app.use('/api/sync-logs', syncLogRoutes)  // 同步审计日志（GET /, GET /:id）
 ```
 
 ---

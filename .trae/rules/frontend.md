@@ -235,6 +235,7 @@ const handleDelete = async (item: Item) => {
 | DNS 记录 | `dnsRecords.ts` | DNS 记录管理 |
 | 通知渠道 | `notificationChannels.ts` | 渠道配置与 CRUD |
 | 续期日志 | `renewalLogs.ts` | 续期记录与统计 |
+| 同步日志 | `syncLogs.ts` | 服务商域名同步记录与详情 |
 | 主题 | `theme.ts` | `light` / `dark` / `system` |
 
 ### 4.2 Store 标准模式
@@ -348,19 +349,29 @@ toast.success(`同步成功！新增 ${count} 个域名`)
 
 ## 8. 路由与页面组织
 
-前端路由定义在 `App.tsx`。页面组件存放在 `pages/`：
+前端路由定义在 `App.tsx`（基于 `react-router`）。页面组件存放在 `pages/`：
 
 | 路由 | 页面 | 说明 |
 |------|------|------|
 | `/login` | `Login.tsx` | 登录 / 注册（未受保护） |
 | `/` | `Domains.tsx` | 域名管理首页（受保护） |
 | `/providers` | `Providers.tsx` | 服务商管理（受保护） |
+| `/sync-logs` | `SyncLogs.tsx` | 同步记录（受保护） |
 | `/notification-channels` | `NotificationChannels.tsx` | 通知渠道（受保护） |
 | `/renewal-logs` | `RenewalLogs.tsx` | 续期日志（受保护） |
 | `/profile` | `Profile.tsx` | 个人资料与密码修改（受保护） |
 | `/auto-renew-config` | `AutoRenewConfig.tsx` | 自动续期配置（受保护） |
 
 所有受保护路由使用 `ProtectedRoute` 组件包裹，未登录自动重定向到 `/login`。
+
+**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 4 项，子项放入下拉菜单：
+
+| 顶级菜单 | 子项 |
+|---------|------|
+| 域名管理 | — |
+| 服务商管理（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
+| 通知渠道 | — |
+| 续期（dropdown） | 续期日志 (`/renewal-logs`)、续期配置 (`/auto-renew-config`) |
 
 ---
 

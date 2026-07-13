@@ -36,7 +36,8 @@ packages/server/src/
 │   ├── domain.ts
 │   ├── dnsRecord.ts
 │   ├── notificationChannel.ts
-│   └── renewalLog.ts
+│   ├── renewalLog.ts
+│   └── syncLog.ts
 ├── prisma/                  # Prisma schema + seed + migrations
 │   ├── schema.prisma
 │   ├── seed.ts
@@ -55,6 +56,7 @@ packages/server/src/
 │   ├── dnspod/              # DNSPod
 │   ├── namecheap/           # Namecheap
 │   ├── vps8/                # VPS8
+│   ├── gleam/               # Gleam (HL6 API，apiKey 鉴权)
 │   └── index.ts             # DNSProviderFactory + 聚合导出
 ├── routes/                  # 控制器层（路由 + 参数校验 + 调用 service）
 │   ├── auth.ts
@@ -62,14 +64,16 @@ packages/server/src/
 │   ├── domains.ts
 │   ├── dnsRecords.ts
 │   ├── notificationChannels.ts
-│   └── renewalLogs.ts
+│   ├── renewalLogs.ts
+│   └── syncLogs.ts
 ├── services/                # 业务服务层
 │   ├── autoRenewService.ts  # 自动续期调度
-│   ├── providerService.ts   # 服务商业务逻辑
+│   ├── providerService.ts   # 服务商业务逻辑（含同步写 SyncLog）
 │   ├── domainService.ts     # 域名业务逻辑
 │   ├── dnsRecordService.ts  # DNS 记录业务逻辑
 │   ├── notificationChannelService.ts
 │   ├── renewalLogService.ts
+│   ├── syncLogService.ts    # 同步日志业务层
 │   ├── userService.ts
 │   └── notificationService.ts
 ├── utils/                   # 工具函数
@@ -280,6 +284,7 @@ pnpm tsx src/prisma/cleanup.ts
 | `RenewalLog` | `id`、`domainId`、`status`、`message?`、`error?`、`renewedAt?`、`createdAt` | 续期日志 |
 | `Reminder` | `id`、`domainId`、`daysBefore`、`notified`、`notifyDate?`、`createdAt` | 提醒记录 |
 | `NotificationLog` | `id`、`userId`、`domainId?`、`type`、`content`、`channel`、`sentAt` | 通知发送日志 |
+| `SyncLog` | `id`、`providerId`、`userId`、`status`（success/failed/partial）、`domainsSynced`、`dnsInserted`、`dnsDeleted`、`error?`、`details?`（JSON 字符串，含具体变更域名/DNS 记录）、`createdAt` | 服务商域名同步审计日志 |
 
 **级联关系**：
 - `Provider → Domain`：手动级联（删除服务商时由 `deleteUserProvider` 显式删除关联域名），DB 层为 `SetNull`
@@ -309,6 +314,7 @@ interface ProviderFeatures {
 | `dnspod` | ✅ | ✅ | ❌ |
 | `namecheap` | ✅ | ✅ | ✅ |
 | `vps8` | ✅ | ✅ | ❌ |
+| `gleam` | ✅ | ✅ | ❌ |
 
 **service 层执行操作前必须校验对应能力**：
 
@@ -372,6 +378,8 @@ logger.error({ error, providerId }, 'Failed to sync domains')
 ```
 
 **日志查看**：后端 stdout 输出 Pino 结构化日志，可通过 `pnpm dev:server | pnpm pino-pretty` 以人类可读格式查看。
+
+**同步审计日志（SyncLog）**：除 Pino 运行时日志外，服务商域名同步操作还会写入 `SyncLog` 表用于持久化审计。`providerService.syncProviderDomains` 在每次同步完成后记录 `status`（success/failed/partial）、计数（`domainsSynced` / `dnsInserted` / `dnsDeleted`）以及 `details`（JSON 字符串，含具体变更的域名与 DNS 记录）。前端通过 `/api/sync-logs` 接口查询历史同步记录。
 
 ---
 

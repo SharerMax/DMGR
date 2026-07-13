@@ -31,7 +31,8 @@ packages/server/src/
 │   ├── domain.ts
 │   ├── dnsRecord.ts
 │   ├── notificationChannel.ts
-│   └── renewalLog.ts
+│   ├── renewalLog.ts
+│   └── syncLog.ts
 ├── prisma/                  # Prisma schema + seed + migrations
 │   ├── schema.prisma
 │   ├── seed.ts
@@ -50,6 +51,7 @@ packages/server/src/
 │   ├── dnspod/              # DNSPod
 │   ├── namecheap/           # Namecheap
 │   ├── vps8/                # VPS8
+│   ├── gleam/               # Gleam (HL6 API，apiKey 鉴权)
 │   └── index.ts             # DNSProviderFactory + 聚合导出
 ├── routes/                  # 控制器层
 │   ├── auth.ts
@@ -57,14 +59,16 @@ packages/server/src/
 │   ├── domains.ts
 │   ├── dnsRecords.ts
 │   ├── notificationChannels.ts
-│   └── renewalLogs.ts
+│   ├── renewalLogs.ts
+│   └── syncLogs.ts
 ├── services/                # 业务服务层
 │   ├── autoRenewService.ts  # 自动续期调度
-│   ├── providerService.ts   # 服务商业务逻辑
+│   ├── providerService.ts   # 服务商业务逻辑（含同步写 SyncLog）
 │   ├── domainService.ts     # 域名业务逻辑
 │   ├── dnsRecordService.ts  # DNS 记录业务逻辑
 │   ├── notificationChannelService.ts
 │   ├── renewalLogService.ts
+│   ├── syncLogService.ts    # 同步日志业务层
 │   ├── userService.ts
 │   └── notificationService.ts
 ├── utils/                   # 工具函数
@@ -195,6 +199,7 @@ interface ProviderFeatures {
 | `dnspod` | ✅ | ✅ | ❌ |
 | `namecheap` | ✅ | ✅ | ✅ |
 | `vps8` | ✅ | ✅ | ❌ |
+| `gleam` | ✅ | ✅ | ❌ |
 
 ### 4.2 service 层能力校验模板
 
@@ -499,6 +504,18 @@ pnpm dev  # Pino 结构化日志输出
 # 或者通过管道格式化（需安装 pino-pretty）
 pnpm dev | pnpm pino-pretty
 ```
+
+### 11.3 同步审计日志（SyncLog）
+
+除了 Pino 运行时日志，服务商域名同步操作还会写入 `SyncLog` 表用于持久化审计：
+
+- `providerService.syncProviderDomains` 在每次同步完成后写入一条记录
+- 字段包含 `status`（success/failed/partial）、`domainsSynced` / `dnsInserted` / `dnsDeleted` 计数
+- `details`（JSON 字符串）记录具体新增的域名、插入/删除的 DNS 记录
+- 失败时 `error` 字段记录错误信息
+- 前端通过 `/api/sync-logs` 查询历史同步记录（含筛选与分页）
+
+`models/dnsRecord.ts` 的 `syncDomainDNSRecords` 返回 `insertedRecords` 与 `deletedRecords` 数组（而非仅计数），供 service 层组装 `details`。
 
 ---
 

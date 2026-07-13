@@ -74,7 +74,8 @@ packages/client/src/
 │   ├── NotificationChannels.tsx # 通知渠道管理
 │   ├── RenewalLogs.tsx          # 续期日志
 │   ├── Profile.tsx              # 个人资料
-│   └── AutoRenewConfig.tsx      # 自动续期配置
+│   ├── AutoRenewConfig.tsx      # 自动续期配置
+│   └── SyncLogs.tsx             # 同步记录（筛选 + 分页 + 详情对话框）
 ├── stores/                      # Zustand 状态管理（按领域拆分）
 │   ├── auth.ts                  # 认证状态（token, user, login/logout）
 │   ├── domains.ts               # 域名状态
@@ -82,6 +83,7 @@ packages/client/src/
 │   ├── dnsRecords.ts            # DNS 记录状态
 │   ├── notificationChannels.ts  # 通知渠道状态
 │   ├── renewalLogs.ts           # 续期日志状态
+│   ├── syncLogs.ts              # 同步日志状态
 │   └── theme.ts                 # 主题状态（light / dark / system）
 └── index.css                    # 全局样式 + Tailwind CSS v4 指令
 ```
@@ -607,7 +609,7 @@ import { Globe, Database, RefreshCw, Trash2, Pencil, Shield, Bell, Settings } fr
 
 ## 11. 路由与受保护路由
 
-所有需要登录的路由在 `App.tsx` 中用 `ProtectedRoute` 包裹：
+所有需要登录的路由在 `App.tsx` 中用 `ProtectedRoute` 包裹（基于 `react-router`）：
 
 ```tsx
 <Route path="/login" element={<Login />} />
@@ -621,7 +623,14 @@ import { Globe, Database, RefreshCw, Trash2, Pencil, Shield, Bell, Settings } fr
     <Providers />
   </ProtectedRoute>
 } />
+<Route path="/sync-logs" element={
+  <ProtectedRoute>
+    <SyncLogs />
+  </ProtectedRoute>
+} />
 ```
+
+**顶部导航（dropdown）**：顶级菜单精简为 4 项 — 域名管理、服务商管理（dropdown：服务商列表 / 同步记录）、通知渠道、续期（dropdown：续期日志 / 续期配置）。`/sync-logs` 路由位于"服务商管理"下拉菜单中。
 
 ---
 

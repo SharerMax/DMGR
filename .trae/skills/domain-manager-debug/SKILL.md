@@ -224,6 +224,21 @@ logger.info({ params: req.params, body: req.body }, 'Debug: request')
 - 检查各服务商文档，确认凭证格式与权限要求
 - 查看 `providers/<name>/apiClient.ts` 中的请求封装是否正确
 
+### 7.5 Gleam (HL6 API) 失败
+
+1. 确认 `apiKey` 是否正确（Gleam 使用单一 API Key 鉴权，非 AccessKey/Secret 对）
+2. 检查 API Key 是否有域名与 DNS 记录的读写权限
+3. 查看 Pino 日志中的 HL6 API 原始错误响应
+
+### 7.6 通过 SyncLog 排查同步问题
+
+服务商域名同步失败或部分成功时，`SyncLog` 表会持久化每次同步的结果与明细：
+
+- 查询 `SyncLog` 表中 `providerId` 对应的最新记录，检查 `status` 字段（success / failed / partial）
+- `error` 字段记录失败原因；`details`（JSON 字符串）含具体新增的域名、插入/删除的 DNS 记录
+- 前端 `/sync-logs` 页面提供筛选与详情对话框查看历史同步记录
+- 也可在 `prisma studio` 中直接查看 `SyncLog` 表
+
 ---
 
 ## 8. 表单验证调试

@@ -150,6 +150,14 @@
 - ✅ 可空字段正确声明为 `DateTime?` / `String?` 等
 - ✅ 新字段设置合理的默认值（或保持可选）
 
+### 3.10 同步审计日志（SyncLog）
+
+- ✅ `providerService.syncProviderDomains` 在每次同步后写入 `SyncLog` 记录（含成功/失败/部分成功状态）
+- ✅ `SyncLog` 写入包含 `domainsSynced` / `dnsInserted` / `dnsDeleted` 计数与 `details`（JSON 字符串）明细
+- ✅ 同步失败时 `SyncLog.error` 字段记录错误信息
+- ✅ `SyncLog` 查询包含 `userId` 过滤（与其他业务表一致的用户隔离）
+- ✅ `/api/sync-logs` 接口走 `routes → services → models` 分层，不在 route 层直接操作 prisma
+
 ---
 
 ## 4. 常见反模式示例
@@ -290,3 +298,4 @@ const domain = await prisma.domain.findFirstOrThrow({
 - ✅ 前后端：没有硬编码的敏感信息
 - ✅ 前后端：使用统一的 API 响应格式
 - ✅ Provider 操作前检查了 ProviderFeatures 能力
+- ✅ 服务商域名同步操作写入了 `SyncLog` 审计记录

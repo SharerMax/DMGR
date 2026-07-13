@@ -50,11 +50,12 @@
 
 | 能力 | 说明 |
 |------|------|
-| 多服务商域名管理 | 阿里云 / 腾讯云 / Cloudflare / DNSPod / Namecheap / VPS8 |
+| 多服务商域名管理 | 阿里云 / 腾讯云 / Cloudflare / DNSPod / Namecheap / VPS8 / Gleam |
 | DNS 记录管理 | 每个域名下增删改查各类 DNS 记录 |
 | 自动续期调度 | 由 `autoRenewService.ts` 按 cron 表达式定时执行续期任务 |
 | 通知渠道 | 配置通知渠道，用于域名过期、续期结果等消息推送 |
 | 服务商能力声明 | 通过 `ProviderFeatures` 对象声明各服务商支持的能力 |
+| 同步审计 | 通过 `SyncLog` 记录服务商域名同步操作的成功/失败/部分成功状态及变更明细 |
 
 ### 1.2 启动与常用命令
 
@@ -115,20 +116,20 @@ DMGR/
 │   │       │   └── ui/       # shadcn/ui CLI 生成的标准组件（不手动修改）
 │   │       ├── hooks/        # useConfirm 等自定义 Hooks
 │   │       ├── lib/          # api.ts（Axios 实例）、utils.ts
-│   │       ├── pages/        # Login / Domains / Providers / NotificationChannels / Profile / RenewalLogs / AutoRenewConfig
-│   │       ├── stores/       # Zustand Stores（按领域拆分：auth/domains/providers/dnsRecords/notificationChannels/renewalLogs/theme）
+│   │       ├── pages/        # Login / Domains / Providers / NotificationChannels / Profile / RenewalLogs / AutoRenewConfig / SyncLogs
+│   │       ├── stores/       # Zustand Stores（按领域拆分：auth/domains/providers/dnsRecords/notificationChannels/renewalLogs/syncLogs/theme）
 │   │       ├── App.tsx       # 路由 + 布局 + 主题 + Toaster
 │   │       └── main.tsx
 │   └── server/               # 后端 (Express 5 + Prisma + SQLite + Zod + Pino)
 │       └── src/
 │           ├── db/           # Prisma Client 初始化
 │           ├── middleware/   # auth.ts（JWT 鉴权）、index.ts（聚合导出）
-│           ├── models/       # 纯 CRUD（user / provider / domain / dnsRecord / notificationChannel / renewalLog）
+│           ├── models/       # 纯 CRUD（user / provider / domain / dnsRecord / notificationChannel / renewalLog / syncLog）
 │           ├── prisma/       # schema.prisma + seed.ts + cleanup.ts + migrations
 │           ├── providers/    # 第三方服务商适配层（按服务商拆分子目录）
 │           │   ├── base.ts   # DNSProvider / DomainSyncer / DomainRenewer 抽象基类 + ProviderFeatures
 │           │   ├── config.ts # 内置服务商配置（fields 驱动前端动态表单 + features 声明能力）
-│           │   ├── aliyun/ tencent/ cloudflare/ dnspod/ namecheap/ vps8/
+│           │   ├── aliyun/ tencent/ cloudflare/ dnspod/ namecheap/ vps8/ gleam/
 │           │   │   ├── apiClient.ts / provider.ts / syncer.ts / renewer.ts / index.ts
 │           │   └── index.ts  # DNSProviderFactory + 统一导出
 │           ├── routes/       # 控制器层：Zod 参数校验 + 调用 service + sendSuccess/sendError
@@ -265,6 +266,7 @@ interface ProviderFeatures {
 | `dnspod` | ✅ | ✅ | ❌ |
 | `namecheap` | ✅ | ✅ | ✅ |
 | `vps8` | ✅ | ✅ | ❌ |
+| `gleam` | ✅ | ✅ | ❌ |
 
 **能力校验规则**：
 - 前端根据 `features` 决定是否显示同步按钮、DNS 管理入口
@@ -309,6 +311,7 @@ const renewer = DNSProviderFactory.createRenewer(provider.type, config)
 | `RenewalLog` | `id`、`domainId`、`status`、`message?`、`error?`、`renewedAt?`、`createdAt` | 续期日志 |
 | `Reminder` | `id`、`domainId`、`daysBefore`、`notified`、`notifyDate?`、`createdAt` | 提醒记录 |
 | `NotificationLog` | `id`、`userId`、`domainId?`、`type`、`content`、`channel`、`sentAt` | 通知发送日志 |
+| `SyncLog` | `id`、`providerId`、`userId`、`status`（success/failed/partial）、`domainsSynced`、`dnsInserted`、`dnsDeleted`、`error?`、`details?`（JSON 字符串，含具体变更域名/DNS 记录）、`createdAt` | 服务商域名同步审计日志 |
 
 **级联关系**：
 - `Provider → Domain`：手动级联（删除服务商时由 service 层显式删除关联域名），DB 层为 `SetNull`
@@ -463,7 +466,7 @@ const domains = res.data  // 已是后端响应的 data 字段
 
 **后端核心**
 - `packages/server/src/index.ts` — 后端入口（路由注册 + 中间件 + 启动）
-- `packages/server/src/prisma/schema.prisma` — Prisma schema（9 个模型）
+- `packages/server/src/prisma/schema.prisma` — Prisma schema（10 个模型）
 - `packages/server/src/prisma/seed.ts` — 种子数据
 - `packages/server/src/prisma/cleanup.ts` — 脏数据清理脚本
 - `packages/server/src/middleware/auth.ts` — JWT 鉴权中间件
@@ -474,8 +477,15 @@ const domains = res.data  // 已是后端响应的 data 字段
 - `packages/server/src/providers/base.ts` — Provider 抽象基类 + ProviderFeatures
 - `packages/server/src/providers/config.ts` — 内置服务商配置（fields 驱动前端动态表单 + features）
 - `packages/server/src/providers/index.ts` — Provider 聚合导出（DNSProviderFactory）
-- `packages/server/src/services/providerService.ts` — 服务商业务逻辑（能力校验 + 级联删除）
+- `packages/server/src/services/providerService.ts` — 服务商业务逻辑（能力校验 + 级联删除 + 同步写 SyncLog）
 - `packages/server/src/services/autoRenewService.ts` — 自动续期调度
+
+**同步审计系统（SyncLog）**
+- `packages/server/src/models/syncLog.ts` — SyncLog 数据层（CRUD + userId 过滤）
+- `packages/server/src/services/syncLogService.ts` — 同步日志业务层（列表/详情查询）
+- `packages/server/src/routes/syncLogs.ts` — 同步日志控制器（GET /api/sync-logs, GET /api/sync-logs/:id）
+- `packages/client/src/stores/syncLogs.ts` — 同步日志 Zustand store
+- `packages/client/src/pages/SyncLogs.tsx` — 同步记录页面（筛选 + 分页 + 详情对话框）
 
 **前端核心**
 - `packages/client/src/App.tsx` — 路由 + 布局 + 主题 + Toaster
