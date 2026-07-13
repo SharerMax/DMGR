@@ -23,7 +23,7 @@
 | 技术 | 用途 | 关键文件 |
 |------|------|---------|
 | **React 19** | UI 框架 | `.tsx` 文件 |
-| **react-router-dom** | 路由 | `App.tsx` |
+| **react-router** | 路由 | `App.tsx` |
 | **Zustand** | 状态管理 | `stores/*.ts` |
 | **react-hook-form** | 表单验证 | 所有表单 |
 | **Axios** | HTTP 请求 | `lib/api.ts` |

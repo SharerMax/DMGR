@@ -1,6 +1,6 @@
 import { Bell, FileText, Globe, LogOut, Moon, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router'
 import { Toaster } from 'sonner'
 import Logo from '@/components/Logo'
 import { Button } from '@/components/ui/button'
