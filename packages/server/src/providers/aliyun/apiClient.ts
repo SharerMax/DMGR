@@ -9,6 +9,8 @@
 
 import Core from '@alicloud/pop-core'
 
+import { logger } from '@/utils/index.js'
+
 interface AliyunConfig {
   accessKeyId: string
   accessKeySecret: string
@@ -63,20 +65,24 @@ export class AliyunApiClient {
     action: string,
     params: Record<string, unknown> = {},
   ): Promise<AliyunApiResult<T>> {
+    logger.debug({ provider: 'aliyun', action }, 'API request')
     try {
       const raw = await this.client.request(action, params, {
         method: 'POST',
       }) as any
 
       if (raw && (raw.Code || raw.code)) {
+        const errMsg = extractErrorMessage(raw) || `阿里云 API 错误`
+        logger.warn({ provider: 'aliyun', action, error: errMsg }, 'API error')
         return {
           success: false,
-          error: extractErrorMessage(raw) || `阿里云 API 错误`,
+          error: errMsg,
           code: extractErrorCode(raw),
           raw,
         }
       }
 
+      logger.debug({ provider: 'aliyun', action }, 'API response')
       return {
         success: true,
         data: raw as T,
@@ -84,6 +90,7 @@ export class AliyunApiClient {
       }
     }
     catch (error: any) {
+      logger.error({ provider: 'aliyun', action, error: error.message }, 'API network error')
       const raw = (error?.data || error?.response?.body || error) as any
       return {
         success: false,

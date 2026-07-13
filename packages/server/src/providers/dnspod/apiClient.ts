@@ -3,6 +3,8 @@
  * 直接提供业务化的 API 方法，由 provider / syncer 导入使用
  */
 
+import { logger } from '@/utils/index.js'
+
 interface DnspodConfig {
   loginToken: string
   apiUrl?: string
@@ -98,28 +100,34 @@ export class DnspodApiClient {
 
     try {
       const url = `${this.apiUrl}${path}`
+      logger.debug({ provider: 'dnspod', method: 'POST', path }, 'API request')
       const response = await fetch(url, init)
       const text = await response.text()
       const raw: DnspodRawResponse<T> | undefined = text ? JSON.parse(text) : undefined
 
       if (!response.ok) {
+        const error = raw?.status?.message || `HTTP ${response.status}`
+        logger.warn({ provider: 'dnspod', method: 'POST', path, status: response.status, error }, 'API error')
         return {
           success: false,
-          error: raw?.status?.message || `HTTP ${response.status}`,
+          error,
           code: raw?.status?.code || String(response.status),
           raw,
         }
       }
 
       if (raw?.status && raw.status.code !== '1') {
+        const error = raw.status.message || 'DNSPod API 错误'
+        logger.warn({ provider: 'dnspod', method: 'POST', path, error }, 'API error')
         return {
           success: false,
-          error: raw.status.message || 'DNSPod API 错误',
+          error,
           code: raw.status.code,
           raw,
         }
       }
 
+      logger.debug({ provider: 'dnspod', method: 'POST', path, status: response.status }, 'API response')
       return {
         success: true,
         data: raw as unknown as T,
@@ -127,6 +135,7 @@ export class DnspodApiClient {
       }
     }
     catch (error: any) {
+      logger.error({ provider: 'dnspod', method: 'POST', path, error: error.message }, 'API network error')
       return {
         success: false,
         error: error.message || 'Network error',

@@ -10,6 +10,8 @@
 
 import { randomUUID } from 'node:crypto'
 
+import { logger } from '@/utils/index.js'
+
 /** Gleam API 配置 */
 interface GleamConfig {
   apiKey: string
@@ -113,23 +115,28 @@ export class GleamApiClient {
       }
 
       const url = `${this.apiUrl}${path}`
+      logger.debug({ provider: 'gleam', method, path }, 'API request')
       const response = await fetch(url, init)
       const text = await response.text()
       const raw: GleamResponse<T> | undefined = text ? JSON.parse(text) : undefined
 
       if (!response.ok || (raw && raw.code !== 0)) {
+        const error = raw?.message || `HTTP ${response.status}`
+        logger.warn({ provider: 'gleam', method, path, status: response.status, error }, 'API error')
         return {
           success: false,
-          error: raw?.message || `HTTP ${response.status}`,
+          error,
         }
       }
 
+      logger.debug({ provider: 'gleam', method, path, status: response.status }, 'API response')
       return {
         success: true,
         data: raw?.data,
       }
     }
     catch (error: any) {
+      logger.error({ provider: 'gleam', method, path, error: error.message }, 'API network error')
       return {
         success: false,
         error: error.message || 'Network error',

@@ -11,6 +11,8 @@
 import * as dnspod from 'tencentcloud-sdk-nodejs-dnspod'
 import * as domain from 'tencentcloud-sdk-nodejs-domain'
 
+import { logger } from '@/utils/index.js'
+
 interface TencentConfig {
   secretId: string
   secretKey: string
@@ -93,7 +95,16 @@ export class TencentApiClient {
     domain: string,
     limit = 500,
   ): Promise<TencentApiResult<{ RecordList?: any[] }>> {
-    return wrapSdkCall(() => this.dnsClient.DescribeRecordList({ Domain: domain, Limit: limit }))
+    const action = 'describeRecordList'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<{ RecordList?: any[] }>(() => this.dnsClient.DescribeRecordList({ Domain: domain, Limit: limit }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   /**
@@ -103,7 +114,9 @@ export class TencentApiClient {
     domain: string,
     record: { subDomain: string, recordType: string, recordLine: string, value: string, ttl?: number, priority?: number },
   ): Promise<TencentApiResult<{ RecordId: number }>> {
-    return wrapSdkCall(() => this.dnsClient.CreateRecord({
+    const action = 'createRecord'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<{ RecordId: number }>(() => this.dnsClient.CreateRecord({
       Domain: domain,
       SubDomain: record.subDomain,
       RecordType: record.recordType,
@@ -112,6 +125,13 @@ export class TencentApiClient {
       TTL: record.ttl ?? 600,
       ...(record.priority !== undefined && record.priority !== null ? { MX: record.priority } : {}),
     }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   /**
@@ -122,6 +142,8 @@ export class TencentApiClient {
     recordId: number,
     record: { subDomain?: string, recordType?: string, recordLine?: string, value?: string, ttl?: number, priority?: number },
   ): Promise<TencentApiResult<Record<string, unknown>>> {
+    const action = 'updateRecord'
+    logger.debug({ provider: 'tencent', action }, 'API request')
     const params: Record<string, unknown> = { Domain: domain, RecordId: recordId }
     if (record.subDomain !== undefined) {
       params.SubDomain = record.subDomain
@@ -141,7 +163,14 @@ export class TencentApiClient {
     if (record.priority !== undefined && record.priority !== null) {
       params.MX = record.priority
     }
-    return wrapSdkCall(() => this.dnsClient.ModifyRecord(params))
+    const result = await wrapSdkCall<Record<string, unknown>>(() => this.dnsClient.ModifyRecord(params))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   /**
@@ -151,7 +180,16 @@ export class TencentApiClient {
     domain: string,
     recordId: number,
   ): Promise<TencentApiResult<Record<string, unknown>>> {
-    return wrapSdkCall(() => this.dnsClient.DeleteRecord({ Domain: domain, RecordId: recordId }))
+    const action = 'deleteRecord'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<Record<string, unknown>>(() => this.dnsClient.DeleteRecord({ Domain: domain, RecordId: recordId }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   // --- 域名相关 ---
@@ -162,14 +200,32 @@ export class TencentApiClient {
   async describeDomainList(
     limit = 500,
   ): Promise<TencentApiResult<{ DomainList?: any[] }>> {
-    return wrapSdkCall(() => this.dnsClient.DescribeDomainList({ Limit: limit }))
+    const action = 'describeDomainList'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<{ DomainList?: any[] }>(() => this.dnsClient.DescribeDomainList({ Limit: limit }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   /**
    * 获取域名详情
    */
   async describeDomain(domain: string): Promise<TencentApiResult<any>> {
-    return wrapSdkCall(() => this.dnsClient.DescribeDomain({ Domain: domain }))
+    const action = 'describeDomain'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall(() => this.dnsClient.DescribeDomain({ Domain: domain }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   // --- 域名续期相关（domain 产品） ---
@@ -180,7 +236,16 @@ export class TencentApiClient {
   async checkDomainRenewal(
     domain: string,
   ): Promise<TencentApiResult<{ Eligible?: boolean, MaxRenewYears?: number }>> {
-    return wrapSdkCall(() => this.domainClient.CheckDomain({ DomainName: domain }))
+    const action = 'checkDomainRenewal'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<{ Eligible?: boolean, MaxRenewYears?: number }>(() => this.domainClient.CheckDomain({ DomainName: domain }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 
   /**
@@ -190,6 +255,15 @@ export class TencentApiClient {
     domain: string,
     years: number,
   ): Promise<TencentApiResult<{ DealId?: string, OrderId?: string }>> {
-    return wrapSdkCall(() => this.domainClient.RenewDomain({ DomainName: domain, Period: years }))
+    const action = 'renewDomain'
+    logger.debug({ provider: 'tencent', action }, 'API request')
+    const result = await wrapSdkCall<{ DealId?: string, OrderId?: string }>(() => this.domainClient.RenewDomain({ DomainName: domain, Period: years }))
+    if (!result.success) {
+      logger.warn({ provider: 'tencent', action, error: result.error }, 'API error')
+    }
+    else {
+      logger.debug({ provider: 'tencent', action }, 'API response')
+    }
+    return result
   }
 }

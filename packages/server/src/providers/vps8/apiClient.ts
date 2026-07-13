@@ -5,6 +5,8 @@
 
 import { Buffer } from 'node:buffer'
 
+import { logger } from '@/utils/index.js'
+
 interface VPS8Config {
   apiKey: string
   apiUrl?: string
@@ -98,26 +100,32 @@ export class VPS8ApiClient {
         ? `${this.apiUrl}/${apiPath}`
         : `${this.apiUrl}${apiPath}`
 
+      logger.debug({ provider: 'vps8', method: 'POST', path: apiPath }, 'API request')
       const response = await fetch(url, init)
       const text = await response.text()
       const raw: VPS8RawResponse<T> | undefined = text ? JSON.parse(text) : undefined
 
       if (!response.ok) {
+        const error = raw?.error || `HTTP ${response.status}`
+        logger.warn({ provider: 'vps8', method: 'POST', path: apiPath, status: response.status, error }, 'API error')
         return {
           success: false,
-          error: raw?.error || `HTTP ${response.status}`,
+          error,
           raw,
         }
       }
 
       if (raw?.error) {
+        const error = raw.error
+        logger.warn({ provider: 'vps8', method: 'POST', path: apiPath, status: response.status, error }, 'API error')
         return {
           success: false,
-          error: raw.error,
+          error,
           raw,
         }
       }
 
+      logger.debug({ provider: 'vps8', method: 'POST', path: apiPath, status: response.status }, 'API response')
       return {
         success: true,
         data: raw?.result,
@@ -125,6 +133,7 @@ export class VPS8ApiClient {
       }
     }
     catch (error: any) {
+      logger.error({ provider: 'vps8', method: 'POST', path: apiPath, error: error.message }, 'API network error')
       return {
         success: false,
         error: error.message || 'Network error',

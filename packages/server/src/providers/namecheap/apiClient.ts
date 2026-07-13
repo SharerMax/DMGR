@@ -16,6 +16,8 @@
 import crypto from 'node:crypto'
 import { XMLParser } from 'fast-xml-parser'
 
+import { logger } from '@/utils/index.js'
+
 interface NamecheapConfig {
   apiUser: string
   apiKey: string
@@ -161,13 +163,16 @@ export class NamecheapApiClient {
       const query = new URLSearchParams(params).toString()
       const url = `${this.apiUrl}?${query}`
 
+      logger.debug({ provider: 'namecheap', method: 'GET', path: command }, 'API request')
       const response = await fetch(url, { method: 'GET' })
       const xml = await response.text()
 
       if (!response.ok) {
+        const error = `HTTP ${response.status} ${response.statusText}`
+        logger.warn({ provider: 'namecheap', method: 'GET', path: command, status: response.status, error }, 'API error')
         return {
           success: false,
-          error: `HTTP ${response.status} ${response.statusText}`,
+          error,
           code: String(response.status),
           raw: xml,
         }
@@ -178,14 +183,17 @@ export class NamecheapApiClient {
       const errorMessage = extractXmlErrors(parsed)
 
       if (status !== 'OK' || errorMessage) {
+        const error = errorMessage || 'Namecheap API 状态异常'
+        logger.warn({ provider: 'namecheap', method: 'GET', path: command, error }, 'API error')
         return {
           success: false,
-          error: errorMessage || 'Namecheap API 状态异常',
+          error,
           code: status,
           raw: parsed,
         }
       }
 
+      logger.debug({ provider: 'namecheap', method: 'GET', path: command, status: response.status }, 'API response')
       return {
         success: true,
         data: parsed as T,
@@ -193,6 +201,7 @@ export class NamecheapApiClient {
       }
     }
     catch (error: any) {
+      logger.error({ provider: 'namecheap', method: 'GET', path: command, error: error.message }, 'API network error')
       return {
         success: false,
         error: error?.message || 'Namecheap API 请求失败',
