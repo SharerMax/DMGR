@@ -184,6 +184,10 @@ function buildSyncerConfig(type: string, parsed: Record<string, any>): Record<st
         apiKey: parsed.apiKey,
         apiUrl: parsed.apiUrl,
       }
+    case 'gleam':
+      return {
+        apiKey: parsed.apiKey,
+      }
     default:
       return {}
   }

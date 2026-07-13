@@ -17,6 +17,9 @@ export * from './config'
 // DNSPod
 export * from './dnspod'
 
+// Gleam
+export * from './gleam'
+
 // Namecheap
 export * from './namecheap'
 

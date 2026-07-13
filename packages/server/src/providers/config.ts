@@ -147,6 +147,22 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
     ],
     features: { domainSync: true, dnsManagement: true, autoRenew: false },
   },
+  {
+    id: 'gleam',
+    name: 'Gleam',
+    description: 'Gleam 子域名管理服务',
+    fields: [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'password',
+        required: true,
+        placeholder: 'hl6_xxxxxxxxxxxx',
+        description: 'Gleam API Key（以 hl6_ 开头）',
+      },
+    ],
+    features: { domainSync: true, dnsManagement: true, autoRenew: false },
+  },
 ]
 
 // 根据 ID 获取服务商配置
