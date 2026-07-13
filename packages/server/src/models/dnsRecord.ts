@@ -94,6 +94,19 @@ export interface SyncDNSRecordInput {
   priority?: number | null
 }
 
+export interface DNSRecordChange {
+  type: string
+  name: string
+  value: string
+}
+
+export interface SyncDNSResult {
+  inserted: number
+  deleted: number
+  insertedRecords: DNSRecordChange[]
+  deletedRecords: DNSRecordChange[]
+}
+
 /**
  * 将从服务商获取的 DNS 记录与数据库中的记录进行全量同步。
  * - 不存在的记录会被插入
@@ -103,7 +116,7 @@ export interface SyncDNSRecordInput {
 export async function syncDomainDNSRecords(
   domainId: number,
   records: SyncDNSRecordInput[],
-): Promise<{ inserted: number, deleted: number }> {
+): Promise<SyncDNSResult> {
   const existing = await prisma.dNSRecord.findMany({
     where: { domainId },
     select: { id: true, type: true, name: true, value: true, ttl: true, priority: true },
@@ -140,5 +153,10 @@ export async function syncDomainDNSRecords(
     })
   }
 
-  return { inserted: toInsert.length, deleted: toDelete.length }
+  return {
+    inserted: toInsert.length,
+    deleted: toDelete.length,
+    insertedRecords: toInsert.map(r => ({ type: r.type, name: r.name, value: r.value })),
+    deletedRecords: toDelete.map(r => ({ type: r.type, name: r.name, value: r.value })),
+  }
 }

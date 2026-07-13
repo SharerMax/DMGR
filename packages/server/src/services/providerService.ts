@@ -11,6 +11,7 @@ import {
 
   updateProvider,
 } from '../models/provider.js'
+import { createSyncLog } from '../models/syncLog.js'
 import { BUILT_IN_PROVIDERS, DNSProviderFactory, getProviderConfig } from '../providers/index.js'
 
 export function providerSupportsAutoRenew(providerType: string): boolean {
@@ -28,11 +29,29 @@ export function providerSupportsDnsManagement(providerType: string): boolean {
   return config?.features.dnsManagement === true
 }
 
+export interface DomainChange {
+  name: string
+}
+
+export interface DNSChangeDetail {
+  domain: string
+  type: string
+  name: string
+  value: string
+}
+
+export interface SyncDetails {
+  domainsAdded: DomainChange[]
+  dnsInserted: DNSChangeDetail[]
+  dnsDeleted: DNSChangeDetail[]
+}
+
 export interface SyncResult {
   syncedCount: number
   domains: any[]
   dnsRecordsInserted: number
   dnsRecordsDeleted: number
+  details: SyncDetails
 }
 
 export function getSupportedProviderTypes() {
@@ -251,92 +270,139 @@ export async function syncProviderDomains(userId: number, providerId: number): P
     throw new Error('当前服务商不支持域名同步')
   }
 
-  const syncer = getSyncer(provider)
+  try {
+    const syncer = getSyncer(provider)
 
-  if (!syncer || !syncer.validateConfig()) {
-    const mockDomains = generateMockDomains(provider)
-    const syncedDomains = await syncNewDomains(userId, providerId, mockDomains)
-    return {
-      syncedCount: syncedDomains.length,
-      domains: syncedDomains,
-      dnsRecordsInserted: 0,
-      dnsRecordsDeleted: 0,
+    const syncDetails: SyncDetails = {
+      domainsAdded: [],
+      dnsInserted: [],
+      dnsDeleted: [],
     }
-  }
 
-  const syncResult = await syncer.syncDomains()
+    if (!syncer || !syncer.validateConfig()) {
+      const mockDomains = generateMockDomains(provider)
+      const syncedDomains = await syncNewDomains(userId, providerId, mockDomains)
+      syncDetails.domainsAdded = syncedDomains.map(d => ({ name: d.name }))
+      const result: SyncResult = {
+        syncedCount: syncedDomains.length,
+        domains: syncedDomains,
+        dnsRecordsInserted: 0,
+        dnsRecordsDeleted: 0,
+        details: syncDetails,
+      }
+      await createSyncLog({
+        providerId,
+        userId,
+        status: 'success',
+        domainsSynced: result.syncedCount,
+        dnsInserted: result.dnsRecordsInserted,
+        dnsDeleted: result.dnsRecordsDeleted,
+        details: JSON.stringify(syncDetails),
+      })
+      return result
+    }
 
-  if (!syncResult.success) {
-    throw new Error(syncResult.errors?.join(', ') || '同步失败')
-  }
+    const syncResult = await syncer.syncDomains()
 
-  const domainList = syncResult.domains.map(d => ({
-    name: d.name,
-    expiryDate: d.expirationDate || null,
-    autoRenew: provider.supportsAutoRenew,
-  }))
+    if (!syncResult.success) {
+      throw new Error(syncResult.errors?.join(', ') || '同步失败')
+    }
 
-  const newDomains = await syncNewDomains(userId, providerId, domainList)
+    const domainList = syncResult.domains.map(d => ({
+      name: d.name,
+      expiryDate: d.expirationDate || null,
+      autoRenew: provider.supportsAutoRenew,
+    }))
 
-  const allUserDomains = await getDomainsByUserId(userId)
-  const domainNameToId = new Map<string, number>()
-  for (const d of allUserDomains) {
-    if (d.providerId === providerId || newDomains.some(nd => nd.id === d.id)) {
+    const newDomains = await syncNewDomains(userId, providerId, domainList)
+    syncDetails.domainsAdded = newDomains.map(d => ({ name: d.name }))
+
+    const allUserDomains = await getDomainsByUserId(userId)
+    const domainNameToId = new Map<string, number>()
+    for (const d of allUserDomains) {
+      if (d.providerId === providerId || newDomains.some(nd => nd.id === d.id)) {
+        domainNameToId.set(d.name, d.id)
+      }
+    }
+    for (const d of newDomains) {
       domainNameToId.set(d.name, d.id)
     }
-  }
-  for (const d of newDomains) {
-    domainNameToId.set(d.name, d.id)
-  }
 
-  const supportsDNS = providerSupportsDnsManagement(provider.type)
-  let totalInserted = 0
-  let totalDeleted = 0
+    const supportsDNS = providerSupportsDnsManagement(provider.type)
+    let totalInserted = 0
+    let totalDeleted = 0
 
-  if (supportsDNS) {
-    for (const domain of domainList) {
-      const domainId = domainNameToId.get(domain.name)
-      if (!domainId) {
-        continue
-      }
-      try {
-        const recordsResult = await syncer.syncDomainRecords(domain.name)
-        if (recordsResult.success && recordsResult.data) {
-          const normalized = recordsResult.data.map(r => ({
-            type: r.type,
-            name: r.name,
-            value: r.value,
-            ttl: r.ttl,
-            priority: r.priority ?? null,
-          }))
-          const { inserted, deleted } = await syncDomainDNSRecords(domainId, normalized)
-          totalInserted += inserted
-          totalDeleted += deleted
-          logger.info(
-            { domainId, domain: domain.name, inserted, deleted },
-            'DNS records synced',
+    if (supportsDNS) {
+      for (const domain of domainList) {
+        const domainId = domainNameToId.get(domain.name)
+        if (!domainId) {
+          continue
+        }
+        try {
+          const recordsResult = await syncer.syncDomainRecords(domain.name)
+          if (recordsResult.success && recordsResult.data) {
+            const normalized = recordsResult.data.map(r => ({
+              type: r.type,
+              name: r.name,
+              value: r.value,
+              ttl: r.ttl,
+              priority: r.priority ?? null,
+            }))
+            const dnsResult = await syncDomainDNSRecords(domainId, normalized)
+            totalInserted += dnsResult.inserted
+            totalDeleted += dnsResult.deleted
+            for (const r of dnsResult.insertedRecords) {
+              syncDetails.dnsInserted.push({ domain: domain.name, type: r.type, name: r.name, value: r.value })
+            }
+            for (const r of dnsResult.deletedRecords) {
+              syncDetails.dnsDeleted.push({ domain: domain.name, type: r.type, name: r.name, value: r.value })
+            }
+            logger.info(
+              { domainId, domain: domain.name, inserted: dnsResult.inserted, deleted: dnsResult.deleted },
+              'DNS records synced',
+            )
+          }
+          else {
+            logger.warn(
+              { domain: domain.name, error: recordsResult.error },
+              'Failed to sync DNS records for domain',
+            )
+          }
+        }
+        catch (error) {
+          logger.error(
+            { domain: domain.name, error },
+            'Exception while syncing DNS records',
           )
         }
-        else {
-          logger.warn(
-            { domain: domain.name, error: recordsResult.error },
-            'Failed to sync DNS records for domain',
-          )
-        }
-      }
-      catch (error) {
-        logger.error(
-          { domain: domain.name, error },
-          'Exception while syncing DNS records',
-        )
       }
     }
-  }
 
-  return {
-    syncedCount: newDomains.length,
-    domains: newDomains,
-    dnsRecordsInserted: totalInserted,
-    dnsRecordsDeleted: totalDeleted,
+    const result: SyncResult = {
+      syncedCount: newDomains.length,
+      domains: newDomains,
+      dnsRecordsInserted: totalInserted,
+      dnsRecordsDeleted: totalDeleted,
+      details: syncDetails,
+    }
+    await createSyncLog({
+      providerId,
+      userId,
+      status: 'success',
+      domainsSynced: result.syncedCount,
+      dnsInserted: result.dnsRecordsInserted,
+      dnsDeleted: result.dnsRecordsDeleted,
+      details: JSON.stringify(syncDetails),
+    })
+    return result
+  }
+  catch (error) {
+    await createSyncLog({
+      providerId,
+      userId,
+      status: 'failed',
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
   }
 }

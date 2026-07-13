@@ -18,6 +18,7 @@ model User {
   providers          Provider[]
   notificationChannels NotificationChannel[]
   notificationLogs   NotificationLog[]
+  syncLogs           SyncLog[]
 }
 
 model Provider {
@@ -31,6 +32,7 @@ model Provider {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   domains          Domain[]
+  syncLogs         SyncLog[]
 
   @@index([userId])
 }
@@ -131,4 +133,23 @@ model NotificationLog {
   @@index([userId])
   @@index([type])
   @@index([sentAt])
+}
+
+model SyncLog {
+  id              Int       @id @default(autoincrement())
+  providerId      Int
+  provider        Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String    // success, failed, partial
+  domainsSynced   Int       @default(0)  // 新增域名数
+  dnsInserted     Int       @default(0)  // 新增 DNS 记录数
+  dnsDeleted      Int       @default(0)  // 删除 DNS 记录数
+  error           String?   // 失败时的错误信息
+  details         String?   // JSON 格式的变更详情（域名增删、DNS 记录增删）
+  createdAt       DateTime  @default(now())
+
+  @@index([providerId])
+  @@index([userId])
+  @@index([createdAt])
 }

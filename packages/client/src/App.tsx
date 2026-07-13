@@ -1,4 +1,4 @@
-import { Bell, FileText, Globe, LogOut, Moon, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
+import { Bell, ChevronDown, FileText, Globe, LogOut, Moon, RefreshCw, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router'
 import { Toaster } from 'sonner'
@@ -18,6 +18,7 @@ import NotificationChannels from '@/pages/NotificationChannels'
 import Profile from '@/pages/Profile'
 import Providers from '@/pages/Providers'
 import RenewalLogs from '@/pages/RenewalLogs'
+import SyncLogs from '@/pages/SyncLogs'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 
@@ -61,22 +62,48 @@ function Layout({ children }: { children: React.ReactNode }) {
                   <Globe className="h-4 w-4 mr-2" />
                   域名管理
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/providers')}>
-                  <Server className="h-4 w-4 mr-2" />
-                  服务商管理
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Server className="h-4 w-4 mr-2" />
+                      服务商管理
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => navigate('/providers')}>
+                      <Server className="mr-2 h-4 w-4" />
+                      服务商列表
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/sync-logs')}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      同步记录
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/notification-channels')}>
                   <Bell className="h-4 w-4 mr-2" />
                   通知渠道
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/renewal-logs')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  续期日志
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/auto-renew-config')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  续期配置
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      续期
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => navigate('/renewal-logs')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      续期日志
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/auto-renew-config')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      续期配置
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </nav>
             </div>
             <div className="flex items-center gap-4">
@@ -193,6 +220,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <AutoRenewConfig />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/sync-logs"
+        element={(
+          <ProtectedRoute>
+            <SyncLogs />
           </ProtectedRoute>
         )}
       />
