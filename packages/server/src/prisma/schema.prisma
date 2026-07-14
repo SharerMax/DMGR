@@ -78,7 +78,7 @@ model NotificationChannel {
   id              Int      @id @default(autoincrement())
   userId          Int
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type            String   // email, sms, webhook
+  type            String   // email, webhook, telegram, feishu
   name            String
   config          String   // JSON string for config
   defaultDays     Int      @default(90) // 默认提前天数

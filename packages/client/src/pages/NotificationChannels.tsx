@@ -15,14 +15,16 @@ import { useNotificationChannelStore } from '@/stores/notificationChannels'
 
 const channelTypeConfig = {
   email: { label: '邮件', color: 'bg-blue-100 text-blue-700' },
-  sms: { label: '短信', color: 'bg-green-100 text-green-700' },
   webhook: { label: 'Webhook', color: 'bg-purple-100 text-purple-700' },
+  telegram: { label: 'Telegram', color: 'bg-cyan-100 text-cyan-700' },
+  feishu: { label: '飞书', color: 'bg-orange-100 text-orange-700' },
 }
 
 interface ChannelFormValues {
   type: CreateChannelInput['type']
   name: string
   configValue: string
+  chatId: string
   defaultDays: string
   isActive: boolean
 }
@@ -46,6 +48,7 @@ export default function NotificationChannels() {
       type: 'email',
       name: '',
       configValue: '',
+      chatId: '',
       defaultDays: '90',
       isActive: true,
     },
@@ -60,16 +63,20 @@ export default function NotificationChannels() {
   const getConfigLabel = () => {
     if (watchedType === 'email')
       return '邮箱地址'
-    if (watchedType === 'sms')
-      return '手机号码'
+    if (watchedType === 'telegram')
+      return 'Bot Token'
+    if (watchedType === 'feishu')
+      return 'Webhook URL'
     return 'Webhook URL'
   }
 
   const getPlaceholder = () => {
     if (watchedType === 'email')
       return 'example@email.com'
-    if (watchedType === 'sms')
-      return '13800138000'
+    if (watchedType === 'telegram')
+      return '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'
+    if (watchedType === 'feishu')
+      return 'https://open.feishu.cn/open-apis/bot/v2/hook/xxx'
     return 'https://example.com/webhook'
   }
 
@@ -81,7 +88,12 @@ export default function NotificationChannels() {
         name: channel.name,
         configValue: channel.type === 'email'
           ? (channel.config.email as string) || ''
-          : channel.type === 'webhook' ? (channel.config.url as string) || '' : '',
+          : channel.type === 'webhook'
+            ? (channel.config.url as string) || ''
+            : channel.type === 'telegram'
+              ? (channel.config.botToken as string) || ''
+              : channel.type === 'feishu' ? (channel.config.webhookUrl as string) || '' : '',
+        chatId: channel.type === 'telegram' ? (channel.config.chatId as string) || '' : '',
         defaultDays: channel.defaultDays.toString(),
         isActive: channel.isActive,
       })
@@ -92,6 +104,7 @@ export default function NotificationChannels() {
         type: 'email',
         name: '',
         configValue: '',
+        chatId: '',
         defaultDays: '90',
         isActive: true,
       })
@@ -110,11 +123,15 @@ export default function NotificationChannels() {
       if (data.type === 'email') {
         config.email = data.configValue
       }
-      else if (data.type === 'sms') {
-        config.phone = data.configValue
-      }
       else if (data.type === 'webhook') {
         config.url = data.configValue
+      }
+      else if (data.type === 'telegram') {
+        config.botToken = data.configValue
+        config.chatId = data.chatId || ''
+      }
+      else if (data.type === 'feishu') {
+        config.webhookUrl = data.configValue
       }
 
       const payload = {
@@ -195,8 +212,9 @@ export default function NotificationChannels() {
                             <div className="font-medium">{channel.name}</div>
                             <div className="text-sm text-gray-500">
                               {channel.type === 'email' && (channel.config.email as string)}
-                              {channel.type === 'sms' && (channel.config.phone as string)}
                               {channel.type === 'webhook' && (channel.config.url as string)}
+                              {channel.type === 'telegram' && `Chat ID: ${channel.config.chatId as string || ''}`}
+                              {channel.type === 'feishu' && (channel.config.webhookUrl as string)}
                             </div>
                           </div>
                         </div>
@@ -263,8 +281,9 @@ export default function NotificationChannels() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="email">邮件</SelectItem>
-                      <SelectItem value="sms">短信</SelectItem>
                       <SelectItem value="webhook">Webhook</SelectItem>
+                      <SelectItem value="telegram">Telegram</SelectItem>
+                      <SelectItem value="feishu">飞书</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -301,7 +320,7 @@ export default function NotificationChannels() {
                     if (watchedType === 'email') {
                       return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(value) || '请输入有效的邮箱地址'
                     }
-                    if (watchedType === 'webhook') {
+                    if (watchedType === 'webhook' || watchedType === 'feishu') {
                       return /^https?:\/\//i.test(value) || '请输入有效的 URL'
                     }
                     return true
@@ -314,6 +333,23 @@ export default function NotificationChannels() {
                 <p className="text-xs text-red-500">{errors.configValue.message}</p>
               )}
             </div>
+            {watchedType === 'telegram' && (
+              <div className="space-y-2">
+                <Label htmlFor="chatId">
+                  Chat ID
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="chatId"
+                  {...register('chatId', { required: watchedType === 'telegram' ? '请输入 Chat ID' : false })}
+                  placeholder="123456789"
+                  aria-invalid={!!errors.chatId}
+                />
+                {errors.chatId && (
+                  <p className="text-xs text-red-500">{errors.chatId.message}</p>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="defaultDays">
                 默认提前提醒天数

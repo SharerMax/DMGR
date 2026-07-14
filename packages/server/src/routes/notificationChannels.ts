@@ -15,7 +15,7 @@ import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 const router = Router()
 
 const channelSchema = z.object({
-  type: z.enum(['email', 'sms', 'webhook']),
+  type: z.enum(['email', 'webhook', 'telegram', 'feishu']),
   name: z.string().min(1).max(100),
   config: z.record(z.string(), z.any()),
   defaultDays: z.number().positive().optional(),

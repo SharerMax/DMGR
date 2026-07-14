@@ -4,7 +4,7 @@ import api from '@/lib/api'
 export interface NotificationChannel {
   id: number
   userId: number
-  type: 'email' | 'sms' | 'webhook'
+  type: 'email' | 'webhook' | 'telegram' | 'feishu'
   name: string
   config: Record<string, unknown>
   defaultDays: number
@@ -24,7 +24,7 @@ interface NotificationChannelState {
 }
 
 export interface CreateChannelInput {
-  type: 'email' | 'sms' | 'webhook'
+  type: 'email' | 'webhook' | 'telegram' | 'feishu'
   name: string
   config: Record<string, unknown>
   defaultDays?: number

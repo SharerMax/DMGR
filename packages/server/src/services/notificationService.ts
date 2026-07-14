@@ -104,8 +104,11 @@ async function sendViaChannel(
     case 'webhook':
       await sendWebhook(config, content)
       break
-    case 'sms':
-      await sendSMS(config, content)
+    case 'telegram':
+      await sendTelegram(config, content)
+      break
+    case 'feishu':
+      await sendFeishu(config, content)
       break
     default:
       logger.warn({ channelType: channel.type }, 'Unknown notification channel type')
@@ -147,12 +150,57 @@ async function sendWebhook(config: Record<string, any>, content: string): Promis
 }
 
 /**
- * 发送短信通知
+ * 发送 Telegram 通知
+ * @param config - 包含 botToken 和 chatId
+ * @param content - 通知内容
  */
-async function sendSMS(config: Record<string, any>, _content: string): Promise<void> {
-  // 实际实现需要接入短信服务
-  // 例如：使用阿里云短信、腾讯云短信等
-  logger.info({ phone: config.phone }, 'SMS notification sent')
+async function sendTelegram(config: Record<string, any>, content: string): Promise<void> {
+  const { botToken, chatId } = config
+  if (!botToken || !chatId) {
+    throw new Error('Telegram botToken 或 chatId 未配置')
+  }
+
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: content, parse_mode: 'HTML' }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Telegram 通知发送失败: ${response.status} ${errorText}`)
+  }
+
+  logger.info({ chatId }, 'Telegram notification sent')
+}
+
+/**
+ * 发送飞书通知
+ * @param config - 包含 webhookUrl（飞书机器人 webhook 地址）
+ * @param content - 通知内容
+ */
+async function sendFeishu(config: Record<string, any>, content: string): Promise<void> {
+  const { webhookUrl } = config
+  if (!webhookUrl) {
+    throw new Error('飞书 webhookUrl 未配置')
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      msg_type: 'text',
+      content: { text: content },
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`飞书通知发送失败: ${response.status} ${errorText}`)
+  }
+
+  logger.info({ webhookUrl }, 'Feishu notification sent')
 }
 
 /**
