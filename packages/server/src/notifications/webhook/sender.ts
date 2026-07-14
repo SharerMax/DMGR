@@ -3,9 +3,10 @@
  *
  * 通过 HTTP POST 向用户配置的 Webhook URL 发送 JSON payload。
  * 配置字段：url
+ * payload 中携带通知类型，便于接收方按类型自定义处理。
  */
 
-import type { NotificationSender } from '../base.js'
+import type { NotificationSender, NotificationType } from '../base.js'
 
 import { logger } from '@/utils/index.js'
 
@@ -19,7 +20,7 @@ export class WebhookSender implements NotificationSender {
 
   constructor(private config: WebhookConfig) {}
 
-  async send(content: string): Promise<void> {
+  async send(content: string, type: NotificationType): Promise<void> {
     const { url } = this.config
     if (!url) {
       throw new Error('Webhook URL 未配置')
@@ -30,6 +31,7 @@ export class WebhookSender implements NotificationSender {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content,
+        type,
         timestamp: new Date().toISOString(),
       }),
     })
@@ -39,6 +41,6 @@ export class WebhookSender implements NotificationSender {
       throw new Error(`Webhook 通知发送失败: ${response.status} ${errorText}`)
     }
 
-    logger.info({ provider: 'webhook', method: 'POST', path: url }, 'Webhook notification sent')
+    logger.info({ provider: 'webhook', method: 'POST', path: url, type }, 'Webhook notification sent')
   }
 }

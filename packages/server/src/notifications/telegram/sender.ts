@@ -5,7 +5,7 @@
  * 配置字段：botToken、chatId
  */
 
-import type { NotificationSender } from '../base.js'
+import type { NotificationSender, NotificationType } from '../base.js'
 
 import { logger } from '@/utils/index.js'
 
@@ -20,7 +20,7 @@ export class TelegramSender implements NotificationSender {
 
   constructor(private config: TelegramConfig) {}
 
-  async send(content: string): Promise<void> {
+  async send(content: string, type: NotificationType): Promise<void> {
     const { botToken, chatId } = this.config
     if (!botToken || !chatId) {
       throw new Error('Telegram botToken 或 chatId 未配置')
@@ -38,6 +38,6 @@ export class TelegramSender implements NotificationSender {
       throw new Error(`Telegram 通知发送失败: ${response.status} ${errorText}`)
     }
 
-    logger.info({ provider: 'telegram', method: 'sendMessage', chatId }, 'Telegram notification sent')
+    logger.info({ provider: 'telegram', method: 'sendMessage', chatId, type }, 'Telegram notification sent')
   }
 }

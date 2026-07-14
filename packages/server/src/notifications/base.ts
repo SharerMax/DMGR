@@ -28,6 +28,16 @@ export interface NotificationChannelConfig {
 }
 
 /**
+ * 通知类型
+ * 供通知渠道自定义内容呈现（如邮件主题、消息前缀、payload 结构等）
+ */
+export type NotificationType
+  = | 'expiry_reminder' // 域名即将过期提醒
+    | 'renewal_success' // 续期成功
+    | 'renewal_failed' // 续期失败
+    | 'sync_completed' // 同步完成
+
+/**
  * 通知发送器抽象接口
  * 每个具体渠道（telegram / feishu 等）实现此接口
  */
@@ -39,8 +49,9 @@ export interface NotificationSender {
   /**
    * 发送通知
    * @param content 通知文本内容
+   * @param type 通知类型，供渠道自定义内容呈现
    */
-  send: (content: string) => Promise<void>
+  send: (content: string, type: NotificationType) => Promise<void>
 }
 
 /**

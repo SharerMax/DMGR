@@ -3,15 +3,10 @@
  * 处理域名相关的通知发送
  */
 
+import type { NotificationType } from '../notifications/index.js'
 import { prisma } from '../db/index.js'
 import { NotificationSenderFactory } from '../notifications/index.js'
 import { logger } from '../utils/index.js'
-
-export type NotificationType
-  = | 'expiry_reminder' // 域名即将过期提醒
-    | 'renewal_success' // 续期成功
-    | 'renewal_failed' // 续期失败
-    | 'sync_completed' // 同步完成
 
 interface NotificationData {
   domainName: string
@@ -48,7 +43,7 @@ export async function sendNotification(
   // 通过各渠道发送
   for (const channel of channels) {
     try {
-      await sendViaChannel(channel, content)
+      await sendViaChannel(channel, content, type)
     }
     catch (error) {
       logger.error({ error, channelType: channel.type }, 'Notification send failed')
@@ -96,6 +91,7 @@ function buildNotificationContent(type: NotificationType, data: NotificationData
 async function sendViaChannel(
   channel: { id: number, type: string, name: string, config: string },
   content: string,
+  type: NotificationType,
 ): Promise<void> {
   const config = JSON.parse(channel.config)
   const sender = NotificationSenderFactory.createSender(channel.type, config)
@@ -103,7 +99,7 @@ async function sendViaChannel(
     logger.warn({ channelType: channel.type }, 'Unknown notification channel type')
     return
   }
-  await sender.send(content)
+  await sender.send(content, type)
 }
 
 /**
