@@ -20,6 +20,7 @@ out
 .agents
 .trae/skills/*
 !.trae/skills/domain-manager-*
+!.trae/skills/optimize-docs-structure/
 
 # Logs
 *.log*

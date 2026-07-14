@@ -1,6 +1,7 @@
 # Domain Manager 前端开发 Skill
 
-> 面向 AI Agent 的前端开发速查指南。当你需要修改 `packages/client/` 下的代码时，先阅读本文件。
+> 面向 AI Agent 的前端开发操作指南。当你需要修改 `packages/client/` 下的代码时，先阅读本文件。
+> **相关规则**：`rules/frontend.md`（声明式规则）、`rules/project.md`（项目级规则）。本文件只提供操作步骤和代码模板，不重复规则条目。
 
 ---
 
@@ -23,7 +24,7 @@
 | 技术 | 用途 | 关键文件 |
 |------|------|---------|
 | **React 19** | UI 框架 | `.tsx` 文件 |
-| **react-router** | 路由 | `App.tsx` |
+| **react-router** | 路由（8.x，禁用 `react-router-dom`） | `App.tsx` |
 | **Zustand** | 状态管理 | `stores/*.ts` |
 | **react-hook-form** | 表单验证 | 所有表单 |
 | **Axios** | HTTP 请求 | `lib/api.ts` |
@@ -35,7 +36,7 @@
 
 ---
 
-## 3. 目录结构与职责
+## 3. 目录结构（前端细节，唯一来源）
 
 ```
 packages/client/src/
@@ -90,9 +91,9 @@ packages/client/src/
 
 ---
 
-## 4. 表单验证（最重要规范）
+## 4. 表单验证模板
 
-所有用户输入表单**必须**使用 `react-hook-form`，**禁止**手写 `useState` 管理表单状态。
+表单规则见 `rules/frontend.md` §2。以下是代码模板。
 
 ### 4.1 标准表单模板（带原生 Input）
 
@@ -207,6 +208,7 @@ const { control, formState: { errors } } = useForm({
         <SelectItem value="dnspod">DNSPod</SelectItem>
         <SelectItem value="namecheap">Namecheap</SelectItem>
         <SelectItem value="vps8">VPS8</SelectItem>
+        <SelectItem value="gleam">Gleam</SelectItem>
       </SelectContent>
     </Select>
   )}
@@ -239,8 +241,7 @@ import { Switch } from '@/components/ui/switch'
 服务商的配置字段由后端 `providers/config.ts` 中的 `fields` 动态决定，前端根据 `provider.type` 渲染不同字段：
 
 ```tsx
-import { useForm, Controller } from 'react-hook-form'
-import { watch } from 'react-hook-form'
+import { useForm, Controller, watch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 // 假设 typeFields 由 providers store 获取
@@ -277,24 +278,13 @@ const typeFields = BUILT_IN_PROVIDERS[selectedType]?.fields || []
 ))}
 ```
 
-### 4.5 验证规则速查
-
-| 场景 | react-hook-form |
-|------|-----------------|
-| 必填 | `required: 'xxx必填'` |
-| 最大长度 | `maxLength: { value: 255, message: '最多 255 个字符' }` |
-| 最小长度 | `minLength: { value: 6, message: '最少 6 位' }` |
-| 邮箱格式 | `pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: '邮箱格式不正确' }` |
-| 正整数 | 前端可选配合 TypeScript 类型，后端用 Zod `z.coerce.number().int().positive()` |
-| 条件必填 | `required: watch('mode') === 'auto' ? 'xxx必填' : false` |
-
 ---
 
-## 5. 用户反馈（Toast + Confirm）
+## 5. Toast + useConfirm 模板
+
+通知规则见 `rules/frontend.md` §7。
 
 ### 5.1 Toast（sonner）
-
-**禁止使用 `alert()`**。所有操作成功/失败反馈走 `sonner` toast。
 
 ```typescript
 import { toast } from 'sonner'
@@ -305,16 +295,6 @@ toast.error(error.message || '操作失败')
 toast.info('提示信息')
 toast.warning('域名即将到期，请及时续期')
 ```
-
-**Toast vs Dialog 选择**：
-
-| 场景 | 使用 |
-|------|------|
-| 操作成功反馈 | `toast.success` |
-| 操作错误 / API 失败 | `toast.error` |
-| 一般提示 | `toast.info` |
-| 需要用户确认的危险操作（删除） | `useConfirm` 对话框 |
-| 字段输入错误 | 字段下方 `text-red-500` 提示文字 |
 
 ### 5.2 确认对话框（useConfirm）
 
@@ -344,9 +324,9 @@ const handleDelete = async (provider: Provider) => {
 
 ---
 
-## 6. Zustand Store 标准模式
+## 6. Zustand Store 模板
 
-### 6.1 Store 模板
+Store 规则见 `rules/frontend.md` §4。
 
 ```typescript
 import { create } from 'zustand'
@@ -412,7 +392,7 @@ export const useDomainStore = create<DomainState>((set) => ({
 }))
 ```
 
-### 6.2 在页面中使用 Store
+### 在页面中使用 Store
 
 ```tsx
 import { useDomainStore } from '@/stores/domains'
@@ -438,18 +418,9 @@ const handleCreate = async (data) => {
 
 ---
 
-## 7. API 调用（Axios）
+## 7. API 调用模式
 
-统一使用 `lib/api.ts` 的 Axios 实例，**禁止直接 `fetch()`**。
-
-### 7.1 api.ts 已内置的约定
-
-- 自动附带 `Authorization: Bearer <token>`（从 `auth` store 获取）
-- 401 响应自动跳转 `/login` 并清除本地 token
-- 成功响应自动提取 `res.data.data`（后端返回 `{code, message, data}`）
-- 错误时 `error.message` 即为后端返回的可读消息
-
-### 7.2 标准调用模式
+API 规则见 `rules/frontend.md` §5。
 
 ```typescript
 import api from '@/lib/api'
@@ -476,36 +447,18 @@ const res = await api.get<Domain[]>('/domains', {
 
 ---
 
-## 8. shadcn/ui 使用规范
+## 8. shadcn/ui 组件模板
 
-### 8.1 目录组织
+组件规则见 `rules/frontend.md` §3。
 
-- **`components/ui/`** — 仅存放 `shadcn/ui CLI` 生成的标准组件。**绝不手动修改此目录下的文件！**
-- **`components/` 根目录** — 自定义业务组件（如 `Logo.tsx`、`DatePicker.tsx`、`Pagination.tsx`）
-- **`pages/`** — 页面级组件
-
-### 8.2 添加新的 shadcn/ui 组件
+### 8.1 添加新的 shadcn/ui 组件
 
 ```bash
 cd packages/client
 pnpm dlx shadcn@latest add checkbox switch table
 ```
 
-### 8.3 样式模式速查
-
-| 场景 | 正确用法 |
-|------|---------|
-| 间距 | `space-y-4` / `gap-4` / `p-6` |
-| 语义色 | `bg-card` / `text-muted-foreground` / `border-border` |
-| 按钮 | `Button variant="default"`（主）/ `variant="outline"`（次）/ `variant="destructive"`（危险） |
-| 截断文本 | `truncate` |
-| Flex 居中 | `flex items-center justify-center` |
-| 表格斑马纹 | `odd:bg-white even:bg-slate-50` |
-| 加载态 | `disabled` + `Loading...` 文案 |
-| 条件类名 | `cn('bg-primary', isActive && 'ring-2')` |
-| 图标 | `lucide-react` 的 `<Globe />`, `<Database />` 等 |
-
-### 8.4 Card 模板
+### 8.2 Card 模板
 
 ```tsx
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -521,7 +474,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 </Card>
 ```
 
-### 8.5 Table 模板
+### 8.3 Table 模板
 
 ```tsx
 import {
@@ -567,9 +520,9 @@ import { Badge } from '@/components/ui/badge'
 
 ---
 
-## 9. 主题与暗色模式
+## 9. 主题与语义色
 
-由 `stores/theme.ts` 管理，支持 `'light' | 'dark' | 'system'`。
+主题规则见 `rules/frontend.md` §6。
 
 ```tsx
 import { useThemeStore } from '@/stores/theme'
@@ -577,7 +530,7 @@ import { useThemeStore } from '@/stores/theme'
 const { theme, setTheme } = useThemeStore()
 ```
 
-**颜色使用原则**：**禁止硬编码颜色值**（如 `color: #000` / `bg-gray-100`），必须使用 Tailwind CSS v4 的语义色：
+**语义色速查表**：
 
 | 语义色 | 用途 |
 |--------|------|
@@ -592,24 +545,9 @@ const { theme, setTheme } = useThemeStore()
 
 ---
 
-## 10. 图标规范
+## 10. 路由与受保护路由
 
-**统一使用 `lucide-react`**，禁止使用 emoji 或内联 svg 作为业务图标（Logo 除外）。
-
-```tsx
-import { Globe, Database, RefreshCw, Trash2, Pencil, Shield, Bell, Settings } from 'lucide-react'
-
-<Button size="sm">
-  <Globe className="h-4 w-4 mr-2" />
-  同步
-</Button>
-```
-
----
-
-## 11. 路由与受保护路由
-
-所有需要登录的路由在 `App.tsx` 中用 `ProtectedRoute` 包裹（基于 `react-router`）：
+路由规则见 `rules/frontend.md` §8。
 
 ```tsx
 <Route path="/login" element={<Login />} />
@@ -630,25 +568,8 @@ import { Globe, Database, RefreshCw, Trash2, Pencil, Shield, Bell, Settings } fr
 } />
 ```
 
-**顶部导航（dropdown）**：顶级菜单精简为 4 项 — 域名管理、服务商管理（dropdown：服务商列表 / 同步记录）、通知渠道、续期（dropdown：续期日志 / 续期配置）。`/sync-logs` 路由位于"服务商管理"下拉菜单中。
-
 ---
 
-## 12. 快速检查清单（提交前）
+## 11. 提交前检查
 
-- ✅ 所有表单使用 `useForm` + `register` / `Controller`，没有手写 `useState` 管理字段
-- ✅ 必填字段的 `Label` 中有红色 `<span className="text-red-500 ml-1">*</span>`
-- ✅ 字段错误时下方显示 `text-xs text-red-500` 错误消息
-- ✅ `isSubmitting` 状态下提交按钮设置 `disabled`
-- ✅ shadcn/ui 的 Select / Switch / Checkbox 用 `Controller` 包裹，不用 `register`
-- ✅ 没有 `alert()`，用户提示走 `toast.*` 或 `useConfirm`
-- ✅ 没有 `console.log` / `console.error` 遗留在生产代码中
-- ✅ 使用语义色（`bg-card` / `text-muted-foreground`）而非原始色
-- ✅ `components/ui/` 下没有手动添加/修改的文件
-- ✅ 条件类名使用 `cn()` 工具函数
-- ✅ 图标统一使用 `lucide-react`
-- ✅ 日期处理使用 `date-fns`（`format()` 等）
-- ✅ 所有受保护路由用 `ProtectedRoute` 包裹
-- ✅ `pnpm lint` 无错误
-- ✅ `pnpm typecheck` 通过
-- ✅ `pnpm build:client` 生产构建通过
+代码审查与自检清单见 `skills/domain-manager-review`。

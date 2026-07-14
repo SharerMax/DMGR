@@ -1,6 +1,7 @@
 # Domain Manager 后端开发 Skill
 
-> 面向 AI Agent 的后端开发速查指南。当你需要修改 `packages/server/` 下的代码时，先阅读本文件。
+> 面向 AI Agent 的后端开发操作指南。当你需要修改 `packages/server/` 下的代码时，先阅读本文件。
+> **相关规则**：`rules/backend.md`（声明式规则）、`rules/project.md`（项目级规则）。本文件只提供操作步骤和代码模板，不重复规则条目。
 
 ---
 
@@ -16,7 +17,7 @@
 
 ---
 
-## 2. 目录结构与职责
+## 2. 目录结构（后端细节，唯一来源）
 
 ```
 packages/server/src/
@@ -81,26 +82,11 @@ packages/server/src/
 
 ---
 
-## 3. 分层调用模式（严格遵守）
+## 3. 分层调用模式（CRUD 端点模板）
 
-### 3.1 单向调用链
+分层规则见 `rules/backend.md` §2。以下是添加新 CRUD 端点的完整模板。
 
-```
-routes/ (控制器)   → 只调用 services/
-services/ (业务层) → 调用 models/ + providers/*/
-models/ (数据层)   → 只调用 Prisma
-providers/<name>/  → 只调用官方 SDK / HTTP API，不访问数据库
-```
-
-**禁止的跨层调用**：
-- ❌ `routes/` 直接调用 `prisma.*`
-- ❌ `services/` 直接调用 `prisma.*`（必须走 model 函数）
-- ❌ `providers/` 访问数据库
-- ❌ 任何层直接构造 HTTP 响应（`res.json(...)`），必须使用 `sendSuccess`/`sendError`
-
-### 3.2 添加一个新的 CRUD 端点（模板）
-
-#### Step 1: Model 层（`models/domain.ts`）
+### Step 1: Model 层（`models/domain.ts`）
 
 ```typescript
 import prisma from '@/db/index.js'
@@ -117,7 +103,7 @@ export async function getDetails(id: number, userId: number) {
 }
 ```
 
-#### Step 2: Service 层（`services/domainService.ts`）
+### Step 2: Service 层（`services/domainService.ts`）
 
 ```typescript
 import { logger } from '@/utils/index.js'
@@ -131,7 +117,7 @@ export async function getDomainDetails(userId: number, domainId: number) {
 }
 ```
 
-#### Step 3: Route 层（`routes/domains.ts`）
+### Step 3: Route 层（`routes/domains.ts`）
 
 ```typescript
 import { Router, Request, Response } from 'express'
@@ -173,58 +159,20 @@ router.get('/:id/details', handleGetDomainDetails)
 export default router
 ```
 
+### Step 4: 在主入口挂载路由（`index.ts`）
+
+```typescript
+import domainRoutes from '@/routes/domains.js'
+app.use('/api/domains', domainRoutes)
+```
+
 ---
 
-## 4. ProviderFeatures 能力系统
+## 4. ProviderFeatures 工厂创建与能力校验模板
 
-### 4.1 能力声明（`providers/config.ts`）
+能力声明规则与矩阵见 `rules/backend.md` §8。以下是代码模板。
 
-每个服务商通过 `BUILT_IN_PROVIDERS` 配置声明其能力：
-
-```typescript
-interface ProviderFeatures {
-  domainSync: boolean     // 支持域名同步
-  dnsManagement: boolean  // 支持 DNS 记录管理
-  autoRenew: boolean      // 支持自动续期
-}
-```
-
-**内建服务商能力矩阵**：
-
-| 服务商 | `domainSync` | `dnsManagement` | `autoRenew` |
-|--------|-------------|-----------------|-------------|
-| `aliyun` | ✅ | ✅ | ✅ |
-| `tencent` | ✅ | ✅ | ✅ |
-| `cloudflare` | ✅ | ✅ | ❌ |
-| `dnspod` | ✅ | ✅ | ❌ |
-| `namecheap` | ✅ | ✅ | ✅ |
-| `vps8` | ✅ | ✅ | ❌ |
-| `gleam` | ✅ | ✅ | ❌ |
-
-### 4.2 service 层能力校验模板
-
-```typescript
-import { BUILT_IN_PROVIDERS } from '../providers/config.js'
-
-// 示例：同步域名前检查能力
-const provider = await getProviderById(providerId, userId)
-const builtin = BUILT_IN_PROVIDERS[provider.type]
-if (!builtin?.features.domainSync) {
-  throw new Error(`该服务商（${provider.name}）不支持域名同步`)
-}
-
-// 示例：DNS 管理前检查能力
-if (!builtin?.features.dnsManagement) {
-  throw new Error(`该服务商（${provider.name}）不支持 DNS 记录管理`)
-}
-
-// 示例：自动续期前检查能力
-if (!builtin?.features.autoRenew) {
-  throw new Error(`该服务商（${provider.name}）不支持自动续期`)
-}
-```
-
-### 4.3 通过工厂创建实例
+### 4.1 通过工厂创建实例
 
 ```typescript
 import { DNSProviderFactory } from '@/providers/index.js'
@@ -238,42 +186,35 @@ const syncer = DNSProviderFactory.createSyncer(provider.type, config)
 const renewer = DNSProviderFactory.createRenewer(provider.type, config)
 ```
 
----
-
-## 5. 关键导入规范
-
-### 5.1 必须带 `.js` 扩展名
+### 4.2 service 层能力校验模板
 
 ```typescript
-// ✅ 正确
-import { logger } from '@/utils/index.js'
-import { sendSuccess, sendError, HTTP_STATUS } from '@/utils/response.js'
-import { authMiddleware, AuthenticatedRequest } from '@/middleware/index.js'
-import { createUser, getUserByUsername } from '@/models/user.js'
-import { DNSProviderFactory } from '@/providers/index.js'
+import { BUILT_IN_PROVIDERS } from '@/providers/config.js'
 
-// ❌ 错误 — 缺少 .js 扩展名
-import { logger } from '@/utils/index'
-import { createUser } from '../models/user'
+const provider = await getProviderById(providerId, userId)
+const builtin = BUILT_IN_PROVIDERS[provider.type]
+
+// 同步域名前检查
+if (!builtin?.features.domainSync) {
+  throw new Error(`该服务商（${provider.name}）不支持域名同步`)
+}
+
+// DNS 管理前检查
+if (!builtin?.features.dnsManagement) {
+  throw new Error(`该服务商（${provider.name}）不支持 DNS 记录管理`)
+}
+
+// 自动续期前检查
+if (!builtin?.features.autoRenew) {
+  throw new Error(`该服务商（${provider.name}）不支持自动续期`)
+}
 ```
-
-### 5.2 使用 `@/` 别名引用 `src/`
-
-相对路径仅限同一模块内部使用，跨模块引用使用 `@/` 别名。
 
 ---
 
-## 6. 统一响应格式
+## 5. 统一响应格式用法
 
-所有接口**必须**返回以下格式：
-
-```typescript
-{ code: number, message: string, data?: any }
-// code === 0 表示成功
-// code !== 0 表示失败
-```
-
-### 6.1 sendSuccess / sendError 模板
+响应格式规则见 `rules/project.md` §5。
 
 ```typescript
 import { sendSuccess, sendError, HTTP_STATUS } from '@/utils/response.js'
@@ -301,6 +242,25 @@ sendError(res, '资源不存在', 1, HTTP_STATUS.NOT_FOUND)
 
 // 500 Internal Server Error
 sendError(res, '服务器内部错误', 1, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+```
+
+---
+
+## 6. 导入规范示例
+
+导入规则见 `rules/backend.md` §3。
+
+```typescript
+// ✅ 正确
+import { logger } from '@/utils/index.js'
+import { sendSuccess, sendError, HTTP_STATUS } from '@/utils/response.js'
+import { authMiddleware, AuthenticatedRequest } from '@/middleware/index.js'
+import { createUser, getUserByUsername } from '@/models/user.js'
+import { DNSProviderFactory } from '@/providers/index.js'
+
+// ❌ 错误 — 缺少 .js 扩展名
+import { logger } from '@/utils/index'
+import { createUser } from '../models/user'
 ```
 
 ---
@@ -362,22 +322,29 @@ const createProviderSchema = z.object({
 })
 ```
 
+### 7.3 Zod 常用验证器速查
+
+| 场景 | Zod |
+|------|-----|
+| 非空字符串 | `z.string().min(1, 'xxx不能为空')` |
+| 邮箱 | `z.string().email('邮箱格式不正确')` |
+| 正整数 | `z.coerce.number().int().positive('xxx必须为正整数')` |
+| 可选字段 | `.nullable().optional()` 或 `.optional()` |
+| 默认值 | `.default(false)` / `.default(30)` |
+| 日期 | `z.coerce.date()` |
+| 布尔值 | `z.coerce.boolean()` |
+| 数字数组 | `z.array(z.coerce.number().int().positive())` |
+| 配置字段（对象） | `z.record(z.string(), z.string())` |
+
 ---
 
-## 8. 用户数据隔离（JWT + userId）
+## 8. userId 数据隔离模板
 
-### 8.1 AuthenticatedRequest 类型
-
-```typescript
-// middleware/auth.ts
-export interface AuthenticatedRequest extends Request {
-  user?: { userId: number; username: string; email?: string }
-}
-```
-
-### 8.2 所有查询必须包含 userId 过滤
+隔离规则见 `rules/backend.md` §6。
 
 ```typescript
+import prisma from '@/db/index.js'
+
 // ✅ 正确 — 使用 findFirst / updateMany / deleteMany + userId
 export async function getById(id: number, userId: number) {
   return prisma.domain.findFirstOrThrow({
@@ -406,14 +373,14 @@ export async function getById(id: number) {
 
 ---
 
-## 9. 删除操作与级联处理
+## 9. 删除操作与级联处理模板
 
-### 9.1 删除 Provider（手动级联）
+级联规则见 `rules/backend.md` §7。
 
-删除服务商时，其下所有域名也应一并删除。这在 `services/providerService.ts` 中处理：
+### 9.1 删除 Provider（手动级联，事务保证原子性）
 
 ```typescript
-// 使用事务确保原子性
+// 在 services/providerService.ts 中处理
 await prisma.$transaction(async (tx) => {
   // 1. 删除该 provider 下的所有域名（会自动级联删除 DNSRecord / Reminder / RenewalLog）
   await tx.domain.deleteMany({ where: { providerId, userId } })
@@ -424,7 +391,7 @@ await prisma.$transaction(async (tx) => {
 
 ### 9.2 删除 Domain（DB 层自动级联）
 
-`Domain → DNSRecord / Reminder / RenewalLog` 在 Prisma schema 中设置为 `onDelete: Cascade`，删除域名时自动清理。
+`Domain → DNSRecord / Reminder / RenewalLog` 在 Prisma schema 中设置为 `onDelete: Cascade`，删除域名时自动清理，无需手动处理。
 
 ---
 
@@ -477,49 +444,37 @@ const total = await prisma.domain.count({ where: { userId } })
 
 ---
 
-## 11. 日志规范
+## 11. 数据库模型速查表（唯一来源）
 
-### 11.1 禁止使用 console.log
+| 模型 | 关键字段 | 说明 |
+|------|---------|------|
+| `User` | `id`、`username`、`password`（bcrypt 哈希）、`email?` | 用户账号 |
+| `Provider` | `id`、`type`、`name`、`config`（JSON 字符串）、`supportsAutoRenew`、`features`（JSON）、`userId` | 服务商配置 |
+| `Domain` | `id`、`name`、`providerId?`、`expiryDate?`、`renewalPrice?`、`notes?`、`autoRenew`、`autoRenewDays?`、`status`、`userId` | 域名 |
+| `DNSRecord` | `id`、`domainId`、`type`、`name`、`value`、`ttl`、`priority?` | DNS 记录 |
+| `NotificationChannel` | `id`、`type`、`name`、`config`（JSON 字符串）、`defaultDays`、`isActive`、`userId` | 通知渠道 |
+| `RenewalLog` | `id`、`domainId`、`status`、`message?`、`error?`、`renewedAt?`、`createdAt` | 续期日志 |
+| `Reminder` | `id`、`domainId`、`daysBefore`、`notified`、`notifyDate?`、`createdAt` | 提醒记录 |
+| `NotificationLog` | `id`、`userId`、`domainId?`、`type`、`content`、`channel`、`sentAt` | 通知发送日志 |
+| `SyncLog` | `id`、`providerId`、`userId`、`status`（success/failed/partial）、`domainsSynced`、`dnsInserted`、`dnsDeleted`、`error?`、`details?`（JSON 字符串，含具体变更域名/DNS 记录）、`createdAt` | 服务商域名同步审计日志 |
 
-```typescript
-// ✅ 正确
-import { logger } from '@/utils/index.js'
-
-logger.info({ userId, providerId }, 'Syncing domains')
-logger.warn({ domain }, 'Domain expiring soon')
-logger.error({ error, domainId }, 'Failed to update domain')
-
-// ❌ 错误
-console.log('Syncing domains')
-console.error(error)
-```
-
-### 11.2 日志查看
-
-```bash
-# 启动开发服务器并格式化日志
-cd packages/server
-pnpm dev  # Pino 结构化日志输出
-
-# 或者通过管道格式化（需安装 pino-pretty）
-pnpm dev | pnpm pino-pretty
-```
-
-### 11.3 同步审计日志（SyncLog）
-
-除了 Pino 运行时日志，服务商域名同步操作还会写入 `SyncLog` 表用于持久化审计：
-
-- `providerService.syncProviderDomains` 在每次同步完成后写入一条记录
-- 字段包含 `status`（success/failed/partial）、`domainsSynced` / `dnsInserted` / `dnsDeleted` 计数
-- `details`（JSON 字符串）记录具体新增的域名、插入/删除的 DNS 记录
-- 失败时 `error` 字段记录错误信息
-- 前端通过 `/api/sync-logs` 查询历史同步记录（含筛选与分页）
-
-`models/dnsRecord.ts` 的 `syncDomainDNSRecords` 返回 `insertedRecords` 与 `deletedRecords` 数组（而非仅计数），供 service 层组装 `details`。
+**级联关系**：
+- `Provider → Domain`：手动级联（删除服务商时由 service 层显式删除关联域名），DB 层为 `SetNull`
+- `Domain → DNSRecord / Reminder / RenewalLog`：DB 层 `onDelete: Cascade`
 
 ---
 
-## 12. 添加新服务商的步骤
+## 12. SyncLog 同步审计说明
+
+日志规则见 `rules/project.md` §6。SyncLog 审计规则见 `rules/backend.md` §10。
+
+- `providerService.syncProviderDomains` 在每次同步完成后写入一条 `SyncLog` 记录
+- `models/dnsRecord.ts` 的 `syncDomainDNSRecords` 返回 `insertedRecords` 与 `deletedRecords` 数组（而非仅计数），供 service 层组装 `details`
+- 前端通过 `/api/sync-logs` 查询历史同步记录（含筛选与分页）
+
+---
+
+## 13. 添加新服务商的步骤
 
 1. **创建目录** `providers/<new-provider>/`
 2. **实现 apiClient.ts** — 封装官方 SDK / HTTP API
@@ -532,22 +487,6 @@ pnpm dev | pnpm pino-pretty
 
 ---
 
-## 13. 快速检查清单（提交前）
+## 14. 提交前检查
 
-- ✅ 所有 `import` 语句带 `.js` 扩展名
-- ✅ 使用 `@/` 别名跨模块引用
-- ✅ 所有 POST / PUT / PATCH 路由使用 Zod schema 校验参数
-- ✅ 使用 `sendSuccess` / `sendError` 返回统一响应格式
-- ✅ 使用 `HTTP_STATUS` 常量而非硬编码数字状态码
-- ✅ 没有 `console.log` / `console.error` / `console.warn`
-- ✅ 使用 `logger.info / warn / error` 记录日志
-- ✅ 所有查询/更新/删除包含 `userId` 过滤（用户数据隔离）
-- ✅ `routes/` 层不直接调用 `prisma.*`（走 service → model）
-- ✅ `services/` 层不直接调用 `prisma.*`（走 model）
-- ✅ `providers/` 层不访问数据库，不写业务判断
-- ✅ ProviderFeatures 在执行能力相关操作前做了校验
-- ✅ Provider 的 `config` 字段在 service 层做了 `JSON.parse` 解析和验证
-- ✅ 删除操作正确处理级联（Provider 手动级联，Domain 自动级联）
-- ✅ `pnpm lint` 无错误
-- ✅ `pnpm typecheck` 前后端类型检查通过
-- ✅ 后端 `pnpm build:server` 生产构建通过
+代码审查与自检清单见 `skills/domain-manager-review`。

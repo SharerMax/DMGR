@@ -1,6 +1,7 @@
 # Domain Manager 调试 Skill
 
 > 面向 AI Agent 的问题排查与快速修复指南。遇到问题时按以下步骤排查。
+> **相关规则**：`rules/project.md`、`rules/backend.md`、`rules/frontend.md`。本文件只提供调试操作指南。
 
 ---
 
@@ -308,11 +309,7 @@ pnpm lint
 
 ---
 
-## 10. 调试后清理清单
+## 10. 调试后清理
 
-- ✅ 删除了所有临时的 `console.log` / `console.error`
-- ✅ 删除了所有临时的调试日志
-- ✅ 代码格式化：`pnpm lint:fix`
-- ✅ 类型检查通过：`pnpm typecheck`
-- ✅ 构建通过：`pnpm build`
-- ✅ 未修改 `components/ui/` 目录下的文件
+- ✅ 删除了所有临时的 `console.log` / `console.error` / 调试日志
+- ✅ 完整自检清单见 `skills/domain-manager-review` §7
