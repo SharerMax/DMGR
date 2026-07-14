@@ -22,13 +22,14 @@
 
 ## 2. 分层架构（强制执行，本表为唯一来源）
 
-**严格的单向调用，禁止跨层**：`routes → services → models → prisma`，`services → providers`
+**严格的单向调用，禁止跨层**：`routes → services → models → prisma`，`services → providers`，`services → notifications`
 
 | 层 | 允许做 | 禁止做 |
 |----|--------|--------|
 | `routes/`（控制器） | 定义路由、参数校验（Zod）、应用鉴权中间件、调用 service、用 `sendSuccess/sendError` 返回统一响应、记录请求日志 | 直接调用 `models/` 或 `prisma.*`、直接调用三方 API、写业务判断 |
-| `services/`（业务层） | 业务逻辑实现、权限校验（`userId` 过滤）、多表协调、事务、调用 `models/` 或 `providers/*/` | 直接构造 HTTP 响应、直接操作 prisma（必须走 models） |
+| `services/`（业务层） | 业务逻辑实现、权限校验（`userId` 过滤）、多表协调、事务、调用 `models/` 或 `providers/*/` / `notifications/*/` | 直接构造 HTTP 响应、直接操作 prisma（必须走 models） |
 | `providers/<name>/`（适配器） | 封装官方 SDK / HTTP 请求、解析业务响应、暴露领域方法 | 访问数据库、写业务判断、直接调用 prisma |
+| `notifications/<channel>/`（通知适配器） | 封装通知渠道 SDK / HTTP 请求、解析业务响应、暴露发送方法 | 访问数据库、写业务判断、直接调用 prisma |
 | `models/`（数据层） | 纯 CRUD（`get` / `listByUserId` / `create` / `update` / `delete` 等）、按用户过滤 | 包含业务逻辑、鉴权、调用三方 API |
 
 目录结构详见 `skills/domain-manager-backend` §2。
@@ -130,7 +131,20 @@
 
 ---
 
-## 10. 同步审计日志（SyncLog）
+## 10. Notifications 适配层规范
+
+- `notifications/` 目录必须按通知渠道拆分子目录（`notifications/email/`、`notifications/telegram/`、`notifications/feishu/`、`notifications/webhook/`）
+- 每个渠道目录包含 `sender.ts`（实现 `NotificationSender` 接口）和 `index.ts`（导出 + 注册到工厂）
+- `notifications/base.ts` 定义 `NotificationSender` 接口、`NotificationType` 类型与 `NotificationSenderFactory` 工厂（唯一来源）
+- `notifications/config.ts` 的 `BUILT_IN_NOTIFICATION_CHANNELS` 声明各渠道的字段配置（供前端动态渲染表单）
+- `NotificationSender.send(content, type)` 接收 `type` 参数，渠道据此自定义通知内容（如 email 自定义主题、webhook 携带 type 字段）
+- Email 渠道的 SMTP 配置通过环境变量读取（`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`，详见 `skills/domain-manager-dev` §7）
+- 创建/更新 Email 通知渠道时，service 层**必须**调用 `assertEmailConfigured()` 校验 SMTP 配置，配置缺失时抛出友好错误（前端 `toast.error(error.message)` 提示）
+- Notifications 适配层**禁止**访问数据库、写业务判断
+
+---
+
+## 11. 同步审计日志（SyncLog）
 
 - `providerService.syncProviderDomains` 在每次同步完成后**必须**写入 `SyncLog` 记录
 - 记录字段包含 `status`（success/failed/partial）、计数（`domainsSynced` / `dnsInserted` / `dnsDeleted`）、`details`（JSON 字符串，含具体变更的域名与 DNS 记录）
@@ -140,7 +154,7 @@
 
 ---
 
-## 11. 统一响应格式与日志
+## 12. 统一响应格式与日志
 
 统一响应格式见 `rules/project.md` §5。日志规范见 `rules/project.md` §6。
 

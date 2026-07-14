@@ -137,6 +137,11 @@ app.use('/api/sync-logs', syncLogRoutes)  // 同步审计日志（GET /, GET /:i
 | `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron（默认每天凌晨 2 点） |
 | `LOG_LEVEL` | `info` | Pino 日志级别（`debug` / `info` / `warn` / `error`） |
 | `DATABASE_URL` | `file:./dev.db` | SQLite 文件路径 |
+| `SMTP_HOST` | — | SMTP 服务器地址（Email 通知渠道必填，详见 `rules/backend.md` §10） |
+| `SMTP_PORT` | `465` | SMTP 端口（常见：465 SSL / 587 STARTTLS） |
+| `SMTP_USER` | — | SMTP 用户名（Email 通知渠道必填） |
+| `SMTP_PASS` | — | SMTP 密码 / 授权码（Email 通知渠道必填） |
+| `SMTP_FROM` | — | 发件人地址（如 `DMGR <noreply@example.com>`，Email 通知渠道必填） |
 
 前端环境变量在 `packages/client/` 下的 `.env` 文件：
 

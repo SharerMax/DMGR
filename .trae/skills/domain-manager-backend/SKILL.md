@@ -54,6 +54,23 @@ packages/server/src/
 │   ├── vps8/                # VPS8
 │   ├── gleam/               # Gleam (HL6 API，apiKey 鉴权)
 │   └── index.ts             # DNSProviderFactory + 聚合导出
+├── notifications/           # 通知渠道适配层
+│   ├── base.ts              # NotificationSender 接口 + NotificationType + NotificationSenderFactory
+│   ├── config.ts            # BUILT_IN_NOTIFICATION_CHANNELS 渠道字段配置
+│   ├── email/               # Email (nodemailer + SMTP，读取 SMTP_* 环境变量)
+│   │   ├── smtp.ts          # isEmailConfigured() / getSmtpConfig()
+│   │   ├── sender.ts        # EmailSender 实现
+│   │   └── index.ts         # 注册到工厂
+│   ├── telegram/            # Telegram (Bot API sendMessage)
+│   │   ├── sender.ts
+│   │   └── index.ts
+│   ├── feishu/              # 飞书 (机器人 webhook)
+│   │   ├── sender.ts
+│   │   └── index.ts
+│   ├── webhook/             # 通用 Webhook (POST JSON)
+│   │   ├── sender.ts
+│   │   └── index.ts
+│   └── index.ts             # 注册所有渠道 + 聚合导出
 ├── routes/                  # 控制器层
 │   ├── auth.ts
 │   ├── providers.ts

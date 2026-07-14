@@ -12,9 +12,9 @@ Domain Manager 是一个基于 React + Express + Prisma + SQLite 构建的域名
 
 - **域名管理**：多服务商域名统一管理，支持到期提醒
 - **DNS 记录管理**：增删改查 DNS 记录，自动同步到服务商
-- **服务商对接**：支持阿里云、腾讯云、Cloudflare、DNSPod、Namecheap、VPS8 等
+- **服务商对接**：支持阿里云、腾讯云、Cloudflare、DNSPod、Namecheap、VPS8、Gleam 等
 - **自动续期**：支持域名自动续期，可配置 cron 定时任务
-- **通知提醒**：支持多渠道通知（邮件、短信、Webhook），到期自动提醒
+- **通知提醒**：支持多渠道通知（Email、Telegram、飞书、Webhook），到期自动提醒
 - **续期日志**：完整的续期操作日志，可追溯历史记录
 
 ## 技术栈
@@ -44,6 +44,7 @@ domain/
 │           ├── services/    # 业务服务层
 │           ├── models/      # 数据访问层
 │           ├── providers/   # DNS 服务商适配层
+│           ├── notifications/ # 通知渠道适配层（email/telegram/feishu/webhook）
 │           ├── middleware/  # 中间件
 │           ├── prisma/      # Prisma schema & 迁移
 │           ├── db/          # 数据库初始化
@@ -98,6 +99,12 @@ pnpm build
 | `LOG_LEVEL` | `info` | 日志级别 |
 | `LOG_DIR` | `./logs` | 日志文件目录（生产环境） |
 | `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron 表达式 |
+| `DATABASE_URL` | `file:./dev.db` | SQLite 数据库文件路径 |
+| `SMTP_HOST` | - | SMTP 服务器地址（Email 通知渠道必填） |
+| `SMTP_PORT` | `465` | SMTP 端口（465 SSL / 587 STARTTLS） |
+| `SMTP_USER` | - | SMTP 用户名（Email 通知渠道必填） |
+| `SMTP_PASS` | - | SMTP 密码 / 授权码（Email 通知渠道必填） |
+| `SMTP_FROM` | - | 发件人地址（Email 通知渠道必填） |
 
 ## 测试账号
 
@@ -133,6 +140,7 @@ pnpm build
 | PUT | `/api/renewal-logs/config` | 更新自动续期配置 |
 | POST | `/api/renewal-logs/trigger` | 手动触发续期 |
 | GET | `/api/notification-channels` | 通知渠道列表 |
+| GET | `/api/sync-logs` | 服务商域名同步审计日志 |
 
 ## 开发约定
 

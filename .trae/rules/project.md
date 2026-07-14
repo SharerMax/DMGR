@@ -12,7 +12,7 @@
 | 多服务商域名管理 | 阿里云 / 腾讯云 / Cloudflare / DNSPod / Namecheap / VPS8 / Gleam |
 | DNS 记录管理 | 每个域名下增删改查各类 DNS 记录 |
 | 自动续期调度 | 由 `autoRenewService.ts` 按 cron 表达式定时执行续期任务 |
-| 通知渠道 | 配置通知渠道（Telegram / Feishu），用于域名过期、续期结果等消息推送 |
+| 通知渠道 | 配置通知渠道（Email / Telegram / Feishu / Webhook），用于域名过期、续期结果等消息推送 |
 | 服务商能力声明 | 通过 `ProviderFeatures` 对象声明各服务商支持的能力 |
 | 同步审计 | 通过 `SyncLog` 记录服务商域名同步操作的成功/失败/部分成功状态及变更明细 |
 

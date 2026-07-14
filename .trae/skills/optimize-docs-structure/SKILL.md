@@ -158,7 +158,7 @@ grep -n "见 \`rules\.\|见 \`skills/" .trae/
 
 # 4. 一致性：关键术语全文统一
 #    - 检查 react-router-dom 均为「禁用」语境
-#    - 检查通知渠道一致（如 Telegram/Feishu，无已移除的 SMS）
+#    - 检查通知渠道一致（Email / Telegram / Feishu / Webhook，无已移除的 SMS）
 #    - 检查 provider 列表一致（含所有服务商如 gleam）
 
 # 5. 行数对比：总行数应显著减少（目标减少 30%+）
@@ -241,7 +241,7 @@ skills 文件结尾的检查清单统一改为：
 | 检查项 | 验证方法 |
 |--------|---------|
 | 路由库 | `react-router-dom` 均为「禁用」语境，React Router 8.x 从 `react-router` 导入 |
-| 通知渠道 | 全文为 Telegram/Feishu，无已移除的 SMS/短信（rules/ 和 skills/ 范围内） |
+| 通知渠道 | 全文为 Email / Telegram / Feishu / Webhook，无已移除的 SMS/短信（rules/ 和 skills/ 范围内） |
 | Provider 列表 | 7 个服务商（aliyun/tencent/cloudflare/dnspod/namecheap/vps8/gleam）在矩阵、目录结构、Select 模板、调试章节中一致出现 |
 | 技术栈版本 | Node >= 22.21、pnpm >= 11.9、TypeScript 6.x、Express 5.2、Zod 4.4、Pino 10.3 |
 | `@types/node` | 固定 `^22.20.0`，不升级到 v26+ |

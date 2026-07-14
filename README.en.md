@@ -12,9 +12,9 @@ Domain Manager is a domain management system built with React + Express + Prisma
 
 - **Domain Management**: Unified management of domains across multiple providers with expiration reminders
 - **DNS Record Management**: CRUD operations on DNS records with automatic sync to providers
-- **Provider Integration**: Supports Alibaba Cloud, Tencent Cloud, Cloudflare, DNSPod, Namecheap, VPS8, and more
+- **Provider Integration**: Supports Alibaba Cloud, Tencent Cloud, Cloudflare, DNSPod, Namecheap, VPS8, Gleam, and more
 - **Auto Renewal**: Automated domain renewal with configurable cron schedule
-- **Notifications**: Multi-channel notifications (email, SMS, Webhook) with automatic expiration alerts
+- **Notifications**: Multi-channel notifications (Email, Telegram, Feishu, Webhook) with automatic expiration alerts
 - **Renewal Logs**: Complete renewal operation history with full traceability
 
 ## Tech Stack
@@ -44,6 +44,7 @@ domain/
 │           ├── services/    # Business service layer
 │           ├── models/      # Data access layer
 │           ├── providers/   # DNS provider adapters
+│           ├── notifications/ # Notification channel adapters (email/telegram/feishu/webhook)
 │           ├── middleware/  # Middleware
 │           ├── prisma/      # Prisma schema & migrations
 │           ├── db/          # Database initialization
@@ -98,6 +99,12 @@ pnpm build
 | `LOG_LEVEL` | `info` | Log level |
 | `LOG_DIR` | `./logs` | Log file directory (production) |
 | `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | Auto-renewal cron expression |
+| `DATABASE_URL` | `file:./dev.db` | SQLite database file path |
+| `SMTP_HOST` | - | SMTP server host (required for Email channel) |
+| `SMTP_PORT` | `465` | SMTP port (465 SSL / 587 STARTTLS) |
+| `SMTP_USER` | - | SMTP username (required for Email channel) |
+| `SMTP_PASS` | - | SMTP password / auth code (required for Email channel) |
+| `SMTP_FROM` | - | Sender address (required for Email channel) |
 
 ## Test Account
 
@@ -133,6 +140,7 @@ Main endpoints:
 | PUT | `/api/renewal-logs/config` | Update auto-renewal config |
 | POST | `/api/renewal-logs/trigger` | Manually trigger renewal |
 | GET | `/api/notification-channels` | Notification channel list |
+| GET | `/api/sync-logs` | Provider domain sync audit logs |
 
 ## Development Conventions
 
