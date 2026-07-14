@@ -59,7 +59,8 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
     logger.error({ error }, 'Create channel error')
-    return sendError(res, '创建通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+    const message = error instanceof Error ? error.message : '创建通知渠道失败'
+    return sendError(res, message, 1, HTTP_STATUS.BAD_REQUEST)
   }
 })
 
@@ -78,7 +79,8 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
       return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
     }
     logger.error({ error }, 'Update channel error')
-    return sendError(res, '更新通知渠道失败', 1, HTTP_STATUS.INTERNAL_ERROR)
+    const message = error instanceof Error ? error.message : '更新通知渠道失败'
+    return sendError(res, message, 1, HTTP_STATUS.BAD_REQUEST)
   }
 })
 

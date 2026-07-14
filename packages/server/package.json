@@ -21,6 +21,7 @@
     "fast-xml-parser": "catalog:",
     "jsonwebtoken": "catalog:",
     "node-cron": "catalog:",
+    "nodemailer": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
     "rotating-file-stream": "catalog:",
@@ -33,6 +34,7 @@
     "@types/cors": "catalog:",
     "@types/express": "catalog:",
     "@types/jsonwebtoken": "catalog:",
+    "@types/nodemailer": "catalog:",
     "prisma": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"

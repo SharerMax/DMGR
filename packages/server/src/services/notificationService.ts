@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '../db/index.js'
+import { NotificationSenderFactory } from '../notifications/index.js'
 import { logger } from '../utils/index.js'
 
 export type NotificationType
@@ -90,117 +91,19 @@ function buildNotificationContent(type: NotificationType, data: NotificationData
 
 /**
  * 通过指定渠道发送通知
+ * 具体发送逻辑由 notifications/<渠道>/sender 实现，统一通过工厂创建实例
  */
 async function sendViaChannel(
   channel: { id: number, type: string, name: string, config: string },
   content: string,
 ): Promise<void> {
   const config = JSON.parse(channel.config)
-
-  switch (channel.type) {
-    case 'email':
-      await sendEmail(config, content)
-      break
-    case 'webhook':
-      await sendWebhook(config, content)
-      break
-    case 'telegram':
-      await sendTelegram(config, content)
-      break
-    case 'feishu':
-      await sendFeishu(config, content)
-      break
-    default:
-      logger.warn({ channelType: channel.type }, 'Unknown notification channel type')
+  const sender = NotificationSenderFactory.createSender(channel.type, config)
+  if (!sender) {
+    logger.warn({ channelType: channel.type }, 'Unknown notification channel type')
+    return
   }
-}
-
-/**
- * 发送邮件通知
- */
-async function sendEmail(config: Record<string, any>, _content: string): Promise<void> {
-  // 实际实现需要接入邮件服务
-  // 例如：使用 nodemailer、SendGrid、阿里云邮件推送等
-  logger.info({ email: config.email || config.to }, 'Email notification sent')
-}
-
-/**
- * 发送 Webhook 通知
- */
-async function sendWebhook(config: Record<string, any>, content: string): Promise<void> {
-  // 实际实现需要发送 HTTP 请求
-  const url = config.url
-  if (!url) {
-    throw new Error('Webhook URL 未配置')
-  }
-
-  const _payload = {
-    content,
-    timestamp: new Date().toISOString(),
-  }
-
-  // 示例：使用 fetch 发送 POST 请求
-  // await fetch(url, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(_payload),
-  // })
-
-  logger.info({ url }, 'Webhook notification sent')
-}
-
-/**
- * 发送 Telegram 通知
- * @param config - 包含 botToken 和 chatId
- * @param content - 通知内容
- */
-async function sendTelegram(config: Record<string, any>, content: string): Promise<void> {
-  const { botToken, chatId } = config
-  if (!botToken || !chatId) {
-    throw new Error('Telegram botToken 或 chatId 未配置')
-  }
-
-  const url = `https://api.telegram.org/bot${botToken}/sendMessage`
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: content, parse_mode: 'HTML' }),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Telegram 通知发送失败: ${response.status} ${errorText}`)
-  }
-
-  logger.info({ chatId }, 'Telegram notification sent')
-}
-
-/**
- * 发送飞书通知
- * @param config - 包含 webhookUrl（飞书机器人 webhook 地址）
- * @param content - 通知内容
- */
-async function sendFeishu(config: Record<string, any>, content: string): Promise<void> {
-  const { webhookUrl } = config
-  if (!webhookUrl) {
-    throw new Error('飞书 webhookUrl 未配置')
-  }
-
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      msg_type: 'text',
-      content: { text: content },
-    }),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`飞书通知发送失败: ${response.status} ${errorText}`)
-  }
-
-  logger.info({ webhookUrl }, 'Feishu notification sent')
+  await sender.send(content)
 }
 
 /**
