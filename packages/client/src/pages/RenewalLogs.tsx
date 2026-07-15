@@ -1,9 +1,9 @@
 import type { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 import { useEffect } from 'react'
+import { DataTablePagination } from '@/components/DataTablePagination'
 import { DateRangePicker } from '@/components/DatePicker'
 import { DomainFilter } from '@/components/DomainFilter'
-import { Pagination } from '@/components/Pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -76,6 +76,10 @@ export default function RenewalLogs() {
 
   const handlePageChange = (newPage: number) => {
     setFilters({ page: newPage })
+  }
+
+  const handleItemsPerPageChange = (size: number) => {
+    setFilters({ pageSize: size, page: 1 })
   }
 
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
@@ -227,11 +231,12 @@ export default function RenewalLogs() {
                     </Table>
 
                     {/* 分页 */}
-                    <Pagination
+                    <DataTablePagination
                       itemsPerPage={pagination.pageSize}
                       totalItems={pagination.total}
                       currentPage={pagination.page}
                       onPageChange={handlePageChange}
+                      onItemsPerPageChange={handleItemsPerPageChange}
                     />
                   </>
                 )}

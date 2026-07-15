@@ -3,8 +3,8 @@ import type { SyncDetails, SyncLog } from '@/stores/syncLogs'
 import { format } from 'date-fns'
 import { CircleEllipsis } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { DataTablePagination } from '@/components/DataTablePagination'
 import { DateRangePicker } from '@/components/DatePicker'
-import { Pagination } from '@/components/Pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -86,6 +86,10 @@ export default function SyncLogs() {
 
   const handlePageChange = (newPage: number) => {
     setFilters({ page: newPage })
+  }
+
+  const handleItemsPerPageChange = (size: number) => {
+    setFilters({ pageSize: size, page: 1 })
   }
 
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
@@ -206,11 +210,12 @@ export default function SyncLogs() {
                     </Table>
 
                     {/* 分页 */}
-                    <Pagination
+                    <DataTablePagination
                       itemsPerPage={pagination.pageSize}
                       totalItems={pagination.total}
                       currentPage={pagination.page}
                       onPageChange={handlePageChange}
+                      onItemsPerPageChange={handleItemsPerPageChange}
                     />
                   </>
                 )}

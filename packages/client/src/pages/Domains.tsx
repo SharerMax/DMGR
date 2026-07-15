@@ -6,8 +6,8 @@ import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { DataTablePagination } from '@/components/DataTablePagination'
 import { DomainFilter } from '@/components/DomainFilter'
-import { Pagination } from '@/components/Pagination'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -81,7 +81,12 @@ export default function Domains() {
   }
 
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  const handleItemsPerPageChange = (size: number) => {
+    setItemsPerPage(size)
+    setCurrentPage(1)
+  }
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dnsDialogOpen, setDnsDialogOpen] = useState(false)
@@ -522,11 +527,12 @@ export default function Domains() {
                       </TableBody>
                     </Table>
                     <div className="border-t">
-                      <Pagination
+                      <DataTablePagination
                         itemsPerPage={itemsPerPage}
                         totalItems={domains.length}
                         currentPage={currentPage}
                         onPageChange={setCurrentPage}
+                        onItemsPerPageChange={handleItemsPerPageChange}
                       />
                     </div>
                   </>
