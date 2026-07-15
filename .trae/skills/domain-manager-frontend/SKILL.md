@@ -83,6 +83,7 @@ packages/client/src/
 │   ├── providers.ts             # 服务商状态
 │   ├── dnsRecords.ts            # DNS 记录状态
 │   ├── notificationChannels.ts  # 通知渠道状态
+│   ├── notificationLogs.ts     # 通知记录状态
 │   ├── renewalLogs.ts           # 续期日志状态
 │   ├── syncLogs.ts              # 同步日志状态
 │   └── theme.ts                 # 主题状态（light / dark / system）

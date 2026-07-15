@@ -94,6 +94,7 @@
 | 服务商 | `providers.ts` | 服务商列表、CRUD、同步操作 |
 | DNS 记录 | `dnsRecords.ts` | DNS 记录管理 |
 | 通知渠道 | `notificationChannels.ts` | 渠道配置与 CRUD |
+| 通知记录 | `notificationLogs.ts` | 通知发送记录查询 |
 | 续期日志 | `renewalLogs.ts` | 续期记录与统计 |
 | 同步日志 | `syncLogs.ts` | 服务商域名同步记录与详情 |
 | 主题 | `theme.ts` | `light` / `dark` / `system` |
@@ -149,6 +150,7 @@
 | `/providers` | `Providers.tsx` | 服务商管理（受保护） |
 | `/sync-logs` | `SyncLogs.tsx` | 同步记录（受保护） |
 | `/notification-channels` | `NotificationChannels.tsx` | 通知渠道（受保护） |
+| `/notification-logs` | `NotificationLogs.tsx` | 通知记录（受保护） |
 | `/renewal-logs` | `RenewalLogs.tsx` | 续期日志（受保护） |
 | `/profile` | `Profile.tsx` | 个人资料与密码修改（受保护） |
 | `/auto-renew-config` | `AutoRenewConfig.tsx` | 自动续期配置（受保护） |
@@ -161,7 +163,7 @@
 |---------|------|
 | 域名管理 | — |
 | 服务商管理（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
-| 通知渠道 | — |
+| 通知渠道（dropdown） | 渠道配置 (`/notification-channels`)、通知记录 (`/notification-logs`) |
 | 续期（dropdown） | 续期日志 (`/renewal-logs`)、续期配置 (`/auto-renew-config`) |
 
 ---

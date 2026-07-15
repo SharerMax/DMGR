@@ -24,6 +24,7 @@ import AutoRenewConfig from '@/pages/AutoRenewConfig'
 import Domains from '@/pages/Domains'
 import Login from '@/pages/Login'
 import NotificationChannels from '@/pages/NotificationChannels'
+import NotificationLogs from '@/pages/NotificationLogs'
 import Profile from '@/pages/Profile'
 import Providers from '@/pages/Providers'
 import RenewalLogs from '@/pages/RenewalLogs'
@@ -103,13 +104,26 @@ function Layout({ children }: { children: React.ReactNode }) {
                     </NavigationMenuItem>
 
                     <NavigationMenuItem>
-                      <NavigationMenuLink
-                        className={navigationMenuTriggerStyle()}
-                        onClick={() => navigate('/notification-channels')}
-                      >
+                      <NavigationMenuTrigger>
                         <Bell className="h-4 w-4 mr-2" />
                         通知渠道
-                      </NavigationMenuLink>
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[200px] gap-1">
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/notification-channels')}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              渠道配置
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/notification-logs')}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              通知记录
+                            </NavigationMenuLink>
+                          </li>
+                        </ul>
+                      </NavigationMenuContent>
                     </NavigationMenuItem>
 
                     <NavigationMenuItem>
@@ -228,6 +242,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <NotificationChannels />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/notification-logs"
+        element={(
+          <ProtectedRoute>
+            <NotificationLogs />
           </ProtectedRoute>
         )}
       />

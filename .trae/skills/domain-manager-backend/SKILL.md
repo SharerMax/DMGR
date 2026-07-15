@@ -32,6 +32,7 @@ packages/server/src/
 │   ├── domain.ts
 │   ├── dnsRecord.ts
 │   ├── notificationChannel.ts
+│   ├── notificationLog.ts
 │   ├── renewalLog.ts
 │   └── syncLog.ts
 ├── prisma/                  # Prisma schema + seed + migrations
@@ -78,6 +79,7 @@ packages/server/src/
 │   ├── domains.ts
 │   ├── dnsRecords.ts
 │   ├── notificationChannels.ts
+│   ├── notificationLogs.ts
 │   ├── renewalLogs.ts
 │   └── syncLogs.ts
 ├── services/                # 业务服务层
@@ -86,6 +88,7 @@ packages/server/src/
 │   ├── domainService.ts     # 域名业务逻辑
 │   ├── dnsRecordService.ts  # DNS 记录业务逻辑
 │   ├── notificationChannelService.ts
+│   ├── notificationLogService.ts
 │   ├── renewalLogService.ts
 │   ├── syncLogService.ts    # 同步日志业务层
 │   ├── userService.ts
