@@ -219,7 +219,7 @@ export default function SyncLogs() {
 
       {/* 详情对话框 */}
       <Dialog open={!!detailLog} onOpenChange={open => !open && setDetailLog(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>同步详情</DialogTitle>
             <DialogDescription>
@@ -230,7 +230,7 @@ export default function SyncLogs() {
           </DialogHeader>
 
           {detailLog && (
-            <div className="space-y-4">
+            <div className="space-y-4 -mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4">
               {/* 状态概览 */}
               <div className="flex items-center gap-4">
                 <Badge
