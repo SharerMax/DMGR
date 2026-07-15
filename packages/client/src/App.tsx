@@ -17,7 +17,6 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { ConfirmDialogProvider, useConfirm } from '@/hooks/useConfirm'
 import AutoRenewConfig from '@/pages/AutoRenewConfig'
@@ -71,13 +70,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <NavigationMenu viewport={false} className="justify-start">
                   <NavigationMenuList>
                     <NavigationMenuItem>
-                      <NavigationMenuLink
-                        className={navigationMenuTriggerStyle()}
+                      <NavigationMenuTrigger
                         onClick={() => navigate('/')}
+                        className="[&>svg]:hidden"
                       >
                         <Globe className="h-4 w-4 mr-2" />
                         域名管理
-                      </NavigationMenuLink>
+                      </NavigationMenuTrigger>
                     </NavigationMenuItem>
 
                     <NavigationMenuItem>
