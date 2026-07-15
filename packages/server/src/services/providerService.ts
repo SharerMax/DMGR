@@ -188,6 +188,11 @@ function buildSyncerConfig(type: string, parsed: Record<string, any>): Record<st
         apiToken: parsed.apiToken,
         email: parsed.email,
       }
+    case 'dnshe':
+      return {
+        apiKey: parsed.apiKey,
+        apiSecret: parsed.apiSecret,
+      }
     case 'dnspod':
       return {
         loginToken: parsed.loginToken,

@@ -205,6 +205,7 @@ const { control, formState: { errors } } = useForm({
         <SelectItem value="aliyun">阿里云</SelectItem>
         <SelectItem value="tencent">腾讯云</SelectItem>
         <SelectItem value="cloudflare">Cloudflare</SelectItem>
+        <SelectItem value="dnshe">DNSHE</SelectItem>
         <SelectItem value="dnspod">DNSPod</SelectItem>
         <SelectItem value="namecheap">Namecheap</SelectItem>
         <SelectItem value="vps8">VPS8</SelectItem>

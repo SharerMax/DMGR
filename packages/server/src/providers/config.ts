@@ -83,6 +83,31 @@ export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
     features: { domainSync: true, dnsManagement: true, autoRenew: false },
   },
   {
+    id: 'dnshe',
+    name: 'DNSHE',
+    description: 'DNSHE 免费域名服务',
+    fields: [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'password',
+        required: true,
+        placeholder: 'cfsd_xxxxxxxxxx',
+        description: 'DNSHE API Key（以 cfsd_ 开头）',
+      },
+      {
+        key: 'apiSecret',
+        label: 'API Secret',
+        type: 'password',
+        required: true,
+        placeholder: '输入 API Secret',
+        description: 'DNSHE API Secret（创建密钥时仅显示一次，请妥善保存）',
+      },
+    ],
+    features: { domainSync: true, dnsManagement: true, autoRenew: true },
+    maxRenewalDays: 30,
+  },
+  {
     id: 'dnspod',
     name: 'DNSPod',
     description: 'DNSPod 域名服务',

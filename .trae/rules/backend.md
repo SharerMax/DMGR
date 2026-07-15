@@ -104,6 +104,7 @@
 | `aliyun` | ✅ | ✅ | ✅ |
 | `tencent` | ✅ | ✅ | ✅ |
 | `cloudflare` | ✅ | ✅ | ❌ |
+| `dnshe` | ✅ | ✅ | ✅ |
 | `dnspod` | ✅ | ✅ | ❌ |
 | `namecheap` | ✅ | ✅ | ✅ |
 | `vps8` | ✅ | ✅ | ❌ |

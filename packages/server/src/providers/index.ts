@@ -14,7 +14,10 @@ export * from './cloudflare'
 
 export * from './config'
 
-// DNSPod
+// DNSHE
+export * from './dnshe'
+
+// DNSpod
 export * from './dnspod'
 
 // Gleam

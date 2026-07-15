@@ -49,6 +49,7 @@ packages/server/src/
 │   │   └── index.ts         # 注册到工厂
 │   ├── tencent/             # 腾讯云
 │   ├── cloudflare/          # Cloudflare
+│   ├── dnshe/               # DNSHE 免费域名服务（X-API-Key + X-API-Secret 鉴权，支持续期）
 │   ├── dnspod/              # DNSPod
 │   ├── namecheap/           # Namecheap
 │   ├── vps8/                # VPS8
