@@ -94,7 +94,7 @@ export default function Profile() {
             <div className="space-y-2">
               <Label>用户名</Label>
               <Input value={user?.username || ''} disabled />
-              <p className="text-xs text-gray-500">用户名不可修改</p>
+              <p className="text-xs text-muted-foreground">用户名不可修改</p>
             </div>
             <div className="space-y-2">
               <Label>注册时间</Label>
@@ -131,7 +131,7 @@ export default function Profile() {
                   aria-invalid={!!emailErrors.email}
                 />
                 {emailErrors.email && (
-                  <p className="text-xs text-red-500">{emailErrors.email.message}</p>
+                  <p className="text-xs text-status-error">{emailErrors.email.message}</p>
                 )}
               </div>
               <Button type="submit" disabled={loading}>
@@ -156,7 +156,7 @@ export default function Profile() {
                 <div className="space-y-2">
                   <Label htmlFor="currentPassword">
                     当前密码
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Input
                     id="currentPassword"
@@ -166,13 +166,13 @@ export default function Profile() {
                     aria-invalid={!!passwordErrors.currentPassword}
                   />
                   {passwordErrors.currentPassword && (
-                    <p className="text-xs text-red-500">{passwordErrors.currentPassword.message}</p>
+                    <p className="text-xs text-status-danger">{passwordErrors.currentPassword.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">
                     新密码
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Input
                     id="newPassword"
@@ -185,7 +185,7 @@ export default function Profile() {
                     aria-invalid={!!passwordErrors.newPassword}
                   />
                   {passwordErrors.newPassword && (
-                    <p className="text-xs text-red-500">{passwordErrors.newPassword.message}</p>
+                    <p className="text-xs text-status-danger">{passwordErrors.newPassword.message}</p>
                   )}
                 </div>
               </div>

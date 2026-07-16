@@ -179,8 +179,8 @@ export default function Domains() {
         <div className="space-y-2">
           <Label htmlFor="auto_renew_days">
             自动续期阈值（天）
-            <span className="text-red-500 ml-1">*</span>
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="text-status-danger ml-1">*</span>
+            <span className="text-xs text-muted-foreground ml-2">
               最大:
               {' '}
               {providerType.maxRenewalDays}
@@ -208,11 +208,11 @@ export default function Domains() {
             placeholder={`过期前多少天自动续期（最大 ${providerType.maxRenewalDays} 天）`}
             aria-invalid={!!domainErrors.autoRenewDays}
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             域名过期前指定天数时触发自动续期
           </p>
           {domainErrors.autoRenewDays && (
-            <p className="text-xs text-red-500">{domainErrors.autoRenewDays.message}</p>
+            <p className="text-xs text-status-danger">{domainErrors.autoRenewDays.message}</p>
           )}
         </div>
       )
@@ -371,18 +371,18 @@ export default function Domains() {
 
   const getExpiryStatus = (expiryDate: string | null) => {
     if (!expiryDate)
-      return { text: '未知', color: 'text-gray-600', bg: 'bg-gray-100' }
+      return { text: '未知', color: 'text-status-disabled', bg: 'bg-status-disabled-bg' }
 
     const days = differenceInDays(parseISO(expiryDate), new Date())
     if (days < 0)
-      return { text: '已过期', color: 'text-red-600', bg: 'bg-red-100' }
+      return { text: '已过期', color: 'text-status-error', bg: 'bg-status-error-bg' }
     if (days <= 7)
-      return { text: `${days}天后过期`, color: 'text-red-600', bg: 'bg-red-100' }
+      return { text: `${days}天后过期`, color: 'text-status-error', bg: 'bg-status-error-bg' }
     if (days <= 30)
-      return { text: `${days}天后过期`, color: 'text-orange-600', bg: 'bg-orange-100' }
+      return { text: `${days}天后过期`, color: 'text-status-warning', bg: 'bg-status-warning-bg' }
     if (days <= 90)
-      return { text: `${days}天后过期`, color: 'text-yellow-600', bg: 'bg-yellow-100' }
-    return { text: `${days}天后过期`, color: 'text-green-600', bg: 'bg-green-100' }
+      return { text: `${days}天后过期`, color: 'text-status-warning', bg: 'bg-status-warning-bg' }
+    return { text: `${days}天后过期`, color: 'text-status-success', bg: 'bg-status-success-bg' }
   }
 
   const currentDomainDNSRecords = records.filter(r => r.domainId === selectedDomainId)
@@ -410,7 +410,7 @@ export default function Domains() {
           />
           {(filters.search || filters.providerId !== 'all') && (
             <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 共找到
                 {' '}
                 {domains.length}
@@ -437,7 +437,7 @@ export default function Domains() {
               )
             : domains.length === 0
               ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-muted-foreground">
                     {domains.length === 0 ? '暂无域名，点击上方按钮添加' : '没有找到匹配的域名'}
                   </div>
                 )
@@ -452,7 +452,7 @@ export default function Domains() {
                           <TableHead>状态</TableHead>
                           <TableHead>续期价格</TableHead>
                           <TableHead>提醒</TableHead>
-                          <TableHead className="w-[140px]">操作</TableHead>
+                          <TableHead className="w-35">操作</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -470,7 +470,7 @@ export default function Domains() {
                                   {status.text}
                                 </span>
                                 {domain.autoRenew && (
-                                  <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600">
+                                  <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-status-info-bg text-status-info">
                                     自动续期
                                   </span>
                                 )}
@@ -513,7 +513,7 @@ export default function Domains() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-red-500"
+                                    className="text-status-danger"
                                     onClick={() => handleDelete(domain.id)}
                                     title="删除"
                                   >
@@ -549,7 +549,7 @@ export default function Domains() {
             <div className="space-y-2">
               <Label htmlFor="name">
                 域名
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="name"
@@ -558,7 +558,7 @@ export default function Domains() {
                 aria-invalid={!!domainErrors.name}
               />
               {domainErrors.name && (
-                <p className="text-xs text-red-500">{domainErrors.name.message}</p>
+                <p className="text-xs text-status-danger">{domainErrors.name.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -642,7 +642,7 @@ export default function Domains() {
       </Dialog>
 
       <Dialog open={dnsDialogOpen} onOpenChange={setDnsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>DNS记录管理</DialogTitle>
           </DialogHeader>
@@ -650,18 +650,18 @@ export default function Domains() {
           <div className="mb-6 max-h-48 overflow-y-auto">
             {currentDomainDNSRecords.length === 0
               ? (
-                  <p className="text-sm text-gray-500 text-center py-4">暂无DNS记录</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">暂无DNS记录</p>
                 )
               : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px]">类型</TableHead>
+                        <TableHead className="w-20">类型</TableHead>
                         <TableHead>主机名</TableHead>
                         <TableHead>记录值</TableHead>
-                        <TableHead className="w-[80px]">TTL</TableHead>
-                        <TableHead className="w-[80px]">优先级</TableHead>
-                        <TableHead className="w-[60px]">操作</TableHead>
+                        <TableHead className="w-20">TTL</TableHead>
+                        <TableHead className="w-20">优先级</TableHead>
+                        <TableHead className="w-15">操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -673,7 +673,7 @@ export default function Domains() {
                             </span>
                           </TableCell>
                           <TableCell className="font-mono text-sm">{record.name}</TableCell>
-                          <TableCell className="font-mono text-sm text-gray-600">{record.value}</TableCell>
+                          <TableCell className="font-mono text-sm text-secondary-foreground">{record.value}</TableCell>
                           <TableCell className="text-sm">
                             {record.ttl}
                             s
@@ -692,7 +692,7 @@ export default function Domains() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-red-500"
+                                className="h-7 w-7 text-status-danger"
                                 onClick={() => handleDNSRecordDelete(record.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -734,7 +734,7 @@ export default function Domains() {
                 <div className="space-y-2">
                   <Label htmlFor="dns_type">
                     记录类型
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Controller
                     control={dnsControl}
@@ -754,13 +754,13 @@ export default function Domains() {
                     )}
                   />
                   {dnsErrors.type && (
-                    <p className="text-xs text-red-500">{dnsErrors.type.message}</p>
+                    <p className="text-xs text-status-error">{dnsErrors.type.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dns_name">
                     主机名
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Input
                     id="dns_name"
@@ -769,7 +769,7 @@ export default function Domains() {
                     aria-invalid={!!dnsErrors.name}
                   />
                   {dnsErrors.name && (
-                    <p className="text-xs text-red-500">{dnsErrors.name.message}</p>
+                    <p className="text-xs text-status-danger">{dnsErrors.name.message}</p>
                   )}
                 </div>
               </div>
@@ -778,7 +778,7 @@ export default function Domains() {
                 <div className="space-y-2">
                   <Label htmlFor="dns_value">
                     记录值
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Input
                     id="dns_value"
@@ -787,13 +787,13 @@ export default function Domains() {
                     aria-invalid={!!dnsErrors.value}
                   />
                   {dnsErrors.value && (
-                    <p className="text-xs text-red-500">{dnsErrors.value.message}</p>
+                    <p className="text-xs text-status-error">{dnsErrors.value.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dns_ttl">
                     TTL（秒）
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-status-danger ml-1">*</span>
                   </Label>
                   <Input
                     id="dns_ttl"
@@ -806,7 +806,7 @@ export default function Domains() {
                     aria-invalid={!!dnsErrors.ttl}
                   />
                   {dnsErrors.ttl && (
-                    <p className="text-xs text-red-500">{dnsErrors.ttl.message}</p>
+                    <p className="text-xs text-status-error">{dnsErrors.ttl.message}</p>
                   )}
                 </div>
               </div>

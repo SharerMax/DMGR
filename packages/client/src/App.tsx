@@ -56,9 +56,9 @@ function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-card shadow sticky top-0 z-50">
+      <header className="bg-card shadow sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
@@ -75,7 +75,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                         域名
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[200px] gap-1">
+                        <ul className="grid w-50 gap-1">
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/')}>
                               <Globe className="mr-2 h-4 w-4" />
@@ -92,7 +92,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                         服务商
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[200px] gap-1">
+                        <ul className="grid w-50 gap-1">
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/providers')}>
                               <Server className="mr-2 h-4 w-4" />
@@ -115,7 +115,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                         通知渠道
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[200px] gap-1">
+                        <ul className="grid w-50 gap-1">
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/notification-channels')}>
                               <Settings className="mr-2 h-4 w-4" />
@@ -138,7 +138,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                         续期
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[200px] gap-1">
+                        <ul className="grid w-50 gap-1">
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/renewal-logs')}>
                               <FileText className="mr-2 h-4 w-4" />

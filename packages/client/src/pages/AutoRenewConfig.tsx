@@ -172,7 +172,7 @@ export default function AutoRenewConfig() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-muted-foreground">加载中...</div>
       </div>
     )
   }
@@ -253,10 +253,10 @@ export default function AutoRenewConfig() {
                     value={config.cronExpression}
                     onChange={e => setConfig({ ...config, cronExpression: e.target.value })}
                     placeholder="0 0 2 * * *"
-                    className={cronError ? 'border-red-500' : ''}
+                    className={cronError ? 'border-status-error' : ''}
                   />
                   {cronError && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <p className="text-status-error text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="h-4 w-4" />
                       {cronError}
                     </p>
@@ -275,7 +275,7 @@ export default function AutoRenewConfig() {
                         className="gap-2"
                       >
                         <code className="text-xs">{example.expression}</code>
-                        <span className="text-xs text-gray-500">{example.desc}</span>
+                        <span className="text-xs text-secondary-foreground">{example.desc}</span>
                       </Button>
                     ))}
                   </div>
@@ -288,7 +288,7 @@ export default function AutoRenewConfig() {
                         <div className="space-y-2">
                           {nextRunTimes.map((time, index) => (
                             <div key={index} className="flex items-center gap-2 text-sm">
-                              <span className="text-gray-500">
+                              <span>
                                 第
                                 {index + 1}
                                 次:
@@ -301,7 +301,7 @@ export default function AutoRenewConfig() {
                         </div>
                       )
                     : (
-                        <p className="text-sm text-gray-500">请输入有效的 cron 表达式</p>
+                        <p className="text-sm">请输入有效的 cron 表达式</p>
                       )}
                 </div>
               </div>
@@ -315,9 +315,9 @@ export default function AutoRenewConfig() {
           <CardTitle className="text-lg">Cron 表达式说明</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-gray-600 space-y-2">
+          <div className="text-sm space-y-2">
             <p>Cron 表达式格式（5位）：</p>
-            <code className="block p-2 bg-gray-100 rounded text-xs">分 时 日 月 周</code>
+            <code className="block p-2 bg-muted text-muted-foreground rounded text-xs">分 时 日 月 周</code>
             <ul className="list-disc list-inside space-y-1">
               <li>
                 <strong>*</strong>
