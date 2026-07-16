@@ -70,19 +70,26 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <NavigationMenu viewport={false} className="justify-start">
                   <NavigationMenuList>
                     <NavigationMenuItem>
-                      <NavigationMenuTrigger
-                        onClick={() => navigate('/')}
-                        className="[&>svg]:hidden"
-                      >
+                      <NavigationMenuTrigger>
                         <Globe className="h-4 w-4 mr-2" />
-                        域名管理
+                        域名
                       </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[200px] gap-1">
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/')}>
+                              <Globe className="mr-2 h-4 w-4" />
+                              域名列表
+                            </NavigationMenuLink>
+                          </li>
+                        </ul>
+                      </NavigationMenuContent>
                     </NavigationMenuItem>
 
                     <NavigationMenuItem>
                       <NavigationMenuTrigger>
                         <Server className="h-4 w-4 mr-2" />
-                        服务商管理
+                        服务商
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
                         <ul className="grid w-[200px] gap-1">
