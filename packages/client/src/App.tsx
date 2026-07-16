@@ -167,19 +167,19 @@ function Layout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => setMode('system')}>
-                    {mode === 'system' && <span className="mr-2">✓</span>}
                     <SunMoon className="mr-2 h-4 w-4" />
                     跟随系统
+                    {mode === 'system' && <span className="ml-auto">✓</span>}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setMode('light')}>
-                    {mode === 'light' && <span className="mr-2">✓</span>}
                     <Sun className="mr-2 h-4 w-4" />
                     亮色模式
+                    {mode === 'light' && <span className="ml-auto">✓</span>}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setMode('dark')}>
-                    {mode === 'dark' && <span className="mr-2">✓</span>}
                     <Moon className="mr-2 h-4 w-4" />
                     暗色模式
+                    {mode === 'dark' && <span className="ml-auto">✓</span>}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
