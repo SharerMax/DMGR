@@ -98,7 +98,7 @@ export default function NotificationLogs() {
 
       {/* 筛选器 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="flex flex-wrap gap-4">
             <Select
               value={filters.type || 'all'}

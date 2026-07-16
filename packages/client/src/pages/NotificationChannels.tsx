@@ -186,7 +186,7 @@ export default function NotificationChannels() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent>
           {loading
             ? (
                 <div className="text-center py-12">加载中...</div>

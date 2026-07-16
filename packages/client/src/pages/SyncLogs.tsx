@@ -155,7 +155,7 @@ export default function SyncLogs() {
 
       {/* 日志列表 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           {loading
             ? <div className="text-center py-8">加载中...</div>
             : logs.length === 0

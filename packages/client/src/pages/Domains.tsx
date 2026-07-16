@@ -399,7 +399,7 @@ export default function Domains() {
 
       {/* 过滤器 */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
+        <CardContent>
           <DomainFilter
             domains={domains}
             search={filters.search}
@@ -430,7 +430,7 @@ export default function Domains() {
       </Card>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent>
           {loading
             ? (
                 <div className="text-center py-12">加载中...</div>

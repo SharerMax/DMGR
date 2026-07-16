@@ -147,7 +147,7 @@ export default function RenewalLogs() {
 
       {/* 筛选器 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="space-y-4">
             {/* 域名过滤 - 使用统一组件 */}
             <DomainFilter
@@ -189,7 +189,7 @@ export default function RenewalLogs() {
 
       {/* 日志列表 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           {loading
             ? <div className="text-center py-8">加载中...</div>
             : logs.length === 0
