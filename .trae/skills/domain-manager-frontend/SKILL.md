@@ -61,7 +61,7 @@ packages/client/src/
 │   │   └── ...
 │   ├── Logo.tsx                 # 自定义品牌 Logo
 │   ├── DatePicker.tsx           # 日期选择器
-│   ├── Pagination.tsx           # 分页组件
+│   ├── DataTablePagination.tsx  # 分页组件（基于 shadcn Pagination 原语，含每页行数选择器）
 │   └── DomainFilter.tsx         # 域名过滤组件
 ├── hooks/                       # 自定义 Hooks
 │   └── useConfirm.tsx           # 确认对话框 Hook（删除等危险操作）

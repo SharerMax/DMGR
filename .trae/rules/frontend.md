@@ -59,7 +59,7 @@
 ### 3.1 目录组织
 
 - `components/ui/` — **仅存放 CLI 添加的标准组件**。**绝不手动修改此目录下的文件**（修改会被后续 `pnpm dlx shadcn@latest add` 覆盖）
-- `components/` 根目录 — 自定义业务组件（如 `DatePicker.tsx`、`Pagination.tsx`、`DomainFilter.tsx`、`Logo.tsx`）
+- `components/` 根目录 — 自定义业务组件（如 `DatePicker.tsx`、`DataTablePagination.tsx`、`DomainFilter.tsx`、`Logo.tsx`）
 - `pages/` — 页面级组件（按路由命名，如 `Domains.tsx`、`Providers.tsx`）
 
 ### 3.2 组件使用模式
