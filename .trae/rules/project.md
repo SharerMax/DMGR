@@ -161,3 +161,4 @@ feat(server): add notifications module with email and webhook senders
 | 设置 `minimumReleaseAge: 0` | 等待时间窗口或指定已过年龄的版本 |
 | 使用 `react-router-dom` 包 | React Router 8.x，API 从 `react-router` 导入 |
 | `@types/node` 升级到 v26+ | 固定 `^22.20.0` |
+| 硬编码状态色 `text-red-500` / `bg-green-100` | 使用 `text-status-*` / `bg-status-*-bg` 语义类 |

@@ -73,7 +73,7 @@
 | **截断文本** | `truncate` | `overflow-hidden text-ellipsis whitespace-nowrap` |
 | **Card** | `CardHeader > CardTitle + CardDescription` + `CardContent` | 零散 div 手写卡片 |
 | **z-index** | Dialog/Popover/Sheet 等覆盖组件自带 z-index | 手动设 `z-*` |
-| **状态色** | `Badge variant="..."` 或 Button variant | 自定义 `text-red-500 bg-red-100` |
+| **状态色** | `text-status-success/warning/error/info/disabled/danger` 语义类 + `Badge variant="..."` | 硬编码 `text-red-500` / `bg-green-100` |
 | **加载态** | `Skeleton` 组件 | 自定义 `animate-pulse div` |
 | **按钮图标** | 使用 `lucide-react` 图标 | 不规范的 emoji / svg |
 
@@ -119,6 +119,7 @@
 - 由 `stores/theme.ts` 管理偏好（`'light' | 'dark' | 'system'`），通过在 `<html>` 切换 `.dark` class 生效
 - 使用 Tailwind CSS v4 的 CSS 变量（Vega 主题）
 - **禁止硬编码颜色值**（如 `color: #000` / `bg-gray-100`），必须使用语义色 `text-foreground` / `bg-background` / `border-border`
+- **状态色必须使用 CSS 变量语义类**：`text-status-success` / `text-status-warning` / `text-status-error` / `text-status-info` / `text-status-disabled` / `text-status-danger`（对应背景色 `bg-status-*-bg` / `bg-status-*-bg-light`），变量定义在 `index.css` 的 `:root` 和 `.dark` 中，`error` 和 `danger` 引用 `var(--destructive)`
 - Toaster 配置：`position="top-right"`、`richColors`、`closeButton`
 
 ---
@@ -161,8 +162,8 @@
 
 | 顶级菜单 | 子项 |
 |---------|------|
-| 域名管理 | — |
-| 服务商管理（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
+| 域名（dropdown） | 域名列表 (`/`) |
+| 服务商（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
 | 通知渠道（dropdown） | 渠道配置 (`/notification-channels`)、通知记录 (`/notification-logs`) |
 | 续期（dropdown） | 续期日志 (`/renewal-logs`)、续期配置 (`/auto-renew-config`) |
 
