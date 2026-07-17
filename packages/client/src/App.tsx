@@ -140,15 +140,15 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/renewal-logs')}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              续期日志
-                            </NavigationMenuLink>
-                          </li>
-                          <li>
                             <NavigationMenuLink onClick={() => navigate('/auto-renew-config')}>
                               <Settings className="mr-2 h-4 w-4" />
                               续期配置
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/renewal-logs')}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              续期日志
                             </NavigationMenuLink>
                           </li>
                         </ul>

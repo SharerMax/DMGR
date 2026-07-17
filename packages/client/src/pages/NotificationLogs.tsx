@@ -264,7 +264,7 @@ export default function NotificationLogs() {
 
               <div>
                 <h4 className="font-medium mb-2">通知内容</h4>
-                <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap break-words">
+                <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap wrap-break-word">
                   {detailLog.content}
                 </div>
               </div>
