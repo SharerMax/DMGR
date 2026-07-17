@@ -1,18 +1,17 @@
 import type { AuthRequest } from '../middleware/index.js'
 import { Router } from 'express'
 import { z } from 'zod'
+import { logger } from '@/utils/index.js'
+import { HTTP_STATUS, sendError, sendSuccess } from '@/utils/response.js'
 import { authMiddleware } from '../middleware/index.js'
 import {
-  addDomainReminder,
   createUserDomain,
   deleteUserDomain,
-  getDomainWithReminders,
+  getDomainWithProvider,
   getUserDomains,
   getUserExpiringDomains,
   updateUserDomain,
 } from '../services/domainService.js'
-import { logger } from '../utils/index.js'
-import { HTTP_STATUS, sendError, sendSuccess } from '../utils/response.js'
 
 const router = Router()
 
@@ -24,10 +23,6 @@ const domainSchema = z.object({
   autoRenewDays: z.number().int().positive().optional().nullable(),
   renewalPrice: z.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
-})
-
-const reminderSchema = z.object({
-  daysBefore: z.number().positive(),
 })
 
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
@@ -59,7 +54,7 @@ router.get('/expiring', authMiddleware, async (req: AuthRequest, res) => {
 
 router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const domain = await getDomainWithReminders(req.userId!, Number(req.params.id))
+    const domain = await getDomainWithProvider(req.userId!, Number(req.params.id))
     if (!domain) {
       return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
     }
@@ -118,25 +113,6 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
   catch (error) {
     logger.error({ error }, 'Delete domain error')
     return sendError(res, '删除域名失败', 1, HTTP_STATUS.INTERNAL_ERROR)
-  }
-})
-
-router.post('/:id/reminders', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const data = reminderSchema.parse(req.body)
-    const reminder = await addDomainReminder(req.userId!, Number(req.params.id), data.daysBefore)
-    if (!reminder) {
-      return sendError(res, '域名不存在', 1, HTTP_STATUS.NOT_FOUND)
-    }
-    logger.info({ domainId: Number(req.params.id), reminderId: reminder.id }, 'Reminder created')
-    return sendSuccess(res, reminder, '提醒创建成功', HTTP_STATUS.CREATED)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      return sendError(res, '参数错误', 1, HTTP_STATUS.BAD_REQUEST)
-    }
-    logger.error({ error }, 'Create reminder error')
-    return sendError(res, '创建提醒失败', 1, HTTP_STATUS.INTERNAL_ERROR)
   }
 })
 

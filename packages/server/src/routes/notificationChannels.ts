@@ -18,7 +18,6 @@ const channelSchema = z.object({
   type: z.enum(['email', 'webhook', 'telegram', 'feishu']),
   name: z.string().min(1).max(100),
   config: z.record(z.string(), z.any()),
-  defaultDays: z.number().positive().optional(),
   isActive: z.boolean().optional(),
 })
 

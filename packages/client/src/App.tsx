@@ -23,6 +23,7 @@ import AutoRenewConfig from '@/pages/AutoRenewConfig'
 import Domains from '@/pages/Domains'
 import Login from '@/pages/Login'
 import NotificationChannels from '@/pages/NotificationChannels'
+import NotificationConfigs from '@/pages/NotificationConfigs'
 import NotificationLogs from '@/pages/NotificationLogs'
 import Profile from '@/pages/Profile'
 import Providers from '@/pages/Providers'
@@ -112,10 +113,16 @@ function Layout({ children }: { children: React.ReactNode }) {
                     <NavigationMenuItem>
                       <NavigationMenuTrigger>
                         <Bell className="h-4 w-4 mr-2" />
-                        通知渠道
+                        通知
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/notification-configs')}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              通知配置
+                            </NavigationMenuLink>
+                          </li>
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/notification-channels')}>
                               <Settings className="mr-2 h-4 w-4" />
@@ -248,6 +255,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <NotificationChannels />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/notification-configs"
+        element={(
+          <ProtectedRoute>
+            <NotificationConfigs />
           </ProtectedRoute>
         )}
       />

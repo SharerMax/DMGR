@@ -60,19 +60,6 @@ async function main() {
 
   console.log('Created domain:', domain.name)
 
-  // Create reminder
-  await prisma.reminder.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      domainId: domain.id,
-      daysBefore: 7,
-      notified: false,
-    },
-  })
-
-  console.log('Created reminder for domain:', domain.name)
-
   // Create notification channel
   const notificationChannel = await prisma.notificationChannel.upsert({
     where: { id: 1 },
@@ -84,12 +71,25 @@ async function main() {
       config: JSON.stringify({
         email: 'admin@example.com',
       }),
-      defaultDays: 90,
       isActive: true,
     },
   })
 
   console.log('Created notification channel:', notificationChannel.name)
+
+  // Create notification config (expiry reminder enabled with 30 days threshold)
+  await prisma.notificationConfig.upsert({
+    where: { userId_type: { userId: user.id, type: 'expiry_reminder' } },
+    update: {},
+    create: {
+      userId: user.id,
+      type: 'expiry_reminder',
+      enabled: true,
+      expiryDays: 30,
+    },
+  })
+
+  console.log('Created notification config for expiry_reminder')
 
   // Create DNS record
   await prisma.dNSRecord.upsert({

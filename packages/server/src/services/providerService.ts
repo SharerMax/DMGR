@@ -145,7 +145,7 @@ export async function deleteUserProvider(userId: number, providerId: number): Pr
     return { success: false, deletedDomainCount: 0 }
   }
 
-  // 删除该服务商下所有域名（DNS 记录和 Reminders 会级联删除）
+  // 删除该服务商下所有域名（DNS 记录和续期日志会级联删除）
   const domains = await getDomainsByProviderId(providerId)
   for (const domain of domains) {
     await deleteDomain(domain.id)

@@ -32,6 +32,7 @@ packages/server/src/
 │   ├── domain.ts
 │   ├── dnsRecord.ts
 │   ├── notificationChannel.ts
+│   ├── notificationConfig.ts
 │   ├── notificationLog.ts
 │   ├── renewalLog.ts
 │   └── syncLog.ts
@@ -79,6 +80,7 @@ packages/server/src/
 │   ├── domains.ts
 │   ├── dnsRecords.ts
 │   ├── notificationChannels.ts
+│   ├── notificationConfigs.ts
 │   ├── notificationLogs.ts
 │   ├── renewalLogs.ts
 │   └── syncLogs.ts
@@ -88,6 +90,7 @@ packages/server/src/
 │   ├── domainService.ts     # 域名业务逻辑
 │   ├── dnsRecordService.ts  # DNS 记录业务逻辑
 │   ├── notificationChannelService.ts
+│   ├── notificationConfigService.ts
 │   ├── notificationLogService.ts
 │   ├── renewalLogService.ts
 │   ├── syncLogService.ts    # 同步日志业务层
@@ -403,7 +406,7 @@ export async function getById(id: number) {
 ```typescript
 // 在 services/providerService.ts 中处理
 await prisma.$transaction(async (tx) => {
-  // 1. 删除该 provider 下的所有域名（会自动级联删除 DNSRecord / Reminder / RenewalLog）
+  // 1. 删除该 provider 下的所有域名（会自动级联删除 DNSRecord / RenewalLog）
   await tx.domain.deleteMany({ where: { providerId, userId } })
   // 2. 删除 provider
   await tx.provider.deleteMany({ where: { id: providerId, userId } })
@@ -412,7 +415,7 @@ await prisma.$transaction(async (tx) => {
 
 ### 9.2 删除 Domain（DB 层自动级联）
 
-`Domain → DNSRecord / Reminder / RenewalLog` 在 Prisma schema 中设置为 `onDelete: Cascade`，删除域名时自动清理，无需手动处理。
+`Domain → DNSRecord / RenewalLog` 在 Prisma schema 中设置为 `onDelete: Cascade`，删除域名时自动清理，无需手动处理。
 
 ---
 
@@ -473,15 +476,15 @@ const total = await prisma.domain.count({ where: { userId } })
 | `Provider` | `id`、`type`、`name`、`config`（JSON 字符串）、`userId` | 服务商配置（能力声明通过 `ProviderFeatures` 在 `providers/config.ts` 中定义，见 `rules/backend.md` §8） |
 | `Domain` | `id`、`name`、`providerId?`、`expiryDate?`、`renewalPrice?`、`notes?`、`autoRenew`、`autoRenewDays?`、`status`、`userId` | 域名 |
 | `DNSRecord` | `id`、`domainId`、`type`、`name`、`value`、`ttl`、`priority?` | DNS 记录 |
-| `NotificationChannel` | `id`、`type`、`name`、`config`（JSON 字符串）、`defaultDays`、`isActive`、`userId` | 通知渠道 |
+| `NotificationChannel` | `id`、`type`、`name`、`config`（JSON 字符串）、`isActive`、`userId` | 通知渠道（仅描述「如何发送」，不包含「何时发送」配置） |
+| `NotificationConfig` | `id`、`userId`、`type`（expiry_reminder/renewal_success/renewal_failed/sync_completed）、`enabled`、`expiryDays?`（仅 expiry_reminder 使用：提前多少天提醒）、`@@unique([userId, type])` | 用户级通知类型开关与过期提醒阈值 |
 | `RenewalLog` | `id`、`domainId`、`status`、`message?`、`error?`、`renewedAt?`、`createdAt` | 续期日志 |
-| `Reminder` | `id`、`domainId`、`daysBefore`、`notified`、`notifyDate?`、`createdAt` | 提醒记录 |
 | `NotificationLog` | `id`、`userId`、`domainId?`、`type`、`content`、`channel`、`sentAt` | 通知发送日志 |
 | `SyncLog` | `id`、`providerId`、`userId`、`status`（success/failed/partial）、`domainsSynced`、`dnsInserted`、`dnsDeleted`、`error?`、`details?`（JSON 字符串，含具体变更域名/DNS 记录）、`createdAt` | 服务商域名同步审计日志 |
 
 **级联关系**：
 - `Provider → Domain`：手动级联（删除服务商时由 service 层显式删除关联域名），DB 层为 `SetNull`
-- `Domain → DNSRecord / Reminder / RenewalLog`：DB 层 `onDelete: Cascade`
+- `Domain → DNSRecord / RenewalLog`：DB 层 `onDelete: Cascade`
 
 ---
 

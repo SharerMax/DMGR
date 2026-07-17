@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js'
 import dnsRecordRoutes from './routes/dnsRecords.js'
 import domainRoutes from './routes/domains.js'
 import notificationChannelRoutes from './routes/notificationChannels.js'
+import notificationConfigRoutes from './routes/notificationConfigs.js'
 import notificationLogRoutes from './routes/notificationLogs.js'
 import providerRoutes from './routes/providers.js'
 import renewalLogRoutes from './routes/renewalLogs.js'
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/providers', providerRoutes)
 app.use('/api/domains', domainRoutes)
 app.use('/api/notification-channels', notificationChannelRoutes)
+app.use('/api/notification-configs', notificationConfigRoutes)
 app.use('/api/notification-logs', notificationLogRoutes)
 app.use('/api/dns-records', dnsRecordRoutes)
 app.use('/api/renewal-logs', renewalLogRoutes)

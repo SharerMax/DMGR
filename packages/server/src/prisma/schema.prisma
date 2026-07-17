@@ -17,6 +17,7 @@ model User {
   domains            Domain[]
   providers          Provider[]
   notificationChannels NotificationChannel[]
+  notificationConfigs NotificationConfig[]
   notificationLogs   NotificationLog[]
   syncLogs           SyncLog[]
 }
@@ -51,7 +52,6 @@ model Domain {
   notes        String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-  reminders    Reminder[]
   dnsRecords   DNSRecord[]
   renewalLogs  RenewalLog[]
   notificationLogs NotificationLog[]
@@ -61,18 +61,6 @@ model Domain {
   @@index([expiryDate])
 }
 
-model Reminder {
-  id         Int      @id @default(autoincrement())
-  domainId   Int
-  domain     Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  daysBefore Int
-  notified   Boolean  @default(false)
-  notifyDate DateTime?
-  createdAt  DateTime @default(now())
-
-  @@index([domainId])
-}
-
 model NotificationChannel {
   id              Int      @id @default(autoincrement())
   userId          Int
@@ -80,11 +68,24 @@ model NotificationChannel {
   type            String   // email, webhook, telegram, feishu
   name            String
   config          String   // JSON string for config
-  defaultDays     Int      @default(90) // 默认提前天数
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@index([userId])
+}
+
+model NotificationConfig {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String   // expiry_reminder, renewal_success, renewal_failed, sync_completed
+  enabled         Boolean  @default(true)
+  expiryDays      Int?     // 仅 expiry_reminder 使用：提前多少天提醒
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, type])
   @@index([userId])
 }
 

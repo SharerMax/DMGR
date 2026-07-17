@@ -25,7 +25,6 @@ interface ChannelFormValues {
   name: string
   configValue: string
   chatId: string
-  defaultDays: string
   isActive: boolean
 }
 
@@ -49,7 +48,6 @@ export default function NotificationChannels() {
       name: '',
       configValue: '',
       chatId: '',
-      defaultDays: '90',
       isActive: true,
     },
   })
@@ -94,7 +92,6 @@ export default function NotificationChannels() {
               ? (channel.config.botToken as string) || ''
               : channel.type === 'feishu' ? (channel.config.webhookUrl as string) || '' : '',
         chatId: channel.type === 'telegram' ? (channel.config.chatId as string) || '' : '',
-        defaultDays: channel.defaultDays.toString(),
         isActive: channel.isActive,
       })
     }
@@ -105,7 +102,6 @@ export default function NotificationChannels() {
         name: '',
         configValue: '',
         chatId: '',
-        defaultDays: '90',
         isActive: true,
       })
     }
@@ -138,7 +134,6 @@ export default function NotificationChannels() {
         type: data.type,
         name: data.name,
         config,
-        defaultDays: Number(data.defaultDays) || 90,
         isActive: data.isActive,
       }
 
@@ -219,13 +214,6 @@ export default function NotificationChannels() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-muted-foreground">
-                            提前
-                            {' '}
-                            {channel.defaultDays}
-                            {' '}
-                            天
-                          </span>
                           <span className={`px-2 py-0.5 rounded-full text-xs ${
                             channel.isActive ? 'bg-status-success-bg text-status-success' : 'bg-status-disabled-bg text-status-disabled'
                           }`}
@@ -350,26 +338,6 @@ export default function NotificationChannels() {
                 )}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="defaultDays">
-                默认提前提醒天数
-                <span className="text-status-danger ml-1">*</span>
-              </Label>
-              <Input
-                id="defaultDays"
-                type="number"
-                {...register('defaultDays', {
-                  required: '请输入提醒天数',
-                  min: { value: 1, message: '天数不能小于1' },
-                  max: { value: 365, message: '天数不能超过365' },
-                })}
-                placeholder="90"
-                aria-invalid={!!errors.defaultDays}
-              />
-              {errors.defaultDays && (
-                <p className="text-xs text-status-error">{errors.defaultDays.message}</p>
-              )}
-            </div>
             <div className="flex items-center space-x-2">
               <Controller
                 control={control}

@@ -8,7 +8,6 @@ export interface CreateNotificationChannelInput {
   type: string
   name: string
   config: Record<string, unknown>
-  defaultDays?: number
   isActive?: boolean
 }
 
@@ -16,7 +15,6 @@ export interface UpdateNotificationChannelInput {
   type?: string
   name?: string
   config?: Record<string, unknown>
-  defaultDays?: number
   isActive?: boolean
 }
 
@@ -27,7 +25,6 @@ export async function createNotificationChannel(input: CreateNotificationChannel
       type: input.type,
       name: input.name,
       config: JSON.stringify(input.config),
-      defaultDays: input.defaultDays ?? 90,
       isActive: input.isActive ?? true,
     },
   })
@@ -57,8 +54,6 @@ export async function updateNotificationChannel(
     data.name = input.name
   if (input.config !== undefined)
     data.config = JSON.stringify(input.config)
-  if (input.defaultDays !== undefined)
-    data.defaultDays = input.defaultDays
   if (input.isActive !== undefined)
     data.isActive = input.isActive
 

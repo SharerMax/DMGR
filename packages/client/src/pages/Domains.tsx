@@ -2,7 +2,7 @@ import type { CreateDNSRecordInput, DNSRecord } from '@/stores/dnsRecords'
 import type { Domain } from '@/stores/domains'
 import { differenceInDays, format, parseISO } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { AlertTriangle, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -451,7 +451,6 @@ export default function Domains() {
                           <TableHead>过期日期</TableHead>
                           <TableHead>状态</TableHead>
                           <TableHead>续期价格</TableHead>
-                          <TableHead>提醒</TableHead>
                           <TableHead className="w-35">操作</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -477,18 +476,6 @@ export default function Domains() {
                               </TableCell>
                               <TableCell>
                                 {domain.renewalPrice ? `¥${domain.renewalPrice}` : '-'}
-                              </TableCell>
-                              <TableCell>
-                                {domain.reminders && domain.reminders.length > 0
-                                  ? (
-                                      <span className="flex items-center gap-1 text-sm">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        {domain.reminders.map(r => r.daysBefore).join('/')}
-                                        {' '}
-                                        天
-                                      </span>
-                                    )
-                                  : '-'}
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">

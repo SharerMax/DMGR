@@ -7,7 +7,6 @@ export interface NotificationChannel {
   type: 'email' | 'webhook' | 'telegram' | 'feishu'
   name: string
   config: Record<string, unknown>
-  defaultDays: number
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -27,7 +26,6 @@ export interface CreateChannelInput {
   type: 'email' | 'webhook' | 'telegram' | 'feishu'
   name: string
   config: Record<string, unknown>
-  defaultDays?: number
   isActive?: boolean
 }
 

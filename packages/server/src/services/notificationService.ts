@@ -7,6 +7,7 @@ import type { NotificationType } from '../notifications/index.js'
 import { prisma } from '../db/index.js'
 import { NotificationSenderFactory } from '../notifications/index.js'
 import { logger } from '../utils/index.js'
+import { getUserNotificationConfig } from './notificationConfigService.js'
 
 interface NotificationData {
   domainName: string
@@ -17,6 +18,7 @@ interface NotificationData {
 
 /**
  * 发送通知
+ * 发送前检查用户的通知配置开关，关闭的类型不发送
  */
 export async function sendNotification(
   userId: number,
@@ -24,6 +26,13 @@ export async function sendNotification(
   type: NotificationType,
   data: NotificationData,
 ): Promise<void> {
+  // 检查用户是否启用了该通知类型
+  const config = await getUserNotificationConfig(userId, type)
+  if (!config.enabled) {
+    logger.info({ userId, type }, 'Notification skipped: disabled by user config')
+    return
+  }
+
   // 获取用户的通知渠道
   const channels = await prisma.notificationChannel.findMany({
     where: {
@@ -104,11 +113,12 @@ async function sendViaChannel(
 
 /**
  * 检查域名过期并发送提醒
+ * 使用用户通知配置中的 expiryDays 作为提醒阈值
  */
 export async function checkExpiringDomains(): Promise<void> {
   const now = new Date()
 
-  // 查询需要提醒的域名
+  // 查询即将过期的域名（90天内）
   const domains = await prisma.domain.findMany({
     where: {
       status: 'active',
@@ -116,9 +126,11 @@ export async function checkExpiringDomains(): Promise<void> {
     },
     include: {
       user: true,
-      reminders: true,
     },
   })
+
+  // 按用户分组，避免重复查询配置
+  const userConfigCache = new Map<number, { enabled: boolean, expiryDays: number }>()
 
   for (const domain of domains) {
     if (!domain.expiryDate) {
@@ -129,28 +141,25 @@ export async function checkExpiringDomains(): Promise<void> {
       (domain.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     )
 
-    // 检查是否需要提醒
-    const shouldRemind = domain.reminders.some(
-      r => r.daysBefore >= daysUntilExpiry && !r.notified,
-    )
+    // 获取用户的通知配置（带缓存）
+    if (!userConfigCache.has(domain.userId)) {
+      const config = await getUserNotificationConfig(domain.userId, 'expiry_reminder')
+      userConfigCache.set(domain.userId, {
+        enabled: config.enabled,
+        expiryDays: config.expiryDays ?? 30,
+      })
+    }
+    const userConfig = userConfigCache.get(domain.userId)!
 
-    if (shouldRemind) {
+    if (!userConfig.enabled) {
+      continue
+    }
+
+    // 检查是否在提醒窗口内
+    if (daysUntilExpiry <= userConfig.expiryDays) {
       await sendNotification(domain.userId, domain.id, 'expiry_reminder', {
         domainName: domain.name,
         daysUntilExpiry,
-      })
-
-      // 更新提醒状态
-      await prisma.reminder.updateMany({
-        where: {
-          domainId: domain.id,
-          daysBefore: { gte: daysUntilExpiry },
-          notified: false,
-        },
-        data: {
-          notified: true,
-          notifyDate: now,
-        },
       })
     }
   }

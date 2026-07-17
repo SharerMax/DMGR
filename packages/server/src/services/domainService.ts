@@ -1,5 +1,5 @@
 import type { CreateDomainInput, Domain, UpdateDomainInput } from '../models/domain.js'
-import type { Reminder } from '../models/reminder.js'
+import { logger } from '@/utils/index.js'
 import {
   createDomain,
   deleteDomain,
@@ -9,18 +9,11 @@ import {
   updateDomain,
 } from '../models/domain.js'
 import { getProviderById } from '../models/provider.js'
-import {
-  createReminder,
-  deleteRemindersByDomainId,
-  getRemindersByDomainId,
-} from '../models/reminder.js'
 import { DNSProviderFactory } from '../providers/index.js'
-import { logger } from '../utils/index.js'
 
-export interface DomainWithReminders extends Domain {
+export interface DomainWithProvider extends Domain {
   provider: { name: string } | null
   provider_name?: string | null
-  reminders: Reminder[]
 }
 
 function parseConfig(config: string): Record<string, string> {
@@ -43,7 +36,7 @@ function getSyncer(provider: { type: string, config: string }) {
 export async function getUserDomains(
   userId: number,
   filters?: { search?: string, providerId?: number },
-): Promise<DomainWithReminders[]> {
+): Promise<DomainWithProvider[]> {
   let domains = await getDomainsByUserId(userId)
 
   if (filters?.search) {
@@ -55,18 +48,10 @@ export async function getUserDomains(
     domains = domains.filter(d => d.providerId === filters.providerId)
   }
 
-  const domainsWithReminders = await Promise.all(
-    domains.map(async (domain) => {
-      const reminders = await getRemindersByDomainId(domain.id)
-      return {
-        ...domain,
-        provider_name: domain.provider?.name,
-        reminders,
-      }
-    }),
-  )
-
-  return domainsWithReminders
+  return domains.map(domain => ({
+    ...domain,
+    provider_name: domain.provider?.name,
+  }))
 }
 
 export async function getUserExpiringDomains(userId: number, days = 30) {
@@ -74,13 +59,12 @@ export async function getUserExpiringDomains(userId: number, days = 30) {
   return domains.filter(d => d.userId === userId)
 }
 
-export async function getDomainWithReminders(userId: number, domainId: number) {
+export async function getDomainWithProvider(userId: number, domainId: number) {
   const domain = await getDomainById(domainId)
   if (!domain || domain.userId !== userId) {
     return null
   }
-  const reminders = await getRemindersByDomainId(domainId)
-  return { ...domain, reminders }
+  return domain
 }
 
 export async function createUserDomain(userId: number, input: Omit<CreateDomainInput, 'userId'>) {
@@ -152,16 +136,7 @@ export async function deleteUserDomain(userId: number, domainId: number): Promis
     }
   }
 
-  await deleteRemindersByDomainId(domainId)
   return deleteDomain(domainId)
-}
-
-export async function addDomainReminder(userId: number, domainId: number, daysBefore: number) {
-  const domain = await getDomainById(domainId)
-  if (!domain || domain.userId !== userId) {
-    return null
-  }
-  return createReminder({ domainId, daysBefore })
 }
 
 export async function verifyDomainOwnership(userId: number, domainId: number): Promise<boolean> {

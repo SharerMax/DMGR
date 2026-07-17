@@ -15,16 +15,6 @@ export interface Domain {
   notes: string | null
   createdAt: string
   updatedAt: string
-  reminders?: Reminder[]
-}
-
-export interface Reminder {
-  id: number
-  domainId: number
-  daysBefore: number
-  notified: boolean
-  notifyDate: string | null
-  createdAt: string
 }
 
 interface DomainState {
@@ -35,7 +25,6 @@ interface DomainState {
   createDomain: (data: CreateDomainInput) => Promise<Domain>
   updateDomain: (id: number, data: Partial<CreateDomainInput>) => Promise<Domain>
   deleteDomain: (id: number) => Promise<void>
-  addReminder: (domainId: number, daysBefore: number) => Promise<Reminder>
 }
 
 export interface DomainFilters {
@@ -101,18 +90,5 @@ export const useDomainStore = create<DomainState>(set => ({
     set(state => ({
       domains: state.domains.filter(d => d.id !== id),
     }))
-  },
-
-  addReminder: async (domainId, daysBefore) => {
-    const response = await api.post(`/domains/${domainId}/reminders`, {
-      daysBefore,
-    })
-    const reminder = response.data
-    set(state => ({
-      domains: state.domains.map(d =>
-        d.id === domainId ? { ...d, reminders: [...(d.reminders || []), reminder] } : d,
-      ),
-    }))
-    return reminder
   },
 }))
