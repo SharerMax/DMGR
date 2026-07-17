@@ -186,14 +186,14 @@ export default function NotificationChannels() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent>
           {loading
             ? (
                 <div className="text-center py-12">加载中...</div>
               )
             : channels.length === 0
               ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-muted-foreground">
                     暂无通知渠道，点击上方按钮添加
                   </div>
                 )
@@ -202,7 +202,7 @@ export default function NotificationChannels() {
                     {channels.map(channel => (
                       <div
                         key={channel.id}
-                        className="flex items-center justify-between p-4 hover:bg-gray-50"
+                        className="flex items-center justify-between p-4 hover:bg-muted"
                       >
                         <div className="flex items-center gap-4">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${channelTypeConfig[channel.type].color}`}>
@@ -210,7 +210,7 @@ export default function NotificationChannels() {
                           </span>
                           <div>
                             <div className="font-medium">{channel.name}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {channel.type === 'email' && (channel.config.email as string)}
                               {channel.type === 'webhook' && (channel.config.url as string)}
                               {channel.type === 'telegram' && `Chat ID: ${channel.config.chatId as string || ''}`}
@@ -219,7 +219,7 @@ export default function NotificationChannels() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-muted-foreground">
                             提前
                             {' '}
                             {channel.defaultDays}
@@ -227,7 +227,7 @@ export default function NotificationChannels() {
                             天
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-xs ${
-                            channel.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                            channel.isActive ? 'bg-status-success-bg text-status-success' : 'bg-status-disabled-bg text-status-disabled'
                           }`}
                           >
                             {channel.isActive ? '已启用' : '已禁用'}
@@ -244,7 +244,7 @@ export default function NotificationChannels() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-red-500"
+                              className="text-status-danger"
                               onClick={() => handleDelete(channel.id)}
                               title="删除"
                             >
@@ -268,7 +268,7 @@ export default function NotificationChannels() {
             <div className="space-y-2">
               <Label htmlFor="type">
                 渠道类型
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Controller
                 control={control}
@@ -289,13 +289,13 @@ export default function NotificationChannels() {
                 )}
               />
               {errors.type && (
-                <p className="text-xs text-red-500">{errors.type.message}</p>
+                <p className="text-xs text-status-error">{errors.type.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">
                 渠道名称
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="name"
@@ -304,13 +304,13 @@ export default function NotificationChannels() {
                 aria-invalid={!!errors.name}
               />
               {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
+                <p className="text-xs text-status-error">{errors.name.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="configValue">
                 {getConfigLabel()}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="configValue"
@@ -330,14 +330,14 @@ export default function NotificationChannels() {
                 aria-invalid={!!errors.configValue}
               />
               {errors.configValue && (
-                <p className="text-xs text-red-500">{errors.configValue.message}</p>
+                <p className="text-xs text-status-error">{errors.configValue.message}</p>
               )}
             </div>
             {watchedType === 'telegram' && (
               <div className="space-y-2">
                 <Label htmlFor="chatId">
                   Chat ID
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-status-danger ml-1">*</span>
                 </Label>
                 <Input
                   id="chatId"
@@ -346,14 +346,14 @@ export default function NotificationChannels() {
                   aria-invalid={!!errors.chatId}
                 />
                 {errors.chatId && (
-                  <p className="text-xs text-red-500">{errors.chatId.message}</p>
+                  <p className="text-xs text-status-error">{errors.chatId.message}</p>
                 )}
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="defaultDays">
                 默认提前提醒天数
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="defaultDays"
@@ -367,7 +367,7 @@ export default function NotificationChannels() {
                 aria-invalid={!!errors.defaultDays}
               />
               {errors.defaultDays && (
-                <p className="text-xs text-red-500">{errors.defaultDays.message}</p>
+                <p className="text-xs text-status-error">{errors.defaultDays.message}</p>
               )}
             </div>
             <div className="flex items-center space-x-2">

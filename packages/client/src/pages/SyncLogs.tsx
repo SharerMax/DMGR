@@ -22,9 +22,9 @@ import { useProviderStore } from '@/stores/providers'
 import { useSyncLogStore } from '@/stores/syncLogs'
 
 const STATUS_COLORS: Record<string, string> = {
-  success: 'bg-green-500',
-  failed: 'bg-red-500',
-  partial: 'bg-yellow-500',
+  success: 'bg-status-success',
+  failed: 'bg-status-error',
+  partial: 'bg-status-warning',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -155,7 +155,7 @@ export default function SyncLogs() {
 
       {/* 日志列表 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           {loading
             ? <div className="text-center py-8">加载中...</div>
             : logs.length === 0
@@ -182,7 +182,7 @@ export default function SyncLogs() {
                             <TableCell>
                               <Badge
                                 variant="secondary"
-                                className={`${STATUS_COLORS[log.status] || 'bg-gray-500'} text-white`}
+                                className={`${STATUS_COLORS[log.status] || 'bg-muted-foreground'} text-white`}
                               >
                                 {STATUS_LABELS[log.status] || log.status}
                               </Badge>
@@ -190,7 +190,7 @@ export default function SyncLogs() {
                             <TableCell>{log.domainsSynced}</TableCell>
                             <TableCell>{log.dnsInserted}</TableCell>
                             <TableCell>{log.dnsDeleted}</TableCell>
-                            <TableCell className="text-red-600 max-w-48 truncate">{log.error || '-'}</TableCell>
+                            <TableCell className="text-status-error max-w-48 truncate">{log.error || '-'}</TableCell>
                             <TableCell>
                               {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
                             </TableCell>
@@ -260,7 +260,7 @@ export default function SyncLogs() {
               </div>
 
               {detailLog.error && (
-                <div className="rounded-md bg-red-50 dark:bg-red-950 p-3 text-sm text-red-600 dark:text-red-400">
+                <div className="rounded-md bg-status-error-bg-light p-3 text-sm text-status-error">
                   {detailLog.error}
                 </div>
               )}
@@ -270,14 +270,14 @@ export default function SyncLogs() {
                   {/* 新增域名 */}
                   {details.domainsAdded.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2 text-green-600">
+                      <h4 className="font-medium mb-2 text-status-success">
                         新增域名（
                         {details.domainsAdded.length}
                         ）
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {details.domainsAdded.map(d => (
-                          <Badge key={d.name} variant="outline" className="text-green-600">
+                          <Badge key={d.name} variant="outline" className="text-status-success">
                             {d.name}
                           </Badge>
                         ))}
@@ -288,7 +288,7 @@ export default function SyncLogs() {
                   {/* 新增 DNS 记录 */}
                   {details.dnsInserted.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2 text-green-600">
+                      <h4 className="font-medium mb-2 text-status-success">
                         新增 DNS 记录（
                         {details.dnsInserted.length}
                         ）
@@ -319,7 +319,7 @@ export default function SyncLogs() {
                   {/* 删除 DNS 记录 */}
                   {details.dnsDeleted.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2 text-red-600">
+                      <h4 className="font-medium mb-2 text-status-danger">
                         删除 DNS 记录（
                         {details.dnsDeleted.length}
                         ）

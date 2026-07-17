@@ -195,7 +195,7 @@ export default function Providers() {
       <div key={field.key} className="space-y-2">
         <Label htmlFor={field.key}>
           {field.label}
-          {field.required && <span className="text-red-500 ml-1">*</span>}
+          {field.required && <span className="text-status-danger ml-1">*</span>}
         </Label>
         <Input
           id={field.key}
@@ -207,10 +207,10 @@ export default function Providers() {
           aria-invalid={!!fieldError}
         />
         {field.description && (
-          <p className="text-xs text-gray-500">{field.description}</p>
+          <p className="text-xs text-muted-foreground">{field.description}</p>
         )}
         {fieldError && (
-          <p className="text-xs text-red-500">{fieldError.message as string}</p>
+          <p className="text-xs text-status-error">{fieldError.message as string}</p>
         )}
       </div>
     )
@@ -233,7 +233,7 @@ export default function Providers() {
         : providers.length === 0
           ? (
               <Card>
-                <CardContent className="py-12 text-center text-gray-500">
+                <CardContent className="py-12 text-center text-muted-foreground">
                   暂无服务商，点击上方按钮添加
                 </CardContent>
               </Card>
@@ -249,7 +249,7 @@ export default function Providers() {
                           <div>
                             <CardTitle className="text-lg">{provider.name}</CardTitle>
                             {typeConfig && (
-                              <p className="text-sm text-gray-500">{typeConfig.name}</p>
+                              <p className="text-sm text-muted-foreground">{typeConfig.name}</p>
                             )}
                           </div>
                           <div className="flex gap-2">
@@ -278,19 +278,19 @@ export default function Providers() {
                           {typeConfig && (
                             <div className="flex flex-wrap gap-1">
                               {typeConfig.features.domainSync && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-status-info-bg text-status-info">
                                   <Globe className="h-3 w-3 mr-1" />
                                   域名同步
                                 </span>
                               )}
                               {typeConfig.features.dnsManagement && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-status-info-bg text-status-info">
                                   <Database className="h-3 w-3 mr-1" />
                                   DNS管理
                                 </span>
                               )}
                               {typeConfig.features.autoRenew && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-status-info-bg text-status-info">
                                   <Shield className="h-3 w-3 mr-1" />
                                   自动续期
                                 </span>
@@ -298,12 +298,12 @@ export default function Providers() {
                             </div>
                           )}
                           <p className="flex items-center gap-2">
-                            <span className={provider.supportsAutoRenew ? 'text-green-600' : 'text-gray-400'}>
+                            <span className={provider.supportsAutoRenew ? 'text-status-success' : 'text-status-disabled'}>
                               {provider.supportsAutoRenew ? '✓ 支持自动续期' : '✗ 不支持自动续期'}
                             </span>
                           </p>
                           {typeConfig?.features.autoRenew && typeConfig.maxRenewalDays && (
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-secondary-foreground">
                               可续期时间: 过期前
                               {' '}
                               <span className="font-medium">{typeConfig.maxRenewalDays}</span>
@@ -311,7 +311,7 @@ export default function Providers() {
                               天内
                             </p>
                           )}
-                          <p className="text-gray-400 text-xs">
+                          <p className="text-muted-foreground text-xs">
                             添加于
                             {' '}
                             {new Date(provider.createdAt).toLocaleDateString()}
@@ -335,7 +335,7 @@ export default function Providers() {
               <div className="space-y-2">
                 <Label htmlFor="type">
                   服务商类型
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-status-danger ml-1">*</span>
                 </Label>
                 <Controller
                   control={control}
@@ -357,10 +357,10 @@ export default function Providers() {
                   )}
                 />
                 {currentType?.description && (
-                  <p className="text-xs text-gray-500">{currentType.description}</p>
+                  <p className="text-xs text-muted-foreground">{currentType.description}</p>
                 )}
                 {errors.type && (
-                  <p className="text-xs text-red-500">{errors.type.message}</p>
+                  <p className="text-xs text-status-error">{errors.type.message}</p>
                 )}
               </div>
             )}
@@ -369,7 +369,7 @@ export default function Providers() {
             {editingProvider && (
               <div className="space-y-2">
                 <Label>服务商类型</Label>
-                <div className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="text-sm">
                   {currentType?.name}
                 </div>
               </div>
@@ -379,7 +379,7 @@ export default function Providers() {
             <div className="space-y-2">
               <Label htmlFor="name">
                 名称
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="name"
@@ -388,14 +388,14 @@ export default function Providers() {
                 aria-invalid={!!errors.name}
               />
               {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
+                <p className="text-xs text-status-error">{errors.name.message}</p>
               )}
             </div>
 
             {/* 动态配置字段 */}
             {currentType && (
               <div className="space-y-4 border-t pt-4">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <h3 className="text-sm font-medium text-secondary-foreground">
                   API 配置
                 </h3>
                 {currentType.fields.map(field => renderField(field))}

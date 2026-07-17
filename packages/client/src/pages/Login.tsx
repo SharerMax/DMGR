@@ -61,7 +61,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isLogin ? '登录' : '注册'}</CardTitle>
@@ -74,7 +74,7 @@ export default function Login() {
             <div className="space-y-2">
               <Label htmlFor="username">
                 {isLogin ? '用户名 / 邮箱' : '用户名'}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="username"
@@ -84,7 +84,7 @@ export default function Login() {
                 aria-invalid={!!errors.username}
               />
               {errors.username && (
-                <p className="text-xs text-red-500">{errors.username.message}</p>
+                <p className="text-xs text-status-error">{errors.username.message}</p>
               )}
             </div>
             {!isLogin && (
@@ -103,14 +103,14 @@ export default function Login() {
                   aria-invalid={!!errors.email}
                 />
                 {errors.email && (
-                  <p className="text-xs text-red-500">{errors.email.message}</p>
+                  <p className="text-xs text-status-error">{errors.email.message}</p>
                 )}
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="password">
                 密码
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-status-danger ml-1">*</span>
               </Label>
               <Input
                 id="password"
@@ -123,10 +123,10 @@ export default function Login() {
                 aria-invalid={!!errors.password}
               />
               {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
+                <p className="text-xs text-status-error">{errors.password.message}</p>
               )}
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-status-error">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? '处理中...' : (isLogin ? '登录' : '注册')}
             </Button>

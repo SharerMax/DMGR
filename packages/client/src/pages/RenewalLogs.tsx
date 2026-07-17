@@ -14,11 +14,11 @@ import { useDomainStore } from '@/stores/domains'
 import { useRenewalLogStore } from '@/stores/renewalLogs'
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: 'bg-green-500',
-  failed: 'bg-red-500',
-  pending: 'bg-yellow-500',
-  skipped: 'bg-gray-500',
-  processing: 'bg-blue-500',
+  completed: 'bg-status-success',
+  failed: 'bg-status-error',
+  pending: 'bg-status-warning',
+  skipped: 'bg-status-disabled',
+  processing: 'bg-status-info',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -112,7 +112,7 @@ export default function RenewalLogs() {
               <CardTitle className="text-sm font-medium">成功</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+              <div className="text-2xl font-bold text-status-success">{stats.completed}</div>
             </CardContent>
           </Card>
           <Card>
@@ -120,7 +120,7 @@ export default function RenewalLogs() {
               <CardTitle className="text-sm font-medium">失败</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+              <div className="text-2xl font-bold text-status-error">{stats.failed}</div>
             </CardContent>
           </Card>
           <Card>
@@ -128,7 +128,7 @@ export default function RenewalLogs() {
               <CardTitle className="text-sm font-medium">已跳过</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-600">{stats.skipped}</div>
+              <div className="text-2xl font-bold text-status-disabled">{stats.skipped}</div>
             </CardContent>
           </Card>
           <Card>
@@ -147,7 +147,7 @@ export default function RenewalLogs() {
 
       {/* 筛选器 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="space-y-4">
             {/* 域名过滤 - 使用统一组件 */}
             <DomainFilter
@@ -189,7 +189,7 @@ export default function RenewalLogs() {
 
       {/* 日志列表 */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           {loading
             ? <div className="text-center py-8">加载中...</div>
             : logs.length === 0
@@ -215,13 +215,13 @@ export default function RenewalLogs() {
                             <TableCell>
                               <Badge
                                 variant="secondary"
-                                className={`${STATUS_COLORS[log.status] || 'bg-gray-500'} text-white`}
+                                className={`${STATUS_COLORS[log.status] || 'bg-muted-foreground'} text-white`}
                               >
                                 {STATUS_LABELS[log.status] || log.status}
                               </Badge>
                             </TableCell>
                             <TableCell>{log.message || '-'}</TableCell>
-                            <TableCell className="text-red-600">{log.error || '-'}</TableCell>
+                            <TableCell className="text-status-error">{log.error || '-'}</TableCell>
                             <TableCell>
                               {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
                             </TableCell>

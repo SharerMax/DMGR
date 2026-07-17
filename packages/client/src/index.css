@@ -86,7 +86,37 @@
 
   --radius-3xl: calc(var(--radius) * 2.2);
 
-  --radius-4xl: calc(var(--radius) * 2.6)
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* custom status color*/
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-bg-light: var(--status-success-bg-light);
+
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-bg-light: var(--status-warning-bg-light);
+
+  --color-status-error: var(--status-error);
+  --color-status-error-foreground: var(--status-error-foreground);
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-error-bg-light: var(--status-error-bg-light);
+
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-bg-light: var(--status-info-bg-light);
+
+  --color-status-disabled: var(--status-disabled);
+  --color-status-disabled-foreground: var(--status-disabled-foreground);
+  --color-status-disabled-bg: var(--status-disabled-bg);
+
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-foreground: var(--status-danger-foreground);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-bg-light: var(--status-danger-bg-light);
 }
 
 @layer base {
@@ -99,7 +129,7 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: var(--color-gray-50);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -131,6 +161,36 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* custom status color*/
+  --status-success: oklch(0.582 0.154 145.231);
+  --status-success-foreground: oklch(0.985 0 0);
+  --status-success-bg: oklch(0.962 0.028 145.231);
+  --status-success-bg-light: oklch(0.982 0.012 145.231);
+
+  --status-warning: oklch(0.768 0.192 84.464);
+  --status-warning-foreground: oklch(0.205 0 0);
+  --status-warning-bg: oklch(0.972 0.028 84.464);
+  --status-warning-bg-light: oklch(0.986 0.012 84.464);
+
+  --status-error: var(--destructive);
+  --status-error-foreground: oklch(0.985 0 0);
+  --status-error-bg: oklch(0.982 0.036 27.325);
+  --status-error-bg-light: oklch(0.992 0.012 27.325);
+
+  --status-info: oklch(0.531 0.232 264.376);
+  --status-info-foreground: oklch(0.985 0 0);
+  --status-info-bg: oklch(0.964 0.032 264.376);
+  --status-info-bg-light: oklch(0.984 0.014 264.376);
+
+  --status-disabled: oklch(0.556 0 0);
+  --status-disabled-foreground: oklch(0.985 0 0);
+  --status-disabled-bg: oklch(0.97 0 0);
+
+  --status-danger: var(--destructive);
+  --status-danger-foreground: oklch(0.985 0 0);
+  --status-danger-bg: oklch(0.982 0.036 27.325);
+  --status-danger-bg-light: oklch(0.992 0.012 27.325);
 }
 
 .dark {
@@ -165,4 +225,34 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* custom status color*/
+  --status-success: oklch(0.706 0.176 145.231);
+  --status-success-foreground: oklch(0.985 0 0);
+  --status-success-bg: oklch(0.182 0.064 145.231);
+  --status-success-bg-light: oklch(0.262 0.084 145.231);
+
+  --status-warning: oklch(0.826 0.172 78.844);
+  --status-warning-foreground: oklch(0.205 0 0);
+  --status-warning-bg: oklch(0.262 0.064 78.844);
+  --status-warning-bg-light: oklch(0.322 0.084 78.844);
+
+  --status-error: var(--destructive);
+  --status-error-foreground: oklch(0.985 0 0);
+  --status-error-bg: oklch(0.222 0.084 22.216);
+  --status-error-bg-light: oklch(0.282 0.104 22.216);
+
+  --status-info: oklch(0.708 0.172 264.376);
+  --status-info-foreground: oklch(0.985 0 0);
+  --status-info-bg: oklch(0.182 0.056 264.376);
+  --status-info-bg-light: oklch(0.242 0.076 264.376);
+  
+  --status-disabled: oklch(0.556 0 0);
+  --status-disabled-foreground: oklch(0.985 0 0);
+  --status-disabled-bg: oklch(0.269 0 0);
+
+  --status-danger: var(--destructive);
+  --status-danger-foreground: oklch(0.985 0 0);
+  --status-danger-bg: oklch(0.222 0.084 22.216);
+  --status-danger-bg-light: oklch(0.282 0.104 22.216);
 }
