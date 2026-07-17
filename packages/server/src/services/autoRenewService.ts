@@ -5,10 +5,11 @@
 
 import { differenceInDays } from 'date-fns'
 import cron from 'node-cron'
+import { logger } from '@/utils/index.js'
 import { prisma } from '../db/index.js'
 import { DNSProviderFactory, getProviderConfig } from '../providers/index.js'
-import { logger } from '../utils/index.js'
 import { sendNotification } from './notificationService.js'
+import { providerSupportsAutoRenew } from './providerService.js'
 
 export type RenewalStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'
 
@@ -50,7 +51,6 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
     id: number
     type: string
     config: Record<string, string>
-    supportsAutoRenew: boolean
   } | null
 }>> {
   const now = new Date()
@@ -88,7 +88,6 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
                 return {}
               }
             })(),
-            supportsAutoRenew: domain.provider.supportsAutoRenew,
           }
         : null,
     }))
@@ -100,7 +99,7 @@ export async function getDomainsNeedingRenewal(): Promise<Array<{
       const daysUntilExpiry = differenceInDays(domain.expiryDate, now)
       const triggerDays = domain.autoRenewDays || 30
 
-      if (!provider?.supportsAutoRenew) {
+      if (!provider || !providerSupportsAutoRenew(provider.type)) {
         return false
       }
 

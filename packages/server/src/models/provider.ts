@@ -7,7 +7,6 @@ export interface CreateProviderInput {
   type: string
   name: string
   config: Record<string, string>
-  supportsAutoRenew?: boolean
   userId: number
 }
 
@@ -17,7 +16,6 @@ export async function createProvider(input: CreateProviderInput): Promise<Provid
       type: input.type,
       name: input.name,
       config: JSON.stringify(input.config),
-      supportsAutoRenew: input.supportsAutoRenew ?? false,
       userId: input.userId,
     },
   })
@@ -42,7 +40,6 @@ export async function updateProvider(
 ): Promise<Provider | null> {
   const updateData: any = {
     name: input.name,
-    supportsAutoRenew: input.supportsAutoRenew,
   }
 
   if (input.config !== undefined) {

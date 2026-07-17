@@ -111,14 +111,11 @@ export default function Providers() {
   const onSubmit = async (data: ProviderFormValues) => {
     try {
       const type = editingProvider ? editingProvider.type : data.type
-      const typeConfig = providerTypes.find(t => t.id === type)
-      const supportsAutoRenew = typeConfig?.features.autoRenew ?? false
 
       const payload = {
         type,
         name: data.name,
         config: data.config,
-        supportsAutoRenew,
       }
 
       if (editingProvider) {
@@ -298,8 +295,8 @@ export default function Providers() {
                             </div>
                           )}
                           <p className="flex items-center gap-2">
-                            <span className={provider.supportsAutoRenew ? 'text-status-success' : 'text-status-disabled'}>
-                              {provider.supportsAutoRenew ? '✓ 支持自动续期' : '✗ 不支持自动续期'}
+                            <span className={typeConfig?.features.autoRenew ? 'text-status-success' : 'text-status-disabled'}>
+                              {typeConfig?.features.autoRenew ? '✓ 支持自动续期' : '✗ 不支持自动续期'}
                             </span>
                           </p>
                           {typeConfig?.features.autoRenew && typeConfig.maxRenewalDays && (

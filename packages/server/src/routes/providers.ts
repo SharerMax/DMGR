@@ -20,7 +20,6 @@ const providerSchema = z.object({
   type: z.string().min(1),
   name: z.string().min(1).max(100),
   config: z.record(z.string(), z.unknown()),
-  supportsAutoRenew: z.boolean().optional(),
 })
 
 router.get('/types', (_req, res) => {
@@ -60,7 +59,6 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       type: data.type,
       name: data.name,
       config: data.config as Record<string, string>,
-      supportsAutoRenew: data.supportsAutoRenew,
     })
     logger.info({ providerId: provider.id, type: provider.type }, 'Provider created')
     return sendSuccess(res, provider, '服务商创建成功', HTTP_STATUS.CREATED)

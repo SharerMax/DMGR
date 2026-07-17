@@ -30,7 +30,6 @@ export interface Provider {
   type: string
   name: string
   config: string
-  supportsAutoRenew: boolean
   userId: number
   createdAt: string
   updatedAt: string
@@ -53,7 +52,6 @@ export interface CreateProviderInput {
   type: string
   name: string
   config: Record<string, string>
-  supportsAutoRenew?: boolean
 }
 
 export const useProviderStore = create<ProviderState>(set => ({

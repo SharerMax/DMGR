@@ -77,7 +77,7 @@ export default function Domains() {
     if (!provider)
       return false
     const typeConfig = providerTypes.find(t => t.id === provider.type)
-    return (provider.supportsAutoRenew || typeConfig?.features.autoRenew) === true
+    return typeConfig?.features.autoRenew === true
   }
 
   const [currentPage, setCurrentPage] = useState(1)

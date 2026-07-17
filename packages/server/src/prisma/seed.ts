@@ -35,7 +35,6 @@ async function main() {
         accessKeyId: 'test_key_123',
         accessKeySecret: 'test_secret_456',
       }),
-      supportsAutoRenew: true,
       userId: user.id,
     },
   })

@@ -470,7 +470,7 @@ const total = await prisma.domain.count({ where: { userId } })
 | 模型 | 关键字段 | 说明 |
 |------|---------|------|
 | `User` | `id`、`username`、`password`（bcrypt 哈希）、`email?` | 用户账号 |
-| `Provider` | `id`、`type`、`name`、`config`（JSON 字符串）、`supportsAutoRenew`、`features`（JSON）、`userId` | 服务商配置 |
+| `Provider` | `id`、`type`、`name`、`config`（JSON 字符串）、`userId` | 服务商配置（能力声明通过 `ProviderFeatures` 在 `providers/config.ts` 中定义，见 `rules/backend.md` §8） |
 | `Domain` | `id`、`name`、`providerId?`、`expiryDate?`、`renewalPrice?`、`notes?`、`autoRenew`、`autoRenewDays?`、`status`、`userId` | 域名 |
 | `DNSRecord` | `id`、`domainId`、`type`、`name`、`value`、`ttl`、`priority?` | DNS 记录 |
 | `NotificationChannel` | `id`、`type`、`name`、`config`（JSON 字符串）、`defaultDays`、`isActive`、`userId` | 通知渠道 |

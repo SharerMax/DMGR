@@ -99,19 +99,17 @@ function validateProviderConfig(type: string, config: Record<string, any>): stri
 
 export async function createUserProvider(
   userId: number,
-  data: { type: string, name: string, config: Record<string, string>, supportsAutoRenew?: boolean },
+  data: { type: string, name: string, config: Record<string, string> },
 ): Promise<Provider> {
   const missingFields = validateProviderConfig(data.type, data.config)
   if (missingFields.length > 0) {
     throw new Error(`缺少必填字段: ${missingFields.join(', ')}`)
   }
 
-  const providerConfig = getProviderConfig(data.type)
   return createProvider({
     type: data.type,
     name: data.name,
     config: data.config,
-    supportsAutoRenew: providerConfig?.features.autoRenew ?? data.supportsAutoRenew,
     userId,
   })
 }
@@ -119,7 +117,7 @@ export async function createUserProvider(
 export async function updateUserProvider(
   userId: number,
   providerId: number,
-  data: Partial<{ type: string, name: string, config: Record<string, string>, supportsAutoRenew: boolean }>,
+  data: Partial<{ type: string, name: string, config: Record<string, string> }>,
 ): Promise<Provider | null> {
   const provider = await getProviderById(providerId)
   if (!provider || provider.userId !== userId) {
@@ -228,12 +226,12 @@ function generateMockDomains(provider: Provider) {
     {
       name: 'example1.com',
       expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      autoRenew: provider.supportsAutoRenew,
+      autoRenew: providerSupportsAutoRenew(provider.type),
     },
     {
       name: 'example2.com',
       expiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
-      autoRenew: provider.supportsAutoRenew,
+      autoRenew: providerSupportsAutoRenew(provider.type),
     },
   ]
 }
@@ -316,7 +314,7 @@ export async function syncProviderDomains(userId: number, providerId: number): P
     const domainList = syncResult.domains.map(d => ({
       name: d.name,
       expiryDate: d.expirationDate || null,
-      autoRenew: provider.supportsAutoRenew,
+      autoRenew: providerSupportsAutoRenew(provider.type),
     }))
 
     const newDomains = await syncNewDomains(userId, providerId, domainList)
