@@ -3,10 +3,10 @@ import { format } from 'date-fns'
 import { useEffect } from 'react'
 import { DataTablePagination } from '@/components/DataTablePagination'
 import { DateRangePicker } from '@/components/DatePicker'
-import { DomainFilter } from '@/components/DomainFilter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
@@ -45,6 +45,11 @@ export default function RenewalLogs() {
     setDateRange,
     clearFilters,
   } = useRenewalLogStore()
+
+  // 从域名列表中提取唯一服务商
+  const providers = [...new Map(domains.map(d => [d.providerId, d.provider_name])).entries()]
+    .filter(([id]) => id)
+    .map(([id, name]) => ({ id: id!.toString(), name: name || '未知' }))
 
   useEffect(() => {
     if (token) {
@@ -148,41 +153,52 @@ export default function RenewalLogs() {
       {/* 筛选器 */}
       <Card>
         <CardContent>
-          <div className="space-y-4">
-            {/* 域名过滤 - 使用统一组件 */}
-            <DomainFilter
-              domains={domains}
-              search={filters.domainName || ''}
-              providerId={filters.providerId?.toString() || 'all'}
-              onSearchChange={value => handleFilterChange('domainName', value || undefined)}
-              onProviderChange={value => handleFilterChange('providerId', value === 'all' ? undefined : Number(value))}
-              showProviderFilter={true}
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="搜索域名..."
+              value={filters.domainName || ''}
+              onChange={e => handleFilterChange('domainName', e.target.value || undefined)}
+              className="w-52"
             />
-            {/* 状态和日期筛选 */}
-            <div className="flex flex-wrap gap-4">
-              <Select
-                value={filters.status || 'all'}
-                onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="completed">成功</SelectItem>
-                  <SelectItem value="failed">失败</SelectItem>
-                  <SelectItem value="pending">处理中</SelectItem>
-                  <SelectItem value="skipped">已跳过</SelectItem>
-                </SelectContent>
-              </Select>
-              <DateRangePicker
-                value={dateRange}
-                onChange={handleDateRangeChange}
-              />
-              <Button variant="outline" onClick={clearFilters}>
-                清除筛选
-              </Button>
-            </div>
+            <Select
+              value={filters.providerId?.toString() || 'all'}
+              onValueChange={value => handleFilterChange('providerId', value === 'all' ? undefined : Number(value))}
+            >
+              <SelectTrigger className="w-30">
+                <SelectValue placeholder="全部服务商" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部服务商</SelectItem>
+                {providers.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.status || 'all'}
+              onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="选择状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="completed">成功</SelectItem>
+                <SelectItem value="failed">失败</SelectItem>
+                <SelectItem value="pending">处理中</SelectItem>
+                <SelectItem value="skipped">已跳过</SelectItem>
+              </SelectContent>
+            </Select>
+            <DateRangePicker
+              value={dateRange}
+              onChange={handleDateRangeChange}
+              className="w-64"
+            />
+            <Button variant="outline" onClick={clearFilters}>
+              清除筛选
+            </Button>
           </div>
         </CardContent>
       </Card>

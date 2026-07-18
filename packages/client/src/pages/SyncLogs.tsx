@@ -111,13 +111,13 @@ export default function SyncLogs() {
       {/* 筛选器 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               value={filters.providerId?.toString() || 'all'}
               onValueChange={value => handleFilterChange('providerId', value === 'all' ? undefined : Number(value))}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="选择服务商" />
+              <SelectTrigger className="w-30">
+                <SelectValue placeholder="全部服务商" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部服务商</SelectItem>
@@ -132,7 +132,7 @@ export default function SyncLogs() {
               value={filters.status || 'all'}
               onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="选择状态" />
               </SelectTrigger>
               <SelectContent>
@@ -145,6 +145,7 @@ export default function SyncLogs() {
             <DateRangePicker
               value={dateRange}
               onChange={handleDateRangeChange}
+              className="w-64"
             />
             <Button variant="outline" onClick={clearFilters}>
               清除筛选

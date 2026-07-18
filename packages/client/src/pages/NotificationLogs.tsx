@@ -99,12 +99,12 @@ export default function NotificationLogs() {
       {/* 筛选器 */}
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               value={filters.type || 'all'}
               onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="选择类型" />
               </SelectTrigger>
               <SelectContent>
@@ -119,7 +119,7 @@ export default function NotificationLogs() {
               value={filters.channel || 'all'}
               onValueChange={value => handleFilterChange('channel', value === 'all' ? undefined : value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="选择渠道" />
               </SelectTrigger>
               <SelectContent>
@@ -134,7 +134,7 @@ export default function NotificationLogs() {
               value={filters.domainId?.toString() || 'all'}
               onValueChange={value => handleFilterChange('domainId', value === 'all' ? undefined : Number(value))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-52">
                 <SelectValue placeholder="选择域名" />
               </SelectTrigger>
               <SelectContent>
@@ -149,6 +149,7 @@ export default function NotificationLogs() {
             <DateRangePicker
               value={dateRange}
               onChange={handleDateRangeChange}
+              className="w-64"
             />
             <Button variant="outline" onClick={clearFilters}>
               清除筛选

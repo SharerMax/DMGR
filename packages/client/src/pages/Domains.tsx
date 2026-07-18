@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { DataTablePagination } from '@/components/DataTablePagination'
-import { DomainFilter } from '@/components/DomainFilter'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -400,32 +399,39 @@ export default function Domains() {
       {/* 过滤器 */}
       <Card className="mb-6">
         <CardContent>
-          <DomainFilter
-            domains={domains}
-            search={filters.search}
-            providerId={filters.providerId}
-            onSearchChange={value => setFilters({ ...filters, search: value })}
-            onProviderChange={value => setFilters({ ...filters, providerId: value })}
-            showProviderFilter={true}
-          />
-          {(filters.search || filters.providerId !== 'all') && (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                共找到
-                {' '}
-                {domains.length}
-                {' '}
-                个域名
-              </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="搜索域名..."
+              value={filters.search}
+              onChange={e => setFilters({ ...filters, search: e.target.value })}
+              className="w-52"
+            />
+            <Select
+              value={filters.providerId}
+              onValueChange={value => setFilters({ ...filters, providerId: value })}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="全部服务商" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部服务商</SelectItem>
+                {providers.map(p => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(filters.search || filters.providerId !== 'all') && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setFilters({ search: '', providerId: 'all' })}
               >
                 清除筛选
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
 
