@@ -72,13 +72,6 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <NavigationMenu viewport={false} className="justify-start">
                   <NavigationMenuList>
                     <NavigationMenuItem>
-                      <NavigationMenuLink onClick={() => navigate('/')}>
-                        <Globe className="mr-2 h-4 w-4" />
-                        概览
-                      </NavigationMenuLink>
-                    </NavigationMenuItem>
-
-                    <NavigationMenuItem>
                       <NavigationMenuTrigger>
                         <Globe className="h-4 w-4 mr-2" />
                         域名

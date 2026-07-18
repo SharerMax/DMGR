@@ -162,11 +162,10 @@
 
 - 所有受保护路由使用 `ProtectedRoute` 组件包裹，未登录自动重定向到 `/login`
 
-**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 5 项：
+**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 4 项（点击 Logo 返回概览首页）：
 
 | 顶级菜单 | 子项 |
 |---------|------|
-| 概览 | 概览首页 (`/`) |
 | 域名（dropdown） | 域名列表 (`/domains`) |
 | 服务商（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
 | 通知（dropdown） | 通知配置 (`/notification-configs`)、渠道配置 (`/notification-channels`)、通知记录 (`/notification-logs`) |
