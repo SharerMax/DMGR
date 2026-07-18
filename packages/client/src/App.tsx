@@ -1,4 +1,4 @@
-import { Bell, FileText, Globe, LogOut, Moon, RefreshCw, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
+import { Bell, FileText, Globe, LogOut, Mailbox, Moon, RefreshCw, Send, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router'
 import { Toaster } from 'sonner'
@@ -119,21 +119,21 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/notification-configs')}>
-                              <Settings className="mr-2 h-4 w-4" />
-                              通知配置
-                            </NavigationMenuLink>
-                          </li>
-                          <li>
                             <NavigationMenuLink onClick={() => navigate('/notification-channels')}>
-                              <Settings className="mr-2 h-4 w-4" />
+                              <Mailbox className="mr-2 h-4 w-4" />
                               渠道配置
                             </NavigationMenuLink>
                           </li>
                           <li>
                             <NavigationMenuLink onClick={() => navigate('/notification-logs')}>
-                              <FileText className="mr-2 h-4 w-4" />
+                              <Send className="mr-2 h-4 w-4" />
                               通知记录
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/notification-configs')}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              通知配置
                             </NavigationMenuLink>
                           </li>
                         </ul>
@@ -148,15 +148,15 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/auto-renew-config')}>
-                              <Settings className="mr-2 h-4 w-4" />
-                              续期配置
-                            </NavigationMenuLink>
-                          </li>
-                          <li>
                             <NavigationMenuLink onClick={() => navigate('/renewal-logs')}>
                               <FileText className="mr-2 h-4 w-4" />
                               续期日志
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink onClick={() => navigate('/auto-renew-config')}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              续期配置
                             </NavigationMenuLink>
                           </li>
                         </ul>
