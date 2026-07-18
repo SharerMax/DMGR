@@ -1,17 +1,8 @@
+import type { CreateDNSRecordInput, DNSRecord } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface DNSRecord {
-  id: number
-  domainId: number
-  type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SRV' | 'CAA' | 'PTR' | 'SOA'
-  name: string
-  value: string
-  ttl: number
-  priority: number | null
-  createdAt: string
-  updatedAt: string
-}
+export type { CreateDNSRecordInput, DNSRecord }
 
 interface DNSRecordState {
   records: DNSRecord[]
@@ -21,15 +12,6 @@ interface DNSRecordState {
   createRecord: (data: CreateDNSRecordInput) => Promise<DNSRecord>
   updateRecord: (id: number, data: Partial<CreateDNSRecordInput>) => Promise<DNSRecord>
   deleteRecord: (id: number) => Promise<void>
-}
-
-export interface CreateDNSRecordInput {
-  domainId: number
-  type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SRV' | 'CAA' | 'PTR' | 'SOA'
-  name: string
-  value: string
-  ttl?: number
-  priority?: number | null
 }
 
 export const useDNSRecordStore = create<DNSRecordState>(set => ({

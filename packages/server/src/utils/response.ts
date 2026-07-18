@@ -1,11 +1,7 @@
 import type { Response } from 'express'
+import type { ApiResponse } from 'share'
 
-export interface ApiResponse<T = any> {
-  code: number
-  message: string
-  data?: T
-}
-
+export type { ApiResponse }
 export type ApiResponseType<T = any> = ApiResponse<T>
 
 export function success<T>(data?: T, message = '操作成功'): ApiResponse<T> {

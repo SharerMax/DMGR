@@ -1,64 +1,13 @@
 import type { DateRange } from 'react-day-picker'
+import type { PaginatedResponse, RenewalLog, RenewalLogStats, RenewalLogFilters as SharedRenewalLogFilters } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface RenewalLog {
-  id: number
-  domainId: number
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'
-  message?: string
-  error?: string
-  renewedAt?: string
-  createdAt: string
-  domain?: {
-    id: number
-    name: string
-    userId: number
-    provider?: {
-      id: number
-      name: string
-      type: string
-    }
-  }
-}
+export type { RenewalLog, RenewalLogStats }
+export type RenewalLogsResponse = PaginatedResponse<RenewalLog>
 
-export interface RenewalLogStats {
-  summary: {
-    total: number
-    completed: number
-    failed: number
-    pending: number
-    skipped: number
-    successRate: number
-  }
-  recentLogs: Array<{
-    id: number
-    domainId: number
-    status: string
-    message?: string
-    error?: string
-    createdAt: string
-    domain: { name: string }
-  }>
-}
-
-export interface RenewalLogsResponse {
-  data: RenewalLog[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
-}
-
-export interface RenewalLogFilters {
-  domainId?: number
-  domainName?: string
-  providerId?: number
-  status?: string
-  startDate?: string
-  endDate?: string
+/** 前端过滤器（在共享类型基础上增加分页参数） */
+export interface RenewalLogFilters extends SharedRenewalLogFilters {
   page?: number
   pageSize?: number
 }

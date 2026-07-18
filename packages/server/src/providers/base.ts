@@ -4,6 +4,10 @@
  * 后续可以继承此类实现具体的 DNS 服务商
  */
 
+import type { ProviderFeatures, ProviderField } from 'share'
+
+export type { ProviderFeatures, ProviderField }
+
 export interface DNSRecordInput {
   type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SRV' | 'CAA' | 'PTR' | 'SOA'
   name: string
@@ -45,27 +49,6 @@ export interface DNSOperationResult<T = any> {
   data?: T
   error?: string
   code?: string
-}
-
-/**
- * 服务商字段配置
- */
-export interface ProviderField {
-  key: string
-  label: string
-  type: 'text' | 'password' | 'url'
-  required: boolean
-  placeholder?: string
-  description?: string
-}
-
-/**
- * 服务商支持的功能集合
- */
-export interface ProviderFeatures {
-  domainSync: boolean // 域名同步
-  dnsManagement: boolean // DNS 记录管理
-  autoRenew: boolean // 域名自动续期
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { AutoRenewConfig } from 'share'
 import type { PaginatedRenewalLogs, RenewalLogFilters } from '../models/renewalLog.js'
 import cron from 'node-cron'
 import { getDomainsByUserId } from '../models/domain.js'
@@ -10,15 +11,11 @@ import {
 } from '../models/renewalLog.js'
 import { executeAutoRenewal, getCurrentCronExpression, stopAutoRenewalScheduler, updateAutoRenewalSchedule } from './autoRenewService.js'
 
+export type { AutoRenewConfig }
+
 export interface RenewalLogQuery extends RenewalLogFilters {
   page: number
   pageSize: number
-}
-
-export interface AutoRenewConfig {
-  enabled: boolean
-  triggerMode: 'manual' | 'scheduled'
-  cronExpression: string
 }
 
 export interface RenewalSummaryResult {

@@ -1,42 +1,19 @@
 import type { DateRange } from 'react-day-picker'
+import type {
+  NotificationChannelType,
+  NotificationLog,
+  NotificationType,
+  PaginatedResponse,
+  NotificationLogFilters as SharedNotificationLogFilters,
+} from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export type NotificationType = 'expiry_reminder' | 'renewal_success' | 'renewal_failed' | 'sync_completed'
-export type NotificationChannel = 'email' | 'telegram' | 'feishu' | 'webhook'
+export type { NotificationChannelType, NotificationLog, NotificationType }
+export type NotificationLogsResponse = PaginatedResponse<NotificationLog>
 
-export interface NotificationLogDomain {
-  id: number
-  name: string
-}
-
-export interface NotificationLog {
-  id: number
-  userId: number
-  domainId?: number | null
-  domain?: NotificationLogDomain | null
-  type: NotificationType
-  content: string
-  channel: NotificationChannel
-  sentAt: string
-}
-
-export interface NotificationLogsResponse {
-  data: NotificationLog[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
-}
-
-export interface NotificationLogFilters {
-  type?: string
-  channel?: string
-  domainId?: number
-  startDate?: string
-  endDate?: string
+/** 前端过滤器（在共享类型基础上增加分页参数） */
+export interface NotificationLogFilters extends SharedNotificationLogFilters {
   page?: number
   pageSize?: number
 }

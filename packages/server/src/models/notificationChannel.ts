@@ -1,24 +1,10 @@
+import type { CreateNotificationChannelInput, UpdateNotificationChannelInput } from 'share'
 import type { NotificationChannel } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { NotificationChannel }
+export type { CreateNotificationChannelInput, NotificationChannel, UpdateNotificationChannelInput }
 
-export interface CreateNotificationChannelInput {
-  userId: number
-  type: string
-  name: string
-  config: Record<string, unknown>
-  isActive?: boolean
-}
-
-export interface UpdateNotificationChannelInput {
-  type?: string
-  name?: string
-  config?: Record<string, unknown>
-  isActive?: boolean
-}
-
-export async function createNotificationChannel(input: CreateNotificationChannelInput): Promise<NotificationChannel> {
+export async function createNotificationChannel(input: CreateNotificationChannelInput & { userId: number }): Promise<NotificationChannel> {
   return prisma.notificationChannel.create({
     data: {
       userId: input.userId,

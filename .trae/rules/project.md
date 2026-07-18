@@ -26,6 +26,14 @@
 - 升级依赖使用 `pnpm update --latest`（会同时推高 catalog 范围）
 - 依赖冲突时执行 `pnpm install --no-frozen-lockfile` 重新解析
 
+### 2.1 Workspace 内部包引用
+
+- Monorepo 包含三个 workspace：`packages/client` / `packages/server` / `packages/share`
+- `packages/share` 是**仅类型导出**的共享类型包（API 契约类型，详见 `skills/domain-manager-share`）
+- `client` 与 `server` 的 `package.json` 通过 `"share": "workspace:*"` 引用 share 包
+- share 包 `exports` 直接指向 `./src/index.ts`，配合 `moduleResolution: bundler` 实现**源码直消费**，无 build 步骤
+- 消费方必须使用 `import type { ... } from 'share'`（仅类型导入，编译期擦除，不进入运行时产物）
+
 ### minimumReleaseAge 安全策略
 
 pnpm 默认启用 `minimumReleaseAge`（新发布的包在时间窗口内不会被解析，用于防御供应链攻击）。
@@ -77,6 +85,8 @@ feat(server): add notifications module with email and webhook senders
 
 各层职责的详细规则见 `rules/backend.md` §2，前端调用链见 `rules/frontend.md`。
 
+**类型契约层（`packages/share`）**：跨前后端共享的 API 类型（实体、Input、Filter、Stats 等）必须定义在 share 包中，由前后端各自以 `import type` 消费。share 是**类型唯一来源**，禁止在前后端重复定义同名实体类型。详细约定见 `skills/domain-manager-share`。
+
 ---
 
 ## 5. 统一 API 响应格式（前后端契约）
@@ -117,7 +127,9 @@ feat(server): add notifications module with email and webhook senders
 - **禁止使用 `any`**，尤其在跨模块接口处。使用 `unknown` + 类型断言，或定义具体类型
 - 尽量让类型从代码中自然推导（避免显式声明冗余类型）
 - 对象/数组操作优先使用 `as const` 强化字面量类型
-- 前后端共享的类型定义需保持一致（Domain / Provider / DNSRecord 等）
+- 前后端共享的 API 契约类型（实体 / Input / Filter / Stats 等）**必须定义在 `packages/share`**，由前后端各自 `import type` 消费；禁止在 `client/` 或 `server/` 中重复定义同名类型
+- share 包实体类型用 **`string`（ISO 字符串）表示日期**（JSON wire 格式），后端 Prisma 生成的 `Date` 类型仅供内部函数签名使用，需在 model 层通过 re-export 或类型扩展衔接
+- share 包是**仅类型包**，禁止在 share 中导出任何运行时值（const、function、class）；运行时常量必须保留在前后端各自代码中
 
 ---
 
@@ -147,7 +159,7 @@ feat(server): add notifications module with email and webhook senders
 
 | ❌ 禁止 | ✅ 正确做法 |
 |--------|------------|
-| 后端 import 不带 `.js` 扩展名 | `import { xxx } from '@/utils/index.js'` |
+| 后端 import 不带 `.js` 扩展名 | `import { xxx } from '@/utils/index.js'`（**例外**：从 `share` 裸包导入类型时不带扩展名） |
 | `routes/` 层直接调用 `prisma.*` | 走 `routes → services → models → prisma` |
 | 数据库查询不包含 `userId` 过滤 | 使用 `findFirst({ where: { id, userId } })` |
 | 前端手写 `useState` 管理表单 | 使用 `react-hook-form` 的 `useForm` |
@@ -162,3 +174,6 @@ feat(server): add notifications module with email and webhook senders
 | 使用 `react-router-dom` 包 | React Router 8.x，API 从 `react-router` 导入 |
 | `@types/node` 升级到 v26+ | 固定 `^22.20.0` |
 | 硬编码状态色 `text-red-500` / `bg-green-100` | 使用 `text-status-*` / `bg-status-*-bg` 语义类 |
+| 前后端重复定义同一 API 实体类型 | 定义在 `packages/share`，两端 `import type` 消费 |
+| 从 `share` 用值导入（非 `import type`） | 一律 `import type { ... } from 'share'`（仅类型导出） |
+| 在 `share` 中导出 const / function / class | 运行时常量保留在前后端各自代码中 |

@@ -1,24 +1,8 @@
+import type { CreateDNSRecordInput, UpdateDNSRecordInput } from 'share'
 import type { DNSRecord } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { DNSRecord }
-
-export interface CreateDNSRecordInput {
-  domainId: number
-  type: string
-  name: string
-  value: string
-  ttl?: number
-  priority?: number
-}
-
-export interface UpdateDNSRecordInput {
-  type?: string
-  name?: string
-  value?: string
-  ttl?: number
-  priority?: number
-}
+export type { CreateDNSRecordInput, DNSRecord, UpdateDNSRecordInput }
 
 export async function createDNSRecord(input: CreateDNSRecordInput): Promise<DNSRecord> {
   return prisma.dNSRecord.create({

@@ -1,20 +1,16 @@
+import type { NotificationType, UpdateNotificationConfigInput } from 'share'
 import type { NotificationConfig } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { NotificationConfig }
+export type { NotificationConfig, NotificationType, UpdateNotificationConfigInput }
 
-/** 通知类型列表（与 notifications/base.ts 的 NotificationType 保持一致） */
-export const NOTIFICATION_TYPES = [
+/** 通知类型列表（与 share 的 NotificationType 保持一致） */
+export const NOTIFICATION_TYPES: NotificationType[] = [
   'expiry_reminder',
   'renewal_success',
   'renewal_failed',
   'sync_completed',
-] as const
-
-export interface UpdateNotificationConfigInput {
-  enabled?: boolean
-  expiryDays?: number | null
-}
+]
 
 export async function getNotificationConfigsByUserId(userId: number): Promise<NotificationConfig[]> {
   return prisma.notificationConfig.findMany({

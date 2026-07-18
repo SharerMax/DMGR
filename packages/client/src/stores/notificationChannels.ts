@@ -1,15 +1,19 @@
+import type {
+  CreateNotificationChannelInput,
+  NotificationChannel,
+  NotificationChannelType,
+  UpdateNotificationChannelInput,
+} from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface NotificationChannel {
-  id: number
-  userId: number
-  type: 'email' | 'webhook' | 'telegram' | 'feishu'
-  name: string
-  config: Record<string, unknown>
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
+type CreateChannelInput = CreateNotificationChannelInput
+
+export type {
+  CreateChannelInput,
+  NotificationChannel,
+  NotificationChannelType,
+  UpdateNotificationChannelInput,
 }
 
 interface NotificationChannelState {
@@ -20,13 +24,6 @@ interface NotificationChannelState {
   createChannel: (data: CreateChannelInput) => Promise<NotificationChannel>
   updateChannel: (id: number, data: Partial<CreateChannelInput>) => Promise<NotificationChannel>
   deleteChannel: (id: number) => Promise<void>
-}
-
-export interface CreateChannelInput {
-  type: 'email' | 'webhook' | 'telegram' | 'feishu'
-  name: string
-  config: Record<string, unknown>
-  isActive?: boolean
 }
 
 export const useNotificationChannelStore = create<NotificationChannelState>(set => ({

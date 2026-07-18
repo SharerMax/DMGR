@@ -1,7 +1,11 @@
+import type { SyncLogFilters } from 'share'
 import type { SyncLog } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { SyncLog }
+export type { SyncLog, SyncLogFilters }
+
+/** 后端内部过滤器（在共享类型基础上增加 userId 用于数据隔离） */
+export type SyncLogFiltersWithUser = SyncLogFilters & { userId?: number }
 
 export interface SyncLogWithProvider extends SyncLog {
   provider: {
@@ -9,14 +13,6 @@ export interface SyncLogWithProvider extends SyncLog {
     name: string
     type: string
   }
-}
-
-export interface SyncLogFilters {
-  providerId?: number
-  status?: string
-  startDate?: string
-  endDate?: string
-  userId?: number
 }
 
 export interface PaginatedSyncLogs {
@@ -29,7 +25,7 @@ export interface PaginatedSyncLogs {
   }
 }
 
-function buildWhere(filters: SyncLogFilters): any {
+function buildWhere(filters: SyncLogFiltersWithUser): any {
   const where: any = {}
 
   if (filters.providerId) {
@@ -58,7 +54,7 @@ function buildWhere(filters: SyncLogFilters): any {
 }
 
 export async function getSyncLogs(
-  filters: SyncLogFilters,
+  filters: SyncLogFiltersWithUser,
   page: number,
   pageSize: number,
 ): Promise<PaginatedSyncLogs> {

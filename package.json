@@ -13,7 +13,7 @@
     "build": "pnpm --filter server build",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "typecheck": "pnpm --filter server typecheck && pnpm --filter client typecheck"
+    "typecheck": "pnpm --filter share typecheck && pnpm --filter server typecheck && pnpm --filter client typecheck"
   },
   "dependencies": {
     "date-fns": "catalog:",

@@ -1,20 +1,13 @@
+import type { CreateDomainInput, Domain } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface Domain {
-  id: number
-  name: string
-  providerId: number | null
-  provider_name?: string | null
-  userId: number
-  expiryDate: string | null
-  autoRenew: boolean
-  autoRenewDays: number | null // 自动续期触发阈值
-  renewalPrice: number | null
-  status: string
-  notes: string | null
-  createdAt: string
-  updatedAt: string
+export type { CreateDomainInput, Domain }
+
+/** 前端过滤器（providerId 支持 'all' 哨兵值用于 UI） */
+export interface DomainFilters {
+  search?: string
+  providerId?: number | 'all'
 }
 
 interface DomainState {
@@ -25,21 +18,6 @@ interface DomainState {
   createDomain: (data: CreateDomainInput) => Promise<Domain>
   updateDomain: (id: number, data: Partial<CreateDomainInput>) => Promise<Domain>
   deleteDomain: (id: number) => Promise<void>
-}
-
-export interface DomainFilters {
-  search?: string
-  providerId?: number | 'all'
-}
-
-export interface CreateDomainInput {
-  name: string
-  providerId?: number | null
-  expiryDate?: string | null
-  autoRenew?: boolean
-  autoRenewDays?: number | null
-  renewalPrice?: number | null
-  notes?: string | null
 }
 
 export const useDomainStore = create<DomainState>(set => ({

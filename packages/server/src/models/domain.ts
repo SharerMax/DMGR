@@ -1,24 +1,14 @@
+import type { CreateDomainInput, UpdateDomainInput } from 'share'
 import type { Domain } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { Domain }
+export type { CreateDomainInput, Domain, UpdateDomainInput }
 
 export interface DomainWithProvider extends Domain {
   provider: { name: string } | null
 }
 
-export interface CreateDomainInput {
-  name: string
-  providerId?: number | null
-  userId: number
-  expiryDate?: string | null
-  autoRenew?: boolean
-  autoRenewDays?: number | null
-  renewalPrice?: number | null
-  notes?: string | null
-}
-
-export async function createDomain(input: CreateDomainInput): Promise<Domain> {
+export async function createDomain(input: CreateDomainInput & { userId: number }): Promise<Domain> {
   return prisma.domain.create({
     data: {
       name: input.name,
@@ -78,17 +68,6 @@ export async function getExpiringDomains(
     },
     orderBy: { expiryDate: 'asc' },
   })
-}
-
-export interface UpdateDomainInput {
-  name?: string
-  providerId?: number | null
-  expiryDate?: string | null
-  autoRenew?: boolean
-  autoRenewDays?: number | null
-  renewalPrice?: number | null
-  status?: string
-  notes?: string | null
 }
 
 export async function updateDomain(

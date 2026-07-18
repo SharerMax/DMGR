@@ -1,13 +1,8 @@
+import type { CreateUserInput } from 'share'
 import type { User } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { User }
-
-export interface CreateUserInput {
-  username: string
-  password: string
-  email?: string
-}
+export type { CreateUserInput, User }
 
 export async function createUser(input: CreateUserInput): Promise<User> {
   return prisma.user.create({

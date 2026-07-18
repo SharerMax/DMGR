@@ -1,12 +1,8 @@
+import type { User } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface User {
-  id: number
-  username: string
-  email: string | null
-  createdAt?: string
-}
+export type { User }
 
 interface AuthState {
   user: User | null

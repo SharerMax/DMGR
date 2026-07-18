@@ -1,39 +1,8 @@
+import type { CreateProviderInput, Provider, ProviderFeatures, ProviderField, ProviderType } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface ProviderField {
-  key: string
-  label: string
-  type: 'text' | 'password' | 'url'
-  required: boolean
-  placeholder?: string
-  description?: string
-}
-
-export interface ProviderFeatures {
-  domainSync: boolean
-  dnsManagement: boolean
-  autoRenew: boolean
-}
-
-export interface ProviderType {
-  id: string
-  name: string
-  description?: string
-  fields: ProviderField[]
-  features: ProviderFeatures
-  maxRenewalDays?: number // 过期前最大可续期天数
-}
-
-export interface Provider {
-  id: number
-  type: string
-  name: string
-  config: string
-  userId: number
-  createdAt: string
-  updatedAt: string
-}
+export type { CreateProviderInput, Provider, ProviderFeatures, ProviderField, ProviderType }
 
 interface ProviderState {
   providers: Provider[]
@@ -46,12 +15,6 @@ interface ProviderState {
   updateProvider: (id: number, data: Partial<CreateProviderInput>) => Promise<Provider>
   deleteProvider: (id: number) => Promise<{ deletedDomainCount: number }>
   syncDomains: (id: number) => Promise<{ syncedCount: number, domains: any[], dnsRecordsInserted: number, dnsRecordsDeleted: number }>
-}
-
-export interface CreateProviderInput {
-  type: string
-  name: string
-  config: Record<string, string>
 }
 
 export const useProviderStore = create<ProviderState>(set => ({

@@ -25,6 +25,7 @@
     "pino": "catalog:",
     "pino-pretty": "catalog:",
     "rotating-file-stream": "catalog:",
+    "share": "workspace:*",
     "tencentcloud-sdk-nodejs-dnspod": "catalog:",
     "tencentcloud-sdk-nodejs-domain": "catalog:",
     "zod": "catalog:"

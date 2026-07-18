@@ -1,16 +1,10 @@
+import type { CreateProviderInput } from 'share'
 import type { Provider } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { Provider }
+export type { CreateProviderInput, Provider }
 
-export interface CreateProviderInput {
-  type: string
-  name: string
-  config: Record<string, string>
-  userId: number
-}
-
-export async function createProvider(input: CreateProviderInput): Promise<Provider> {
+export async function createProvider(input: CreateProviderInput & { userId: number }): Promise<Provider> {
   return prisma.provider.create({
     data: {
       type: input.type,

@@ -24,6 +24,7 @@
     "react-hook-form": "catalog:",
     "react-router": "catalog:",
     "shadcn": "catalog:",
+    "share": "workspace:*",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
     "zustand": "catalog:"

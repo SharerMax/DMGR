@@ -1,22 +1,17 @@
+import type { NotificationLogFilters } from 'share'
 import type { NotificationLog } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { NotificationLog }
+export type { NotificationLog, NotificationLogFilters }
+
+/** 后端内部过滤器（在共享类型基础上增加 userId 用于数据隔离） */
+export type NotificationLogFiltersWithUser = NotificationLogFilters & { userId?: number }
 
 export interface NotificationLogWithDomain extends NotificationLog {
   domain: {
     id: number
     name: string
   } | null
-}
-
-export interface NotificationLogFilters {
-  type?: string
-  channel?: string
-  domainId?: number
-  startDate?: string
-  endDate?: string
-  userId?: number
 }
 
 export interface PaginatedNotificationLogs {
@@ -29,7 +24,7 @@ export interface PaginatedNotificationLogs {
   }
 }
 
-function buildWhere(filters: NotificationLogFilters): any {
+function buildWhere(filters: NotificationLogFiltersWithUser): any {
   const where: any = {}
 
   if (filters.type) {
@@ -61,7 +56,7 @@ function buildWhere(filters: NotificationLogFilters): any {
 }
 
 export async function getNotificationLogs(
-  filters: NotificationLogFilters,
+  filters: NotificationLogFiltersWithUser,
   page: number,
   pageSize: number,
 ): Promise<PaginatedNotificationLogs> {

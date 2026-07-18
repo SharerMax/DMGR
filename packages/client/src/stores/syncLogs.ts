@@ -1,57 +1,20 @@
 import type { DateRange } from 'react-day-picker'
+import type {
+  DNSChangeDetail,
+  DomainChange,
+  PaginatedResponse,
+  SyncLogFilters as SharedSyncLogFilters,
+  SyncDetails,
+  SyncLog,
+} from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface DomainChange {
-  name: string
-}
+export type { DNSChangeDetail, DomainChange, SyncDetails, SyncLog }
+export type SyncLogsResponse = PaginatedResponse<SyncLog>
 
-export interface DNSChangeDetail {
-  domain: string
-  type: string
-  name: string
-  value: string
-}
-
-export interface SyncDetails {
-  domainsAdded: DomainChange[]
-  dnsInserted: DNSChangeDetail[]
-  dnsDeleted: DNSChangeDetail[]
-}
-
-export interface SyncLog {
-  id: number
-  providerId: number
-  userId: number
-  status: 'success' | 'failed' | 'partial'
-  domainsSynced: number
-  dnsInserted: number
-  dnsDeleted: number
-  error: string | null
-  details: string | null
-  createdAt: string
-  provider?: {
-    id: number
-    name: string
-    type: string
-  }
-}
-
-export interface SyncLogsResponse {
-  data: SyncLog[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
-}
-
-export interface SyncLogFilters {
-  providerId?: number
-  status?: string
-  startDate?: string
-  endDate?: string
+/** 前端过滤器（在共享类型基础上增加分页参数） */
+export interface SyncLogFilters extends SharedSyncLogFilters {
   page?: number
   pageSize?: number
 }

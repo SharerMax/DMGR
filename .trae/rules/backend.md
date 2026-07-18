@@ -41,6 +41,10 @@
 - **所有 `import` 语句必须带 `.js` 扩展名**（TypeScript 编译为 ESM，Node.js 要求明确扩展名）
 - 使用绝对路径别名 `@/` 从 `src/` 根目录引用，相对路径仅限同一模块内部
 - 正确示例：`import { logger } from '@/utils/index.js'`；错误示例：`import { logger } from './utils'`
+- **例外**：从 workspace 裸包 `share` 导入类型时**不带扩展名**，且**必须使用 `import type`**（share 是仅类型包，源码直消费，详见 `skills/domain-manager-share`）
+  - 正确：`import type { Domain, CreateDomainInput } from 'share'`
+  - 错误：`import { Domain } from 'share'`（值导入，会导致运行时找不到模块）
+  - 错误：`import type { Domain } from 'share/src/domain.js'`（不应直接穿透到子路径）
 
 ---
 
@@ -71,7 +75,9 @@
 - 列表查询使用 `findMany({ where: { userId } })`
 - 关联查询在 model 层使用 `include` 预先拉取，避免 N+1 查询
 - model 层只包含纯 CRUD，**禁止**业务逻辑、鉴权、调用三方 API
-- 用法模板见 `skills/domain-manager-backend` §8
+- **share 类型衔接**：share 的 `Input`/`Filter` 类型**不含 `userId`**（API 契约层不能信任客户端）。model 函数签名必须用交叉类型扩展：`input: CreateDomainInput & { userId: number }`、`RenewalLogFilters & { userId?: number }`
+- **Prisma Date vs share string**：share 实体类型用 `string` 表示日期（JSON wire 格式），后端 Prisma 生成类型用 `Date`。model 层通过 `import type { Domain } from '../prisma/generated/client'` 引用 Prisma 版本作为函数返回类型，并在 model 文件顶部 `export type { Domain } from 'share'` 覆盖（API 响应类型仍以 share 为准）
+- 用法模板见 `skills/domain-manager-backend` §8、`skills/domain-manager-share` §3
 
 ---
 

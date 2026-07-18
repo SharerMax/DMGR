@@ -1,44 +1,8 @@
+import type { DashboardData, DashboardStats, ExpiringDomain, RecentNotification, RecentRenewal } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export interface DashboardStats {
-  totalDomains: number
-  totalProviders: number
-  expiringDomains: number
-  activeDomains: number
-}
-
-export interface RecentNotification {
-  id: number
-  type: string
-  content: string
-  channel: string
-  sentAt: string
-  domainName?: string | null
-}
-
-export interface RecentRenewal {
-  id: number
-  status: string
-  message: string | null
-  domainName: string
-  createdAt: string
-}
-
-export interface ExpiringDomain {
-  id: number
-  name: string
-  expiryDate: string | null
-  daysUntilExpiry: number
-  providerName?: string | null
-}
-
-export interface DashboardData {
-  stats: DashboardStats
-  recentNotifications: RecentNotification[]
-  recentRenewals: RecentRenewal[]
-  expiringDomains: ExpiringDomain[]
-}
+export type { DashboardData, DashboardStats, ExpiringDomain, RecentNotification, RecentRenewal }
 
 interface DashboardState {
   data: DashboardData | null

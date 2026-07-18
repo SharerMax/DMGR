@@ -1,7 +1,7 @@
 # AGENTS.md — Domain Manager 项目指南
 
 > **Domain Manager** — 集中管理多服务商域名与 DNS 记录的单页应用（SPA）。
-> 后端：Express.js 5.2 + TypeScript + Prisma + SQLite；前端：React 19 + Vite + shadcn/ui + Zustand + react-hook-form。Monorepo：`packages/client` + `packages/server`。
+> 后端：Express.js 5.2 + TypeScript + Prisma + SQLite；前端：React 19 + Vite + shadcn/ui + Zustand + react-hook-form；共享类型：`packages/share`（前后端公用的 API 契约类型，仅类型导出）。Monorepo：`packages/client` + `packages/server` + `packages/share`。
 
 ---
 
@@ -17,6 +17,9 @@
 │
 ├─ 修改 后端 Express 代码（API/Service/Model/Provider）
 │   └─ 必读：.trae/rules/backend.md + .trae/skills/domain-manager-backend/SKILL.md
+│
+├─ 修改 / 新增 前后端共享的 API 类型（实体、Input、Filter、Stats 等）
+│   └─ 必读：.trae/skills/domain-manager-share/SKILL.md
 │
 ├─ 配置 / 命令 / 依赖 / 迁移 / 开发流程问题
 │   └─ 必读：.trae/rules/local.md + .trae/skills/domain-manager-dev/SKILL.md
@@ -48,13 +51,15 @@ DMGR/
 │   └── skills/                # 项目技能（操作指南，含代码模板）
 │       ├── domain-manager-backend/SKILL.md   # 后端开发指南（CRUD 模板、Zod、Prisma、加新 Provider）
 │       ├── domain-manager-frontend/SKILL.md  # 前端开发指南（表单模板、Controller、Zustand、shadcn）
+│       ├── domain-manager-share/SKILL.md     # 共享类型指南（share 包使用与扩展模式）
 │       ├── domain-manager-dev/SKILL.md       # 开发工作流（依赖、DB 操作、环境变量、构建）
 │       ├── domain-manager-debug/SKILL.md     # 问题排查（问题→修复映射、Provider 集成调试）
 │       ├── domain-manager-review/SKILL.md    # 代码审查（审查清单、反模式代码示例、自检清单）
 │       └── optimize-docs-structure/SKILL.md  # 文档结构优化（三层分层 + SSOT 方法论）
 ├── packages/
 │   ├── client/               # 前端 (React 19 + Vite + shadcn/ui + Zustand + react-hook-form)
-│   └── server/               # 后端 (Express 5 + Prisma + SQLite + Zod + Pino)
+│   ├── server/               # 后端 (Express 5 + Prisma + SQLite + Zod + Pino)
+│   └── share/                # 前后端共享类型（仅类型导出，源码直消费，无 build 步骤）
 ├── pnpm-workspace.yaml       # catalog 依赖版本声明
 └── package.json              # 根 workspace：pnpm typecheck / lint 等聚合脚本
 ```
@@ -71,6 +76,7 @@ DMGR/
 | `rules/local.md` | 本地环境（OS、版本、命令速查、测试账号、Windows 问题） | 环境配置 |
 | `skills/domain-manager-backend` | 后端开发指南（CRUD 模板、Zod 模式、Prisma 模式、DB 模型速查、加新 Provider） | 代码模板 |
 | `skills/domain-manager-frontend` | 前端开发指南（表单模板、Controller、Zustand、shadcn 模板、语义色） | 代码模板 |
+| `skills/domain-manager-share` | 共享类型指南（share 包设计、源码直消费模式、前后端扩展约定、陷阱） | 操作指南 |
 | `skills/domain-manager-dev` | 开发工作流（变更流程、依赖管理、DB 操作、环境变量） | 操作指南 |
 | `skills/domain-manager-debug` | 调试指南（前后端问题排查、Provider 集成调试、快速修复表） | 操作指南 |
 | `skills/domain-manager-review` | 代码审查（审查清单、反模式代码示例、自检清单） | 审查清单 |

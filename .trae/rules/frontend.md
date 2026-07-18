@@ -104,7 +104,10 @@
 - Store 的 action 使用 `set()` 更新状态
 - HTTP 请求**必须**使用 `lib/api.ts` 的 Axios 实例，**禁止**在组件中直接 `fetch()` 或 `axios()`
 - 错误时必须 re-throw，让页面层可以 catch 并 toast
-- Store 模板见 `skills/domain-manager-frontend` §6
+- **共享类型**：store 中使用的实体类型（`Domain` / `Provider` / `DNSRecord` 等）、Input 类型、Stats 类型**必须**从 `share` 包 `import type` 消费，禁止在 `stores/` 中重复定义同名类型
+  - 正确：`import type { Domain, CreateDomainInput } from 'share'`
+  - **本地扩展例外**：当 share 类型不满足前端特定需求时（如 UI Select 的 `'all'` 哨兵值、分页参数 `page`/`pageSize`），可在 store 中定义本地扩展接口继承 share 类型：`interface DomainFilters extends SharedDomainFilters { page?: number; pageSize?: number }`
+- Store 模板见 `skills/domain-manager-frontend` §6、`skills/domain-manager-share` §4
 
 ---
 
@@ -112,7 +115,8 @@
 
 - 统一使用 `lib/api.ts` 的 Axios 实例，**禁止直接 `fetch()`**
 - Axios 拦截器自动处理：附带 JWT token、401 自动跳转 `/login`、成功响应自动提取 `res.data.data`、错误时 `error.message` 即为后端可读消息
-- 调用模板见 `skills/domain-manager-frontend` §7
+- **响应类型**：所有 API 调用的响应类型必须从 `share` 包 `import type` 消费（`Domain` / `Provider` / `PaginatedResponse<T>` / `ApiResponse<T>` 等），与后端 API 契约保持一致
+- 调用模板见 `skills/domain-manager-frontend` §7、`skills/domain-manager-share` §4
 
 ---
 

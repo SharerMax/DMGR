@@ -1,7 +1,11 @@
+import type { RenewalLogFilters } from 'share'
 import type { RenewalLog } from '../prisma/generated/client'
 import { prisma } from '../db/index.js'
 
-export type { RenewalLog }
+export type { RenewalLog, RenewalLogFilters }
+
+/** 后端内部过滤器（在共享类型基础上增加 userId 用于数据隔离） */
+export type RenewalLogFiltersWithUser = RenewalLogFilters & { userId?: number }
 
 export interface RenewalLogWithDomain extends RenewalLog {
   domain: {
@@ -16,16 +20,6 @@ export interface RenewalLogWithDomain extends RenewalLog {
   }
 }
 
-export interface RenewalLogFilters {
-  domainId?: number
-  domainName?: string
-  providerId?: number
-  status?: string
-  startDate?: string
-  endDate?: string
-  userId?: number
-}
-
 export interface PaginatedRenewalLogs {
   data: RenewalLogWithDomain[]
   pagination: {
@@ -36,7 +30,7 @@ export interface PaginatedRenewalLogs {
   }
 }
 
-function buildWhere(filters: RenewalLogFilters): any {
+function buildWhere(filters: RenewalLogFiltersWithUser): any {
   const where: any = {}
 
   if (filters.domainId) {
@@ -80,7 +74,7 @@ function buildWhere(filters: RenewalLogFilters): any {
 }
 
 export async function getRenewalLogs(
-  filters: RenewalLogFilters,
+  filters: RenewalLogFiltersWithUser,
   page: number,
   pageSize: number,
 ): Promise<PaginatedRenewalLogs> {

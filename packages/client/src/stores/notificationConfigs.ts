@@ -1,18 +1,8 @@
+import type { NotificationConfig, NotificationConfigType, UpdateNotificationConfigInput } from 'share'
 import { create } from 'zustand'
 import api from '@/lib/api'
 
-export type NotificationConfigType = 'expiry_reminder' | 'renewal_success' | 'renewal_failed' | 'sync_completed'
-
-export interface NotificationConfig {
-  type: NotificationConfigType
-  enabled: boolean
-  expiryDays: number | null
-}
-
-export interface UpdateNotificationConfigInput {
-  enabled?: boolean
-  expiryDays?: number | null
-}
+export type { NotificationConfig, NotificationConfigType, UpdateNotificationConfigInput }
 
 interface NotificationConfigState {
   configs: NotificationConfig[]
