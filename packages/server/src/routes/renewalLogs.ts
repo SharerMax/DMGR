@@ -18,6 +18,7 @@ const router = Router()
 const querySchema = z.object({
   domainId: z.string().optional(),
   domainName: z.string().optional(),
+  providerId: z.string().optional(),
   status: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -31,6 +32,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     const result = await getUserRenewalLogs(req.userId!, {
       domainId: query.domainId ? Number.parseInt(query.domainId, 10) : undefined,
       domainName: query.domainName,
+      providerId: query.providerId ? Number.parseInt(query.providerId, 10) : undefined,
       status: query.status,
       startDate: query.startDate,
       endDate: query.endDate,

@@ -19,6 +19,7 @@ export interface RenewalLogWithDomain extends RenewalLog {
 export interface RenewalLogFilters {
   domainId?: number
   domainName?: string
+  providerId?: number
   status?: string
   startDate?: string
   endDate?: string
@@ -45,6 +46,12 @@ function buildWhere(filters: RenewalLogFilters): any {
     where.domain = {
       ...where.domain,
       name: { contains: filters.domainName },
+    }
+  }
+  if (filters.providerId) {
+    where.domain = {
+      ...where.domain,
+      providerId: filters.providerId,
     }
   }
   if (filters.status) {
