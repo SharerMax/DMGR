@@ -90,6 +90,7 @@
 | Store | 文件 | 管理内容 |
 |-------|------|---------|
 | 认证 | `auth.ts` | 用户信息、token、登录/注销 |
+| 概览 | `dashboard.ts` | 首页概览数据（统计、最近通知、续期记录） |
 | 域名 | `domains.ts` | 域名列表、CRUD |
 | 服务商 | `providers.ts` | 服务商列表、CRUD、同步操作 |
 | DNS 记录 | `dnsRecords.ts` | DNS 记录管理 |
@@ -148,7 +149,8 @@
 | 路由 | 页面 | 说明 |
 |------|------|------|
 | `/login` | `Login.tsx` | 登录 / 注册（未受保护） |
-| `/` | `Domains.tsx` | 域名管理首页（受保护） |
+| `/` | `Dashboard.tsx` | 概览首页（受保护） |
+| `/domains` | `Domains.tsx` | 域名管理（受保护） |
 | `/providers` | `Providers.tsx` | 服务商管理（受保护） |
 | `/sync-logs` | `SyncLogs.tsx` | 同步记录（受保护） |
 | `/notification-configs` | `NotificationConfigs.tsx` | 通知类型开关与过期提醒阈值（受保护） |
@@ -160,11 +162,12 @@
 
 - 所有受保护路由使用 `ProtectedRoute` 组件包裹，未登录自动重定向到 `/login`
 
-**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 4 项，子项放入下拉菜单：
+**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 5 项：
 
 | 顶级菜单 | 子项 |
 |---------|------|
-| 域名（dropdown） | 域名列表 (`/`) |
+| 概览 | 概览首页 (`/`) |
+| 域名（dropdown） | 域名列表 (`/domains`) |
 | 服务商（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
 | 通知（dropdown） | 通知配置 (`/notification-configs`)、渠道配置 (`/notification-channels`)、通知记录 (`/notification-logs`) |
 | 续期（dropdown） | 续期日志 (`/renewal-logs`)、续期配置 (`/auto-renew-config`) |

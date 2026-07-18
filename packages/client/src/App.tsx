@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/navigation-menu'
 import { ConfirmDialogProvider, useConfirm } from '@/hooks/useConfirm'
 import AutoRenewConfig from '@/pages/AutoRenewConfig'
+import Dashboard from '@/pages/Dashboard'
 import Domains from '@/pages/Domains'
 import Login from '@/pages/Login'
 import NotificationChannels from '@/pages/NotificationChannels'
@@ -71,6 +72,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <NavigationMenu viewport={false} className="justify-start">
                   <NavigationMenuList>
                     <NavigationMenuItem>
+                      <NavigationMenuLink onClick={() => navigate('/')}>
+                        <Globe className="mr-2 h-4 w-4" />
+                        概览
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+
+                    <NavigationMenuItem>
                       <NavigationMenuTrigger>
                         <Globe className="h-4 w-4 mr-2" />
                         域名
@@ -78,7 +86,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/')}>
+                            <NavigationMenuLink onClick={() => navigate('/domains')}>
                               <Globe className="mr-2 h-4 w-4" />
                               域名列表
                             </NavigationMenuLink>
@@ -236,6 +244,14 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route
         path="/"
+        element={(
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/domains"
         element={(
           <ProtectedRoute>
             <Domains />

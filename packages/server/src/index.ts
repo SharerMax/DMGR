@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import { initDatabase } from './db/index.js'
 import authRoutes from './routes/auth.js'
+import dashboardRoutes from './routes/dashboard.js'
 import dnsRecordRoutes from './routes/dnsRecords.js'
 import domainRoutes from './routes/domains.js'
 import notificationChannelRoutes from './routes/notificationChannels.js'
@@ -31,6 +32,7 @@ app.use('/api/notification-logs', notificationLogRoutes)
 app.use('/api/dns-records', dnsRecordRoutes)
 app.use('/api/renewal-logs', renewalLogRoutes)
 app.use('/api/sync-logs', syncLogRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 
 // 健康检查
 app.get('/api/health', (req, res) => {

@@ -83,7 +83,8 @@ packages/server/src/
 │   ├── notificationConfigs.ts
 │   ├── notificationLogs.ts
 │   ├── renewalLogs.ts
-│   └── syncLogs.ts
+│   ├── syncLogs.ts
+│   └── dashboard.ts         # 概览数据
 ├── services/                # 业务服务层
 │   ├── autoRenewService.ts  # 自动续期调度
 │   ├── providerService.ts   # 服务商业务逻辑（含同步写 SyncLog）
@@ -95,7 +96,8 @@ packages/server/src/
 │   ├── renewalLogService.ts
 │   ├── syncLogService.ts    # 同步日志业务层
 │   ├── userService.ts
-│   └── notificationService.ts
+│   ├── notificationService.ts
+│   └── dashboardService.ts  # 概览数据聚合
 ├── utils/                   # 工具函数
 │   ├── logger.ts
 │   ├── requestLogger.ts
