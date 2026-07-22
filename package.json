@@ -13,7 +13,12 @@
     "build": "pnpm --filter server build",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "typecheck": "pnpm --filter share typecheck && pnpm --filter server typecheck && pnpm --filter client typecheck"
+    "typecheck": "pnpm --filter share typecheck && pnpm --filter server typecheck && pnpm --filter client typecheck",
+    "lint-staged": "lint-staged",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": "eslint --fix"
   },
   "dependencies": {
     "date-fns": "catalog:",
@@ -25,6 +30,8 @@
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
     "typescript": "catalog:"
   }
 }
