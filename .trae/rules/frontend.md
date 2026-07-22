@@ -72,6 +72,7 @@
 - **Select API 变更**：`onValueChange` 回调的 `value` 类型为 `string | null`（无选中项时返回 `null`，不是 `undefined`）。业务代码需用 `value ?? undefined` 或 `value ?? 'all'` 转换
 - **AlertDialog API 变更**：Base UI 没有独立的 `Action` primitive，shadcn 模板把 `AlertDialogAction`/`AlertDialogCancel` 实现为 Button 包装；不要在它们内部再嵌套 `<Button>`，直接传 `variant`/`size`/`onClick` 等 props
 - 通过 `pnpm dlx shadcn@latest add <component> --overwrite --yes` 重新拉取模板以切换 primitive 或同步模板更新
+- **Base UI 文档参考**：`https://base-ui.com/llms.txt`（LLM 友好的文档索引，包含所有组件的 API 与用法链接）
 
 ### 3.3 组件使用模式
 

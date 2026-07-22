@@ -18,7 +18,6 @@ import {
   ComboboxItem,
   ComboboxLabel,
   ComboboxList,
-  ComboboxValue,
 } from '@/components/ui/combobox'
 import {
   Dialog,
@@ -160,7 +159,13 @@ export default function NotificationLogs() {
               onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value ?? undefined)}
             >
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="选择类型" />
+                <SelectValue placeholder="选择类型">
+                  {(value: string | null) => {
+                    if (!value || value === 'all')
+                      return '全部类型'
+                    return TYPE_LABELS[value] || value
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部类型</SelectItem>
@@ -175,7 +180,13 @@ export default function NotificationLogs() {
               onValueChange={value => handleFilterChange('channel', value === 'all' ? undefined : value ?? undefined)}
             >
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="选择渠道" />
+                <SelectValue placeholder="选择渠道">
+                  {(value: string | null) => {
+                    if (!value || value === 'all')
+                      return '全部渠道'
+                    return CHANNEL_LABELS[value] || value
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部渠道</SelectItem>
@@ -187,11 +198,16 @@ export default function NotificationLogs() {
             </Select>
             <Combobox
               value={filters.domainId?.toString() || ''}
-              onValueChange={value => handleFilterChange('domainId', value ? Number(value) : undefined)}
+              onValueChange={(value) => {
+                handleFilterChange('domainId', value ? Number(value) : undefined)
+                if (!value)
+                  setSearchQuery('')
+              }}
             >
               <ComboboxInput
                 placeholder="搜索域名..."
                 className="w-52"
+                showClear
                 value={filters.domainId ? selectedDomain?.name || '' : searchQuery}
                 onInput={e => setSearchQuery((e.target as HTMLInputElement).value)}
               />
@@ -226,7 +242,6 @@ export default function NotificationLogs() {
                         )}
                 </ComboboxList>
               </ComboboxContent>
-              <ComboboxValue />
             </Combobox>
             <DateRangePicker
               value={dateRange}

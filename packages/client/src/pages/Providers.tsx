@@ -341,7 +341,13 @@ export default function Providers() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={value => handleTypeChange(value ?? '')}>
                       <SelectTrigger>
-                        <SelectValue placeholder="请选择服务商类型" />
+                        <SelectValue placeholder="请选择服务商类型">
+                          {(value: string | null) => {
+                            if (!value)
+                              return null
+                            return providerTypes.find(t => t.id === value)?.name || value
+                          }}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {providerTypes.map(type => (

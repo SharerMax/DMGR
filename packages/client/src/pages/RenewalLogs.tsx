@@ -165,7 +165,13 @@ export default function RenewalLogs() {
               onValueChange={value => handleFilterChange('providerId', value === 'all' ? undefined : Number(value))}
             >
               <SelectTrigger className="w-30">
-                <SelectValue placeholder="全部服务商" />
+                <SelectValue placeholder="全部服务商">
+                  {(value: string | null) => {
+                    if (!value || value === 'all')
+                      return '全部服务商'
+                    return providers.find(p => p.id === value)?.name || '未知'
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部服务商</SelectItem>
@@ -181,7 +187,13 @@ export default function RenewalLogs() {
               onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}
             >
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="选择状态" />
+                <SelectValue placeholder="选择状态">
+                  {(value: string | null) => {
+                    if (!value || value === 'all')
+                      return '全部状态'
+                    return STATUS_LABELS[value] || value
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>

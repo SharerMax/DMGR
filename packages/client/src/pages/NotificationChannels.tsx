@@ -265,7 +265,19 @@ export default function NotificationChannels() {
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="选择渠道类型" />
+                      <SelectValue placeholder="选择渠道类型">
+                        {(value: string | null) => {
+                          if (!value)
+                            return null
+                          const labels: Record<string, string> = {
+                            email: '邮件',
+                            webhook: 'Webhook',
+                            telegram: 'Telegram',
+                            feishu: '飞书',
+                          }
+                          return labels[value] || value
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="email">邮件</SelectItem>

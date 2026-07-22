@@ -411,7 +411,13 @@ export default function Domains() {
               onValueChange={value => setFilters({ ...filters, providerId: value ?? 'all' })}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="全部服务商" />
+                <SelectValue placeholder="全部服务商">
+                  {(value: string | null) => {
+                    if (!value || value === 'all')
+                      return '全部服务商'
+                    return providers.find(p => p.id.toString() === value)?.name || '未知'
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部服务商</SelectItem>
@@ -565,7 +571,13 @@ export default function Domains() {
                     onValueChange={value => field.onChange(value === 'none' ? '' : value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="选择服务商" />
+                      <SelectValue placeholder="选择服务商">
+                        {(value: string | null) => {
+                          if (!value || value === 'none')
+                            return '无'
+                          return providers.find(p => p.id.toString() === value)?.name || '未知'
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">无</SelectItem>
