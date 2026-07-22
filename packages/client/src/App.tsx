@@ -79,7 +79,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/domains')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/domains')}>
                               <Globe className="mr-2 h-4 w-4" />
                               域名列表
                             </NavigationMenuLink>
@@ -96,13 +96,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/providers')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/providers')}>
                               <Server className="mr-2 h-4 w-4" />
                               服务商列表
                             </NavigationMenuLink>
                           </li>
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/sync-logs')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/sync-logs')}>
                               <RefreshCw className="mr-2 h-4 w-4" />
                               同步记录
                             </NavigationMenuLink>
@@ -119,19 +119,19 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/notification-channels')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/notification-channels')}>
                               <Mailbox className="mr-2 h-4 w-4" />
                               渠道配置
                             </NavigationMenuLink>
                           </li>
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/notification-logs')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/notification-logs')}>
                               <Send className="mr-2 h-4 w-4" />
                               通知记录
                             </NavigationMenuLink>
                           </li>
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/notification-configs')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/notification-configs')}>
                               <Settings className="mr-2 h-4 w-4" />
                               通知配置
                             </NavigationMenuLink>
@@ -148,13 +148,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <NavigationMenuContent>
                         <ul className="grid w-50 gap-1">
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/renewal-logs')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/renewal-logs')}>
                               <FileText className="mr-2 h-4 w-4" />
                               续期日志
                             </NavigationMenuLink>
                           </li>
                           <li>
-                            <NavigationMenuLink onClick={() => navigate('/auto-renew-config')}>
+                            <NavigationMenuLink className="cursor-pointer" onClick={() => navigate('/auto-renew-config')}>
                               <Settings className="mr-2 h-4 w-4" />
                               续期配置
                             </NavigationMenuLink>
