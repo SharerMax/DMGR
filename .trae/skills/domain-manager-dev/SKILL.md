@@ -93,7 +93,7 @@ pnpm 对新发布的包设置了 "冷静期"。如果某个包因版本太新被
 ```bash
 cd packages/server
 
-# 修改 schema.prisma 后执行：创建并应用迁移
+# 修改 prisma/schema.prisma 后执行：创建并应用迁移
 pnpm prisma migrate dev --name <描述性名称>
 # 示例: pnpm prisma migrate dev --name add_notes_field_to_domain
 

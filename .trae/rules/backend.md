@@ -83,7 +83,7 @@
 
 ## 7. 数据库操作规范
 
-- Schema 修改流程：修改 `schema.prisma` → `pnpm prisma migrate dev --name <名称>` → `pnpm prisma generate`（命令详见 `rules/local.md` §3）
+- Schema 修改流程：修改 `prisma/schema.prisma`（位于 `packages/server/prisma/`，业务无关目录）→ `pnpm prisma migrate dev --name <名称>` → `pnpm prisma generate`（命令详见 `rules/local.md` §3）
 - 可空字段正确声明为 `DateTime?` / `String?` 等
 - 新字段设置合理的默认值或保持可选
 - 删除 Provider 时必须手动级联删除关联域名（事务保证原子性），DB 层为 `SetNull`

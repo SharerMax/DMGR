@@ -36,10 +36,10 @@ packages/server/src/
 │   ├── notificationLog.ts
 │   ├── renewalLog.ts
 │   └── syncLog.ts
-├── prisma/                  # Prisma schema + seed + migrations
-│   ├── schema.prisma
-│   ├── seed.ts
-│   └── cleanup.ts
+├── prisma/                  # 业务脚本 + 生成产物（schema/migrations 在 packages/server/prisma/）
+│   ├── seed.ts              # 种子数据
+│   ├── cleanup.ts           # 脏数据清理脚本
+│   └── generated/           # Prisma Client 自动生成（gitignored，由 schema.prisma output 指向此处）
 ├── providers/               # 第三方服务商适配层
 │   ├── base.ts              # DNSProvider / DomainSyncer / DomainRenewer 抽象基类
 │   ├── config.ts            # 内建服务商配置 + ProviderFeatures
@@ -105,6 +105,8 @@ packages/server/src/
 │   └── index.ts
 └── index.ts                 # 服务器入口（路由注册 + 中间件 + 启动）
 ```
+
+> **Prisma 配置目录**（`packages/server/prisma/`，与 `src/` 同级）：存放业务无关的 `schema.prisma`、`migrations/`、`migration_lock.toml`、`dev.db`。`schema.prisma` 的 `output = "../src/prisma/generated"` 使 Prisma Client 生成到 `src/prisma/generated/`（保持在 `tsconfig.json` 的 `rootDir: "src"` 内，避免跨 rootDir 引用）。路径解析由 `prisma.config.ts` 统一配置。
 
 ---
 

@@ -17,8 +17,8 @@ pnpm --version
 # 确认依赖已安装
 ls -la node_modules/ | head -5
 
-# 确认数据库文件存在
-ls -la packages/server/src/prisma/
+# 确认数据库文件存在（dev.db 位于 packages/server/prisma/）
+ls -la packages/server/prisma/
 ```
 
 ---

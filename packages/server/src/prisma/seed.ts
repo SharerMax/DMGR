@@ -1,10 +1,11 @@
 import path from 'node:path'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import bcrypt from 'bcryptjs'
+import { logger } from '@/utils/index.js'
 import { PrismaClient } from './generated/client'
 
 const dbPath = path.join(process.cwd(), 'prisma', 'dev.db')
-console.log('dbPath:', dbPath)
+logger.info({ dbPath }, '数据库路径')
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` })
 
 const prisma = new PrismaClient({ adapter })
@@ -22,7 +23,7 @@ async function main() {
     },
   })
 
-  console.log('Created user:', user.username)
+  logger.info({ username: user.username }, 'Created user')
 
   // Create test provider
   const provider = await prisma.provider.upsert({
@@ -39,7 +40,7 @@ async function main() {
     },
   })
 
-  console.log('Created provider:', provider.name)
+  logger.info({ name: provider.name }, 'Created provider')
 
   // Create test domain
   const domain = await prisma.domain.upsert({
@@ -58,7 +59,7 @@ async function main() {
     },
   })
 
-  console.log('Created domain:', domain.name)
+  logger.info({ name: domain.name }, 'Created domain')
 
   // Create notification channel
   const notificationChannel = await prisma.notificationChannel.upsert({
@@ -75,7 +76,7 @@ async function main() {
     },
   })
 
-  console.log('Created notification channel:', notificationChannel.name)
+  logger.info({ name: notificationChannel.name }, 'Created notification channel')
 
   // Create notification config (expiry reminder enabled with 30 days threshold)
   await prisma.notificationConfig.upsert({
@@ -89,7 +90,7 @@ async function main() {
     },
   })
 
-  console.log('Created notification config for expiry_reminder')
+  logger.info('Created notification config for expiry_reminder')
 
   // Create DNS record
   await prisma.dNSRecord.upsert({
@@ -104,7 +105,7 @@ async function main() {
     },
   })
 
-  console.log('Created DNS record for domain:', domain.name)
+  logger.info({ domain: domain.name }, 'Created DNS record for domain')
 
   // Create renewal log
   await prisma.renewalLog.upsert({
@@ -118,7 +119,7 @@ async function main() {
     },
   })
 
-  console.log('Created renewal log for domain:', domain.name)
+  logger.info({ domain: domain.name }, 'Created renewal log for domain')
 
   // Create notification log
   await prisma.notificationLog.upsert({
@@ -133,12 +134,12 @@ async function main() {
     },
   })
 
-  console.log('Created notification log for domain:', domain.name)
+  logger.info({ domain: domain.name }, 'Created notification log for domain')
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    logger.error({ err: e }, 'seed 执行失败')
     process.exit(1)
   })
   .finally(async () => {
