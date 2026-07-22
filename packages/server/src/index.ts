@@ -10,8 +10,10 @@ import notificationConfigRoutes from './routes/notificationConfigs.js'
 import notificationLogRoutes from './routes/notificationLogs.js'
 import providerRoutes from './routes/providers.js'
 import renewalLogRoutes from './routes/renewalLogs.js'
+import smtpSettingRoutes from './routes/smtpSettings.js'
 import syncLogRoutes from './routes/syncLogs.js'
 import { startAutoRenewalScheduler } from './services/autoRenewService.js'
+import { loadSmtpOverride } from './services/smtpSettingService.js'
 import { logger, requestLogger } from './utils/index.js'
 
 const app = express()
@@ -32,6 +34,7 @@ app.use('/api/notification-logs', notificationLogRoutes)
 app.use('/api/dns-records', dnsRecordRoutes)
 app.use('/api/renewal-logs', renewalLogRoutes)
 app.use('/api/sync-logs', syncLogRoutes)
+app.use('/api/smtp-settings', smtpSettingRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 
 // 健康检查
@@ -50,6 +53,9 @@ async function start() {
   try {
     // 初始化数据库
     await initDatabase()
+
+    // 加载 SMTP 配置覆盖（DB 优先，环境变量兜底）
+    await loadSmtpOverride()
 
     // 启动自动续期定时任务（默认每天凌晨2点）
     const cronExpression = process.env.RENEWAL_CRON_EXPRESSION || '0 2 * * *'

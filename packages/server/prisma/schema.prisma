@@ -153,3 +153,16 @@ model SyncLog {
   @@index([userId])
   @@index([createdAt])
 }
+
+/// 全局 SMTP 服务器配置（单行，id=1）
+/// 环境变量（SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM）作为默认值，
+/// 数据库值优先于环境变量
+model SmtpSetting {
+  id        Int      @id @default(1)
+  host      String?
+  port      Int?
+  user      String?
+  pass      String?
+  from      String?
+  updatedAt DateTime @updatedAt
+}

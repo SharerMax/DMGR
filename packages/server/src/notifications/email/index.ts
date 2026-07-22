@@ -3,5 +3,5 @@
  */
 
 export { EmailSender } from './sender.js'
-export { getSmtpConfig, isEmailConfigured } from './smtp.js'
+export { getEffectiveSmtpConfig, getSmtpConfig, isEmailConfigured, setSmtpOverride } from './smtp.js'
 export type { SmtpConfig } from './smtp.js'

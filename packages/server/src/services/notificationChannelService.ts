@@ -24,13 +24,16 @@ function withParsedConfig(channel: NotificationChannel): NotificationChannelWith
 }
 
 /**
- * 校验邮件渠道可用性
- * SMTP 服务器配置来自环境变量，未配置时抛出带可读提示的错误
+ * 邮件渠道：SMTP 未配置时强制禁用（不阻止创建）
  */
-function assertEmailConfigured(): void {
-  if (!isEmailConfigured()) {
-    throw new Error('邮件渠道不可用：未配置 SMTP 服务器（缺少 SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM 环境变量）')
+function maybeDisableEmailChannel(input: {
+  type: string
+  isActive?: boolean
+}): boolean | undefined {
+  if (input.type === 'email' && !isEmailConfigured()) {
+    return false
   }
+  return input.isActive
 }
 
 export async function getUserChannels(userId: number): Promise<NotificationChannelWithConfig[]> {
@@ -50,10 +53,8 @@ export async function createUserChannel(
   userId: number,
   input: Omit<CreateNotificationChannelInput, 'userId'>,
 ): Promise<NotificationChannelWithConfig> {
-  if (input.type === 'email') {
-    assertEmailConfigured()
-  }
-  const channel = await createNotificationChannel({ ...input, userId })
+  const isActive = maybeDisableEmailChannel(input)
+  const channel = await createNotificationChannel({ ...input, userId, isActive })
   return withParsedConfig(channel)
 }
 
@@ -66,8 +67,10 @@ export async function updateUserChannel(
   if (!channel || channel.userId !== userId) {
     return null
   }
-  if (input.type === 'email') {
-    assertEmailConfigured()
+  // 邮件渠道：SMTP 未配置时禁止启用
+  const effectiveType = input.type ?? channel.type
+  if (effectiveType === 'email' && !isEmailConfigured() && input.isActive === true) {
+    input.isActive = false
   }
   const updated = await updateNotificationChannel(channelId, input)
   if (!updated) {

@@ -1,5 +1,5 @@
 import type { CreateChannelInput } from '@/stores/notificationChannels'
-import { Edit2, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useNotificationChannelStore } from '@/stores/notificationChannels'
+import { useSmtpSettingStore } from '@/stores/smtpSettings'
 
 const channelTypeConfig = {
   email: { label: '邮件', color: 'bg-blue-100 text-blue-700' },
@@ -28,12 +29,23 @@ interface ChannelFormValues {
   isActive: boolean
 }
 
+interface SmtpFormValues {
+  host: string
+  port: number
+  user: string
+  pass: string
+  from: string
+}
+
 export default function NotificationChannels() {
   const { channels, loading, fetchChannels, createChannel, updateChannel, deleteChannel }
     = useNotificationChannelStore()
   const { confirm } = useConfirm()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<typeof channels[0] | null>(null)
+  const { setting: smtpSetting, fetchSmtpSetting, updateSmtpSetting } = useSmtpSettingStore()
+  const [smtpDialogOpen, setSmtpDialogOpen] = useState(false)
+  const [smtpSaving, setSmtpSaving] = useState(false)
 
   const {
     register,
@@ -41,6 +53,7 @@ export default function NotificationChannels() {
     control,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ChannelFormValues>({
     defaultValues: {
@@ -52,11 +65,35 @@ export default function NotificationChannels() {
     },
   })
 
+  const {
+    register: registerSmtp,
+    handleSubmit: handleSubmitSmtp,
+    reset: resetSmtp,
+    formState: { errors: smtpErrors },
+  } = useForm<SmtpFormValues>({
+    defaultValues: {
+      host: '',
+      port: 587,
+      user: '',
+      pass: '',
+      from: '',
+    },
+  })
+
   const watchedType = watch('type')
+  const smtpConfigured = smtpSetting?.configured ?? false
 
   useEffect(() => {
     fetchChannels()
-  }, [fetchChannels])
+    fetchSmtpSetting()
+  }, [fetchChannels, fetchSmtpSetting])
+
+  // 邮件渠道：SMTP 未配置时强制禁用
+  useEffect(() => {
+    if (watchedType === 'email' && !smtpConfigured) {
+      setValue('isActive', false)
+    }
+  }, [watchedType, smtpConfigured, setValue])
 
   const getConfigLabel = () => {
     if (watchedType === 'email')
@@ -102,7 +139,8 @@ export default function NotificationChannels() {
         name: '',
         configValue: '',
         chatId: '',
-        isActive: true,
+        // 邮件渠道：SMTP 未配置时默认禁用
+        isActive: smtpConfigured,
       })
     }
     setDialogOpen(true)
@@ -111,6 +149,35 @@ export default function NotificationChannels() {
   const handleCloseDialog = () => {
     setDialogOpen(false)
     setEditingChannel(null)
+  }
+
+  const handleOpenSmtpDialog = () => {
+    if (smtpSetting) {
+      resetSmtp({
+        host: smtpSetting.host,
+        port: smtpSetting.port,
+        user: smtpSetting.user,
+        // 密码不回填，留空表示不修改
+        pass: '',
+        from: smtpSetting.from,
+      })
+    }
+    setSmtpDialogOpen(true)
+  }
+
+  const onSubmitSmtp = async (data: SmtpFormValues) => {
+    setSmtpSaving(true)
+    try {
+      await updateSmtpSetting(data)
+      toast.success('SMTP 配置已保存')
+      setSmtpDialogOpen(false)
+    }
+    catch (error: any) {
+      toast.error(error.message || '保存 SMTP 配置失败')
+    }
+    finally {
+      setSmtpSaving(false)
+    }
   }
 
   const onSubmit = async (data: ChannelFormValues) => {
@@ -174,10 +241,16 @@ export default function NotificationChannels() {
     <>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">通知渠道列表</h2>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="h-4 w-4 mr-2" />
-          添加渠道
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleOpenSmtpDialog}>
+            <Mail className="h-4 w-4 mr-2" />
+            SMTP 配置
+          </Button>
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            添加渠道
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -350,6 +423,15 @@ export default function NotificationChannels() {
                 )}
               </div>
             )}
+            {watchedType === 'email' && !smtpConfigured && (
+              <div className="flex items-start gap-2 rounded-md bg-status-warning-bg p-3 text-sm text-status-warning">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  SMTP 服务器未配置，邮件渠道将默认禁用。
+                  请先点击上方「SMTP 配置」按钮完成配置。
+                </span>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <Controller
                 control={control}
@@ -359,6 +441,7 @@ export default function NotificationChannels() {
                     id="isActive"
                     checked={field.value}
                     onCheckedChange={field.onChange}
+                    disabled={watchedType === 'email' && !smtpConfigured}
                   />
                 )}
               />
@@ -370,6 +453,106 @@ export default function NotificationChannels() {
               </Button>
               <Button type="submit">
                 {editingChannel ? '保存' : '创建'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* SMTP 配置 Dialog */}
+      <Dialog open={smtpDialogOpen} onOpenChange={setSmtpDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>SMTP 服务器配置</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitSmtp(onSubmitSmtp)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="smtp-host">
+                SMTP 服务器地址
+                <span className="text-status-danger ml-1">*</span>
+              </Label>
+              <Input
+                id="smtp-host"
+                {...registerSmtp('host', { required: '请输入 SMTP 服务器地址' })}
+                placeholder="smtp.example.com"
+              />
+              {smtpErrors.host && (
+                <p className="text-xs text-status-error">{smtpErrors.host.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-port">
+                端口
+                <span className="text-status-danger ml-1">*</span>
+              </Label>
+              <Input
+                id="smtp-port"
+                type="number"
+                {...registerSmtp('port', {
+                  required: '请输入端口',
+                  valueAsNumber: true,
+                  min: { value: 1, message: '端口必须大于 0' },
+                  max: { value: 65535, message: '端口必须小于 65536' },
+                })}
+                placeholder="587"
+              />
+              {smtpErrors.port && (
+                <p className="text-xs text-status-error">{smtpErrors.port.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-user">
+                用户名
+                <span className="text-status-danger ml-1">*</span>
+              </Label>
+              <Input
+                id="smtp-user"
+                {...registerSmtp('user', { required: '请输入用户名' })}
+                placeholder="user@example.com"
+              />
+              {smtpErrors.user && (
+                <p className="text-xs text-status-error">{smtpErrors.user.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-pass">
+                密码
+                {smtpSetting?.pass && (
+                  <span className="text-status-danger ml-1">*</span>
+                )}
+              </Label>
+              <Input
+                id="smtp-pass"
+                type="password"
+                {...registerSmtp('pass', {
+                  required: smtpSetting?.pass ? false : '请输入密码',
+                })}
+                placeholder={smtpSetting?.pass ? '留空表示不修改' : '请输入密码'}
+              />
+              {smtpErrors.pass && (
+                <p className="text-xs text-status-error">{smtpErrors.pass.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-from">
+                发件人地址
+                <span className="text-status-danger ml-1">*</span>
+              </Label>
+              <Input
+                id="smtp-from"
+                {...registerSmtp('from', { required: '请输入发件人地址' })}
+                placeholder="noreply@example.com"
+              />
+              {smtpErrors.from && (
+                <p className="text-xs text-status-error">{smtpErrors.from.message}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSmtpDialogOpen(false)}>
+                取消
+              </Button>
+              <Button type="submit" disabled={smtpSaving}>
+                {smtpSaving ? '保存中...' : '保存'}
               </Button>
             </DialogFooter>
           </form>
