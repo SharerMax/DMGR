@@ -17,21 +17,23 @@
     "lint-staged": "lint-staged",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": "eslint --fix"
-  },
   "dependencies": {
     "date-fns": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "@eslint-react/eslint-plugin": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.1.0",
+    "husky": "catalog:",
+    "lint-staged": "catalog:",
     "typescript": "catalog:"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,jsonc,yaml}": "eslint --fix"
   }
 }
