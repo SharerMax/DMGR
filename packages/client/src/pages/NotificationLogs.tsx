@@ -102,7 +102,7 @@ export default function NotificationLogs() {
           <div className="flex flex-wrap items-center gap-3">
             <Select
               value={filters.type || 'all'}
-              onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}
+              onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value ?? undefined)}
             >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="选择类型" />
@@ -117,7 +117,7 @@ export default function NotificationLogs() {
             </Select>
             <Select
               value={filters.channel || 'all'}
-              onValueChange={value => handleFilterChange('channel', value === 'all' ? undefined : value)}
+              onValueChange={value => handleFilterChange('channel', value === 'all' ? undefined : value ?? undefined)}
             >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="选择渠道" />

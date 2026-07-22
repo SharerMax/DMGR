@@ -10,7 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
 
 interface ConfirmOptions {
   title: string
@@ -45,18 +44,14 @@ function ConfirmDialogComponent({ state, onConfirm, onCancel }: { state: Confirm
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel asChild>
-            <Button variant="outline" onClick={onCancel}>
-              {state.options.cancelText || '取消'}
-            </Button>
+          <AlertDialogCancel variant="outline" onClick={onCancel}>
+            {state.options.cancelText || '取消'}
           </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button
-              variant={state.options.destructive ? 'destructive' : 'default'}
-              onClick={onConfirm}
-            >
-              {state.options.confirmText || '确定'}
-            </Button>
+          <AlertDialogAction
+            variant={state.options.destructive ? 'destructive' : 'default'}
+            onClick={onConfirm}
+          >
+            {state.options.confirmText || '确定'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

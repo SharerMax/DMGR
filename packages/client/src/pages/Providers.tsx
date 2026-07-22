@@ -339,7 +339,7 @@ export default function Providers() {
                   name="type"
                   rules={{ required: '请选择服务商类型' }}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={handleTypeChange}>
+                    <Select value={field.value} onValueChange={value => handleTypeChange(value ?? '')}>
                       <SelectTrigger>
                         <SelectValue placeholder="请选择服务商类型" />
                       </SelectTrigger>

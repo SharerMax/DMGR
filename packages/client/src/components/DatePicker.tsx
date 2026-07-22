@@ -18,19 +18,21 @@ export interface DatePickerProps {
 export function DatePicker({ value, onChange, placeholder = '选择日期', className, disabled }: DatePickerProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            'w-full justify-start text-left font-normal',
-            !value && 'text-muted-foreground',
-            className,
-          )}
-          disabled={disabled}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, 'yyyy-MM-dd') : <span>{placeholder}</span>}
-        </Button>
+      <PopoverTrigger
+        render={(
+          <Button
+            variant="outline"
+            className={cn(
+              'w-full justify-start text-left font-normal',
+              !value && 'text-muted-foreground',
+              className,
+            )}
+            disabled={disabled}
+          />
+        )}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        {value ? format(value, 'yyyy-MM-dd') : <span>{placeholder}</span>}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
@@ -63,40 +65,42 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            'w-full justify-start text-left font-normal',
-            !value?.from && !value?.to && 'text-muted-foreground',
-            className,
-          )}
-          disabled={disabled}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value?.from
-            ? (
-                value?.to
-                  ? (
-                      <>
-                        {format(value.from, 'yyyy-MM-dd')}
-                        <span className="mx-2 text-muted-foreground">至</span>
-                        {format(value.to, 'yyyy-MM-dd')}
-                      </>
-                    )
-                  : (
-                      format(value.from, 'yyyy-MM-dd')
-                    )
-              )
-            : (
-                <span>
-                  {startPlaceholder}
-                  {' '}
-                  -
-                  {endPlaceholder}
-                </span>
-              )}
-        </Button>
+      <PopoverTrigger
+        render={(
+          <Button
+            variant="outline"
+            className={cn(
+              'w-full justify-start text-left font-normal',
+              !value?.from && !value?.to && 'text-muted-foreground',
+              className,
+            )}
+            disabled={disabled}
+          />
+        )}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        {value?.from
+          ? (
+              value?.to
+                ? (
+                    <>
+                      {format(value.from, 'yyyy-MM-dd')}
+                      <span className="mx-2 text-muted-foreground">至</span>
+                      {format(value.to, 'yyyy-MM-dd')}
+                    </>
+                  )
+                : (
+                    format(value.from, 'yyyy-MM-dd')
+                  )
+            )
+          : (
+              <span>
+                {startPlaceholder}
+                {' '}
+                -
+                {endPlaceholder}
+              </span>
+            )}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar

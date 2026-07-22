@@ -62,7 +62,18 @@
 - `components/` 根目录 — 自定义业务组件（如 `DatePicker.tsx`、`DataTablePagination.tsx`、`DomainFilter.tsx`、`Logo.tsx`）
 - `pages/` — 页面级组件（按路由命名，如 `Domains.tsx`、`Providers.tsx`）
 
-### 3.2 组件使用模式
+### 3.2 Primitive 库（Base UI）
+
+- shadcn/ui 的底层 primitive 库为 **`@base-ui/react`**（`components.json` 的 `style` 为 `base-vega`），不再使用 `radix-ui`
+- 业务代码**禁止直接** `import` `@base-ui/react/*`，所有 primitive 通过 `@/components/ui/*` 间接消费（保持替换成本可控）
+- **渲染组合模式**：Base UI 使用显式 `render` prop 而非 Radix 的 `asChild`
+  - 正确：`<DialogTrigger render={<Button />}>{children}</DialogTrigger>`
+  - 错误：`<DialogTrigger asChild><Button>{children}</Button></DialogTrigger>`
+- **Select API 变更**：`onValueChange` 回调的 `value` 类型为 `string | null`（无选中项时返回 `null`，不是 `undefined`）。业务代码需用 `value ?? undefined` 或 `value ?? 'all'` 转换
+- **AlertDialog API 变更**：Base UI 没有独立的 `Action` primitive，shadcn 模板把 `AlertDialogAction`/`AlertDialogCancel` 实现为 Button 包装；不要在它们内部再嵌套 `<Button>`，直接传 `variant`/`size`/`onClick` 等 props
+- 通过 `pnpm dlx shadcn@latest add <component> --overwrite --yes` 重新拉取模板以切换 primitive 或同步模板更新
+
+### 3.3 组件使用模式
 
 | 组件 | 正确用法 | 避免 |
 |------|---------|------|
@@ -77,7 +88,7 @@
 | **加载态** | `Skeleton` 组件 | 自定义 `animate-pulse div` |
 | **按钮图标** | 使用 `lucide-react` 图标 | 不规范的 emoji / svg |
 
-### 3.3 确认对话框
+### 3.4 确认对话框
 
 危险操作（删除服务商、删除域名、退出登录等）**必须**使用 `useConfirm` 对话框二次确认（模板见 `skills/domain-manager-frontend` §5）
 

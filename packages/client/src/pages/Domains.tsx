@@ -408,7 +408,7 @@ export default function Domains() {
             />
             <Select
               value={filters.providerId}
-              onValueChange={value => setFilters({ ...filters, providerId: value })}
+              onValueChange={value => setFilters({ ...filters, providerId: value ?? 'all' })}
             >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="全部服务商" />

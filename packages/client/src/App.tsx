@@ -69,7 +69,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <span className="font-bold text-lg">域名管理系统</span>
               </div>
               <nav className="flex gap-1">
-                <NavigationMenu viewport={false} className="justify-start">
+                <NavigationMenu className="justify-start">
                   <NavigationMenuList>
                     <NavigationMenuItem>
                       <NavigationMenuTrigger>
@@ -168,10 +168,12 @@ function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-4">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    {getThemeIcon()}
-                  </Button>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="ghost" size="icon" className="h-9 w-9" />
+                  }
+                >
+                  {getThemeIcon()}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => setMode('system')}>
