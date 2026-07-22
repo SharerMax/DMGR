@@ -1,13 +1,25 @@
 import type { DateRange } from 'react-day-picker'
+import type { Domain } from '@/stores/domains'
 import type { NotificationLog } from '@/stores/notificationLogs'
 import { format } from 'date-fns'
-import { CircleEllipsis } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CircleEllipsis, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DataTablePagination } from '@/components/DataTablePagination'
 import { DateRangePicker } from '@/components/DatePicker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxLabel,
+  ComboboxList,
+  ComboboxValue,
+} from '@/components/ui/combobox'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuthStore } from '@/stores/auth'
 import { useDomainStore } from '@/stores/domains'
 import { useNotificationLogStore } from '@/stores/notificationLogs'
+import { useProviderStore } from '@/stores/providers'
 
 const TYPE_LABELS: Record<string, string> = {
   expiry_reminder: '过期提醒',
@@ -36,7 +49,8 @@ const CHANNEL_LABELS: Record<string, string> = {
 }
 
 export default function NotificationLogs() {
-  const { domains } = useDomainStore()
+  const { domains, fetchDomains } = useDomainStore()
+  const { providers, fetchProviders } = useProviderStore()
   const { token } = useAuthStore()
   const {
     logs,
@@ -51,12 +65,16 @@ export default function NotificationLogs() {
   } = useNotificationLogStore()
 
   const [detailLog, setDetailLog] = useState<NotificationLog | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchDomains, setSearchDomains] = useState<Domain[]>([])
 
   useEffect(() => {
     if (token) {
-      useDomainStore.getState().fetchDomains()
+      fetchDomains()
+      fetchProviders()
     }
-  }, [token])
+  }, [token, fetchDomains, fetchProviders])
 
   useEffect(() => {
     if (token) {
@@ -89,6 +107,43 @@ export default function NotificationLogs() {
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range)
   }
+
+  const handleDomainSearch = useCallback(async () => {
+    const currentQuery = searchQuery.trim()
+    setSearchLoading(true)
+    try {
+      if (!currentQuery) {
+        await fetchDomains()
+      }
+      else {
+        await fetchDomains({ search: currentQuery })
+      }
+      const updatedDomains = useDomainStore.getState().domains
+      setSearchDomains(updatedDomains.slice(0, 15))
+    }
+    finally {
+      setSearchLoading(false)
+    }
+  }, [searchQuery, fetchDomains])
+
+  useEffect(() => {
+    const timer = setTimeout(handleDomainSearch, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const selectedDomain = domains.find(d => d.id === filters.domainId)
+
+  const domainsToGroup = searchDomains.length > 0 ? searchDomains : domains.slice(0, 15)
+  const groupedDomains = useMemo(() => {
+    return domainsToGroup.reduce((acc, domain) => {
+      const providerId = domain.providerId ?? 'none'
+      if (!acc[providerId]) {
+        acc[providerId] = []
+      }
+      acc[providerId].push(domain)
+      return acc
+    }, {} as Record<string | number, Domain[]>)
+  }, [domainsToGroup])
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -130,22 +185,49 @@ export default function NotificationLogs() {
                 <SelectItem value="webhook">Webhook</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={filters.domainId?.toString() || 'all'}
-              onValueChange={value => handleFilterChange('domainId', value === 'all' ? undefined : Number(value))}
+            <Combobox
+              value={filters.domainId?.toString() || ''}
+              onValueChange={value => handleFilterChange('domainId', value ? Number(value) : undefined)}
             >
-              <SelectTrigger className="w-52">
-                <SelectValue placeholder="选择域名" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部域名</SelectItem>
-                {domains.map(domain => (
-                  <SelectItem key={domain.id} value={domain.id.toString()}>
-                    {domain.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxInput
+                placeholder="搜索域名..."
+                className="w-52"
+                value={filters.domainId ? selectedDomain?.name || '' : searchQuery}
+                onInput={e => setSearchQuery((e.target as HTMLInputElement).value)}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxItem value="" className="font-medium">全部域名</ComboboxItem>
+                  {searchLoading
+                    ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      )
+                    : Object.keys(groupedDomains).length > 0
+                      ? (
+                          Object.entries(groupedDomains).map(([providerId, domainList]) => {
+                            const provider = providers.find(p => p.id === Number(providerId))
+                            const label = provider ? provider.name : providerId === 'none' ? '未分配服务商' : '未知服务商'
+                            return (
+                              <ComboboxGroup key={providerId}>
+                                <ComboboxLabel>{label}</ComboboxLabel>
+                                {domainList.map(domain => (
+                                  <ComboboxItem key={domain.id} value={domain.id.toString()}>
+                                    {domain.name}
+                                  </ComboboxItem>
+                                ))}
+                              </ComboboxGroup>
+                            )
+                          })
+                        )
+                      : (
+                          <ComboboxEmpty>未找到匹配的域名</ComboboxEmpty>
+                        )}
+                </ComboboxList>
+              </ComboboxContent>
+              <ComboboxValue />
+            </Combobox>
             <DateRangePicker
               value={dateRange}
               onChange={handleDateRangeChange}
