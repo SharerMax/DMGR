@@ -66,7 +66,7 @@
 
 - ✅ 没有手动修改 `components/ui/` 下的 shadcn/ui 生成文件
 - ✅ 自定义组件放在 `components/` 根目录
-- ✅ 业务页面放在 `pages/` 目录
+- ✅ 业务页面放在 `pages/<route>/` 目录
 - ✅ 图标统一使用 `lucide-react`，不使用 emoji 或内联 svg
 
 ### 2.4 Zustand Store
@@ -80,7 +80,7 @@
 ### 2.5 路由
 
 - ✅ 受保护路由用 `ProtectedRoute` 包裹
-- ✅ 路由路径与文件命名有意义（`/providers` → `Providers.tsx`）
+- ✅ 路由路径与目录命名有意义（`/providers` → `pages/providers/`）
 
 ---
 
@@ -255,7 +255,7 @@ const domain = await prisma.domain.findFirstOrThrow({
 
 ## 5. 目录与文件命名检查
 
-- ✅ pages/ 下的页面组件使用 PascalCase（如 `Domains.tsx`、`Providers.tsx`）
+- ✅ pages/ 下按路由分目录，入口为 `index.tsx`，页面专属子组件使用 PascalCase（如 `DomainFilter.tsx`、`DomainFormDialog.tsx`）
 - ✅ components/ 下的自定义组件使用 PascalCase
 - ✅ stores/ 下的文件使用 camelCase（如 `domains.ts`、`providers.ts`）
 - ✅ routes/ 下的文件使用 camelCase（如 `domains.ts`、`providers.ts`）

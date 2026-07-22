@@ -9,7 +9,7 @@
 
 假设你需要添加一个新页面（如"域名到期提醒"），按以下步骤执行：
 
-1. **创建页面组件** — 在 `pages/` 下创建新文件
+1. **创建页面组件** — 在 `pages/<route>/` 下创建 `index.tsx`（编排根）+ 按职责拆分子组件（筛选器 / 表格 / 表单弹窗等 `PascalCase.tsx`）
 2. **使用 Zustand store** — 在 `stores/` 中找到或新建对应领域的 store
 3. **使用 react-hook-form 处理表单** — 所有用户输入走 `useForm`
 4. **使用 sonner toast 反馈** — 操作结果走 `toast.success / toast.error`
@@ -67,16 +67,26 @@ packages/client/src/
 │   └── useConfirm.tsx           # 确认对话框 Hook（删除等危险操作）
 ├── lib/                         # 工具库
 │   ├── api.ts                   # Axios 实例配置（含 JWT token）
+│   ├── constants.ts             # 跨页面共享常量（通知类型/续期状态标签与色值）
 │   └── utils.ts                 # 通用工具函数（cn 等）
-├── pages/                       # 页面组件（按路由命名）
-│   ├── Login.tsx                # 登录 / 注册（未受保护）
-│   ├── Domains.tsx              # 域名管理
-│   ├── Providers.tsx            # 服务商管理
-│   ├── NotificationChannels.tsx # 通知渠道管理
-│   ├── RenewalLogs.tsx          # 续期日志
-│   ├── Profile.tsx              # 个人资料
-│   ├── AutoRenewConfig.tsx      # 自动续期配置
-│   └── SyncLogs.tsx             # 同步记录（筛选 + 分页 + 详情对话框）
+├── pages/                       # 页面组件（按路由路径分目录，各导出 index.tsx）
+│   ├── login/                   # 登录 / 注册（单文件页面）
+│   │   └── index.tsx
+│   ├── dashboard/               # 概览首页
+│   │   ├── index.tsx            # 编排根
+│   │   ├── StatCard.tsx         # 统计卡片
+│   │   └── ...
+│   ├── domains/                 # 域名管理（编排根 + 子组件）
+│   │   ├── index.tsx
+│   │   ├── DomainFilter.tsx     # 筛选器
+│   │   ├── DomainTable.tsx      # 表格
+│   │   ├── DomainFormDialog.tsx # 表单弹窗
+│   │   └── DnsRecordDialog.tsx  # DNS 记录弹窗
+│   ├── providers/               # 服务商管理
+│   │   ├── index.tsx
+│   │   ├── ProviderGrid.tsx
+│   │   └── ProviderFormDialog.tsx
+│   └── ...                      # 其余页面同理（notification-* / renewal-logs / sync-logs / profile / auto-renew-config）
 ├── stores/                      # Zustand 状态管理（按领域拆分）
 │   ├── auth.ts                  # 认证状态（token, user, login/logout）
 │   ├── domains.ts               # 域名状态

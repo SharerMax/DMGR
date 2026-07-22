@@ -33,7 +33,7 @@ domain/
 ├── packages/
 │   ├── client/          # Frontend (React + Vite)
 │   │   └── src/
-│   │       ├── pages/       # Page components
+│   │       ├── pages/       # Page components (per-route dirs, each exports index.tsx)
 │   │       ├── stores/      # Zustand state management
 │   │       ├── components/  # Components (ui/ is shadcn/ui)
 │   │       ├── lib/         # API client & utilities

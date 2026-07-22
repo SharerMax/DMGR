@@ -117,7 +117,7 @@ feat(server): add notifications module with email and webhook senders
 | 目录一律 `kebab-case` | `notification-channels` / `routes` |
 | TypeScript 文件使用 `camelCase.ts` | `domainService.ts` / `useConfirm.tsx` |
 | 数据库 schema 与 seed 用 `kebab-case` | `schema.prisma` |
-| React 组件使用 `PascalCase.tsx` | `Domains.tsx` / `DatePicker.tsx` |
+| React 组件使用 `PascalCase.tsx` | `DomainFilter.tsx` / `DatePicker.tsx`（页面入口例外，用 `index.tsx`） |
 | 目录按领域拆分 | `providers/aliyun/` / `providers/tencent/` |
 
 ---

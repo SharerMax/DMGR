@@ -33,7 +33,7 @@ domain/
 ├── packages/
 │   ├── client/          # 前端（React + Vite）
 │   │   └── src/
-│   │       ├── pages/       # 页面组件
+│   │       ├── pages/       # 页面组件（按路由分目录，各导出 index.tsx）
 │   │       ├── stores/      # Zustand 状态管理
 │   │       ├── components/  # 组件（ui/ 为 shadcn/ui）
 │   │       ├── lib/         # API 客户端 & 工具函数

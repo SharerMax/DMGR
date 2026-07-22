@@ -60,7 +60,7 @@
 
 - `components/ui/` — **仅存放 CLI 添加的标准组件**。**绝不手动修改此目录下的文件**（修改会被后续 `pnpm dlx shadcn@latest add` 覆盖）
 - `components/` 根目录 — 自定义业务组件（如 `DatePicker.tsx`、`DataTablePagination.tsx`、`DomainFilter.tsx`、`Logo.tsx`）
-- `pages/` — 页面级组件（按路由命名，如 `Domains.tsx`、`Providers.tsx`）
+- `pages/<route>/` — 页面级组件，**按路由路径分目录**（kebab-case），每个目录导出 `index.tsx`（编排根）+ 页面专属子组件（`PascalCase.tsx`，如 `DomainFilter.tsx`、`DomainTable.tsx`、`DomainFormDialog.tsx`）。单文件页面（如 login/profile）仅含 `index.tsx`
 
 ### 3.2 Primitive 库（Base UI）
 
@@ -160,21 +160,21 @@
 
 ## 8. 路由与页面组织
 
-前端路由定义在 `App.tsx`（基于 `react-router`，**禁用 `react-router-dom`**）。页面组件存放在 `pages/`：
+前端路由定义在 `App.tsx`（基于 `react-router`，**禁用 `react-router-dom`**）。页面组件按路由路径存放在 `pages/<route>/` 目录下（各导出 `index.tsx`）：
 
-| 路由 | 页面 | 说明 |
-|------|------|------|
-| `/login` | `Login.tsx` | 登录 / 注册（未受保护） |
-| `/` | `Dashboard.tsx` | 概览首页（受保护） |
-| `/domains` | `Domains.tsx` | 域名管理（受保护） |
-| `/providers` | `Providers.tsx` | 服务商管理（受保护） |
-| `/sync-logs` | `SyncLogs.tsx` | 同步记录（受保护） |
-| `/notification-configs` | `NotificationConfigs.tsx` | 通知类型开关与过期提醒阈值（受保护） |
-| `/notification-channels` | `NotificationChannels.tsx` | 通知渠道（受保护） |
-| `/notification-logs` | `NotificationLogs.tsx` | 通知记录（受保护） |
-| `/renewal-logs` | `RenewalLogs.tsx` | 续期日志（受保护） |
-| `/profile` | `Profile.tsx` | 个人资料与密码修改（受保护） |
-| `/auto-renew-config` | `AutoRenewConfig.tsx` | 自动续期配置（受保护） |
+| 路由 | 页面目录 | 说明 |
+|------|---------|------|
+| `/login` | `pages/login/` | 登录 / 注册（未受保护） |
+| `/` | `pages/dashboard/` | 概览首页（受保护） |
+| `/domains` | `pages/domains/` | 域名管理（受保护） |
+| `/providers` | `pages/providers/` | 服务商管理（受保护） |
+| `/sync-logs` | `pages/sync-logs/` | 同步记录（受保护） |
+| `/notification-configs` | `pages/notification-configs/` | 通知类型开关与过期提醒阈值（受保护） |
+| `/notification-channels` | `pages/notification-channels/` | 通知渠道（受保护） |
+| `/notification-logs` | `pages/notification-logs/` | 通知记录（受保护） |
+| `/renewal-logs` | `pages/renewal-logs/` | 续期日志（受保护） |
+| `/profile` | `pages/profile/` | 个人资料与密码修改（受保护） |
+| `/auto-renew-config` | `pages/auto-renew-config/` | 自动续期配置（受保护） |
 
 - 所有受保护路由使用 `ProtectedRoute` 组件包裹，未登录自动重定向到 `/login`
 
