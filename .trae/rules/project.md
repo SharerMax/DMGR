@@ -61,6 +61,8 @@ pnpm 默认启用 `minimumReleaseAge`（新发布的包在时间窗口内不会�
 
 **type 清单**：`feat` / `fix` / `refactor` / `chore` / `docs` / `style` / `test` / `perf` / `build` / `revert`
 
+**type 选择规则**：纯依赖更新（无功能变更、无修复）使用 `chore`，而非 `build`
+
 **scope 清单**：`server` / `client` / `providers` / `db` / `skills` / `config` 等
 
 **示例**：
