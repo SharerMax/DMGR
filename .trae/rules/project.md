@@ -78,6 +78,16 @@ feat(server): add notifications module with email and webhook senders
 
 提交代码前必须完成：`pnpm lint:fix` → `pnpm lint`（0 errors）→ `pnpm typecheck`（前后端通过）
 
+### 3.3 前后端拆分提交
+
+当一次变更同时涉及前端（`packages/client`）和后端（`packages/server` / `packages/share`）时，**必须**拆分为独立的提交，禁止混合提交：
+
+- **后端提交**（scope 为 `server`）：包含 `packages/server/` 与 `packages/share/` 下的变更
+- **前端提交**（scope 为 `client`）：包含 `packages/client/` 下的变更
+- **规则文档**（`.trae/rules/*.md` / `AGENTS.md`）：跟随相关功能的提交；若为纯文档变更，type 使用 `docs`
+- **提交顺序**：先提交后端（API 契约先行），再提交前端（消费契约），保证每次提交都能独立通过 `pnpm typecheck`
+- **数据库迁移**（`packages/server/prisma/`）：跟随后端提交，scope 使用 `db` 或 `server`
+
 ---
 
 ## 4. 分层架构原则
