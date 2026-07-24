@@ -152,7 +152,7 @@ export class CloudflareApiClient {
   ): Promise<CloudflareApiResult<any>> {
     const action = 'updateDnsRecord'
     logger.debug({ provider: 'cloudflare', action }, 'API request')
-    const params: Record<string, unknown> = { zone_id: zoneId, dns_record_id: recordId }
+    const params: Record<string, unknown> = { zone_id: zoneId }
     if (record.type !== undefined) {
       params.type = record.type
     }
@@ -177,7 +177,7 @@ export class CloudflareApiClient {
     if (record.tags !== undefined) {
       params.tags = record.tags
     }
-    const result = await wrapSdkCall(() => this.client.dns.records.update(params))
+    const result = await wrapSdkCall(() => this.client.dns.records.update(recordId, params))
     if (!result.success) {
       logger.warn({ provider: 'cloudflare', action, error: result.error }, 'API error')
     }
@@ -190,7 +190,7 @@ export class CloudflareApiClient {
   async deleteDnsRecord(zoneId: string, recordId: string): Promise<CloudflareApiResult<any>> {
     const action = 'deleteDnsRecord'
     logger.debug({ provider: 'cloudflare', action }, 'API request')
-    const result = await wrapSdkCall(() => this.client.dns.records.delete({ zone_id: zoneId, dns_record_id: recordId }))
+    const result = await wrapSdkCall(() => this.client.dns.records.delete(recordId, { zone_id: zoneId }))
     if (!result.success) {
       logger.warn({ provider: 'cloudflare', action, error: result.error }, 'API error')
     }

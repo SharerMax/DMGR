@@ -61,6 +61,7 @@
 - `components/ui/` — **仅存放 CLI 添加的标准组件**。**绝不手动修改此目录下的文件**（修改会被后续 `pnpm dlx shadcn@latest add` 覆盖）
 - `components/` 根目录 — 自定义业务组件（如 `DatePicker.tsx`、`DataTablePagination.tsx`、`DomainFilter.tsx`、`Logo.tsx`）
 - `pages/<route>/` — 页面级组件，**按路由路径分目录**（kebab-case），每个目录导出 `index.tsx`（编排根）+ 页面专属子组件（`PascalCase.tsx`，如 `DomainFilter.tsx`、`DomainTable.tsx`、`DomainFormDialog.tsx`）。单文件页面（如 login/profile）仅含 `index.tsx`
+- **shadcn/ui 文档参考**：`https://ui.shadcn.com/llms.txt`（LLM 友好的文档索引，包含组件文档、CLI、主题与用法链接。注：`.trae/skills/shadcn/SKILL.md` 由 `skills-lock.json` 锁定维护，勿手动修改）
 
 ### 3.2 Primitive 库（Base UI）
 
