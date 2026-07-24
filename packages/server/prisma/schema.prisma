@@ -49,6 +49,7 @@ model Domain {
   autoRenew    Boolean    @default(false)
   autoRenewDays Int?      // 自动续期触发阈值（过期前多少天）
   renewalPrice Float?
+  nameServers  String?    // 域名 NS 列表（JSON 数组字符串，来自服务商配置）
   status       String     @default("active")
   notes        String?
   createdAt    DateTime   @default(now())

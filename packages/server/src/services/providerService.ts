@@ -244,13 +244,26 @@ interface SyncDomainsResult {
 }
 
 /**
+ * 解析 provider config 中的 nameServers 字段（多行字符串）为 string[]。
+ * 用户在服务商高级配置中填写，每行一个 NS 服务器地址。
+ */
+function parseProviderNameServers(config: Record<string, string>): string[] | null {
+  const raw = config.nameServers
+  if (!raw || typeof raw !== 'string') {
+    return null
+  }
+  const list = raw.split('\n').map(s => s.trim()).filter(Boolean)
+  return list.length > 0 ? list : null
+}
+
+/**
  * 同步域名列表：新增本地不存在的域名，更新已存在域名来自服务商的字段。
- * 仅更新服务商能提供的字段（registrationDate、expiryDate），不覆盖用户偏好（autoRenew 等）。
+ * 仅更新服务商能提供的字段（registrationDate、expiryDate、nameServers），不覆盖用户偏好（autoRenew 等）。
  */
 async function syncDomains(
   userId: number,
   providerId: number,
-  domainList: Array<{ name: string, registrationDate?: string | null, expiryDate?: string | null, autoRenew?: boolean }>,
+  domainList: Array<{ name: string, registrationDate?: string | null, expiryDate?: string | null, autoRenew?: boolean, nameServers?: string[] | null }>,
 ): Promise<SyncDomainsResult> {
   const existingDomains = await getDomainsByUserId(userId)
   const existingDomainMap = new Map(existingDomains.map(d => [d.name, d]))
@@ -260,6 +273,8 @@ async function syncDomains(
 
   for (const domain of domainList) {
     const existing = existingDomainMap.get(domain.name)
+    const domainNameServers = domain.nameServers && domain.nameServers.length > 0 ? domain.nameServers : null
+
     if (!existing) {
       logger.info(`同步新增域名: ${domain.name} ${domain.expiryDate} ${domain.autoRenew}`)
       const newDomain = await createDomain({
@@ -269,6 +284,7 @@ async function syncDomains(
         registrationDate: domain.registrationDate || null,
         expiryDate: domain.expiryDate || null,
         autoRenew: domain.autoRenew,
+        nameServers: domainNameServers,
       })
       added.push({ id: newDomain.id, name: newDomain.name })
     }
@@ -279,8 +295,12 @@ async function syncDomains(
       const oldRegistrationDate = existing.registrationDate ? existing.registrationDate.toISOString().split('T')[0] : null
       const oldExpiryDate = existing.expiryDate ? existing.expiryDate.toISOString().split('T')[0] : null
 
+      // 比较nameServers是否变化（existing.nameServers 已是 string[] | null）
+      const oldNameServers = existing.nameServers
+      const nameServersChanged = JSON.stringify(domainNameServers) !== JSON.stringify(oldNameServers)
+
       // 跳过无变化的域名
-      if (newRegistrationDate === oldRegistrationDate && newExpiryDate === oldExpiryDate) {
+      if (newRegistrationDate === oldRegistrationDate && newExpiryDate === oldExpiryDate && !nameServersChanged) {
         continue
       }
 
@@ -288,6 +308,7 @@ async function syncDomains(
       const updatedDomain = await updateDomain(existing.id, {
         registrationDate: newRegistrationDate,
         expiryDate: newExpiryDate,
+        nameServers: domainNameServers,
       })
       if (updatedDomain) {
         updated.push({ id: updatedDomain.id, name: updatedDomain.name })
@@ -315,6 +336,8 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
   try {
     const syncer = getSyncer(provider)
+    const providerConfig = parseProviderConfig(provider)
+    const providerNameServers = parseProviderNameServers(providerConfig)
 
     const syncDetails: SyncDetails = {
       domainsAdded: [],
@@ -324,7 +347,10 @@ export async function syncProviderDomains(userId: number, providerId: number): P
     }
 
     if (!syncer || !syncer.validateConfig()) {
-      const mockDomains = generateMockDomains(provider)
+      const mockDomains = generateMockDomains(provider).map(d => ({
+        ...d,
+        nameServers: providerNameServers,
+      }))
       const { added: syncedDomains } = await syncDomains(userId, providerId, mockDomains)
       syncDetails.domainsAdded = syncedDomains
       const result: SyncResult = {
@@ -358,6 +384,8 @@ export async function syncProviderDomains(userId: number, providerId: number): P
       registrationDate: d.registrationDate || null,
       expiryDate: d.expirationDate || null,
       autoRenew: providerSupportsAutoRenew(provider.type),
+      // 优先使用服务商返回的实际 dnsServers，否则使用 provider 配置的 nameServers
+      nameServers: d.dnsServers?.length ? d.dnsServers : providerNameServers,
     }))
 
     const { added: newDomains, updated: updatedDomains } = await syncDomains(userId, providerId, domainList)

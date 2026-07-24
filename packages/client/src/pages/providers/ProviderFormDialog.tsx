@@ -1,8 +1,14 @@
 import type { CreateProviderInput, Provider, ProviderField, ProviderType } from '@/stores/providers'
-import { useEffect } from 'react'
+import { ChevronDown, Settings2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ProviderFormValues {
   type: string
@@ -57,12 +64,15 @@ export function ProviderFormDialog({
     },
   })
 
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+
   const selectedType = watch('type')
   const currentType = providerTypes.find(t => t.id === selectedType)
 
   useEffect(() => {
     if (!open)
       return
+    setAdvancedOpen(false)
     if (editingProvider) {
       let parsedConfig: Record<string, string> = {}
       try {
@@ -85,6 +95,7 @@ export function ProviderFormDialog({
   const handleTypeChange = (typeId: string) => {
     setValue('type', typeId)
     setValue('config', {})
+    setAdvancedOpen(false)
     const type = providerTypes.find(t => t.id === typeId)
     if (type) {
       const currentName = watch('name')
@@ -220,6 +231,39 @@ export function ProviderFormDialog({
               </h3>
               {currentType.fields.map(field => renderField(field))}
             </div>
+          )}
+
+          {/* 高级配置：仅 DNS 管理服务商显示，默认折叠 */}
+          {currentType?.features.dnsManagement && (
+            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="border-t pt-4">
+              <CollapsibleTrigger
+                render={(
+                  <Button type="button" variant="ghost" className="w-full justify-between">
+                    <span className="flex items-center gap-2 text-sm font-medium text-secondary-foreground">
+                      <Settings2 className="size-4" />
+                      高级配置
+                    </span>
+                    <ChevronDown
+                      className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+                    />
+                  </Button>
+                )}
+              />
+              <CollapsibleContent className="pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nameServers">NameServer 配置</Label>
+                  <Textarea
+                    id="nameServers"
+                    rows={4}
+                    placeholder="每行一个 NS 服务器地址，例如：&#10;ns1.cloudflare.com&#10;ns2.cloudflare.com"
+                    {...register('config.nameServers')}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    可选。配置后将在域名同步时使用此 NameServer 列表，留空则使用服务商默认值。
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           <DialogFooter>

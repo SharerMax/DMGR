@@ -8,8 +8,24 @@ export interface DomainWithProvider extends Domain {
   provider: { name: string } | null
 }
 
+/**
+ * 将 Prisma Domain 的 nameServers（JSON 字符串）解析为 string[] | null。
+ * 其他字段保持 Prisma 原始类型（日期为 Date，由 Express 序列化为 ISO 字符串）。
+ */
+function transformNameServers<T extends { nameServers: string | null }>(d: T): T {
+  if (!d.nameServers) {
+    return { ...d, nameServers: null }
+  }
+  try {
+    return { ...d, nameServers: JSON.parse(d.nameServers) }
+  }
+  catch {
+    return { ...d, nameServers: null }
+  }
+}
+
 export async function createDomain(input: CreateDomainInput & { userId: number }): Promise<Domain> {
-  return prisma.domain.create({
+  const domain = await prisma.domain.create({
     data: {
       name: input.name,
       providerId: input.providerId,
@@ -19,19 +35,22 @@ export async function createDomain(input: CreateDomainInput & { userId: number }
       autoRenew: input.autoRenew ?? false,
       autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,
+      nameServers: input.nameServers && input.nameServers.length > 0 ? JSON.stringify(input.nameServers) : null,
       notes: input.notes,
     },
   })
+  return transformNameServers(domain)
 }
 
 export async function getDomainById(id: number): Promise<Domain | null> {
-  return prisma.domain.findUnique({
+  const domain = await prisma.domain.findUnique({
     where: { id },
   })
+  return domain ? transformNameServers(domain) : null
 }
 
 export async function getDomainsByUserId(userId: number): Promise<(Domain & { provider: { name: string } | null })[]> {
-  return prisma.domain.findMany({
+  const domains = await prisma.domain.findMany({
     where: { userId },
     include: {
       provider: {
@@ -40,12 +59,14 @@ export async function getDomainsByUserId(userId: number): Promise<(Domain & { pr
     },
     orderBy: { expiryDate: 'asc' },
   })
+  return domains.map(transformNameServers)
 }
 
 export async function getDomainsByProviderId(providerId: number): Promise<Domain[]> {
-  return prisma.domain.findMany({
+  const domains = await prisma.domain.findMany({
     where: { providerId },
   })
+  return domains.map(transformNameServers)
 }
 
 export async function getExpiringDomains(
@@ -54,7 +75,7 @@ export async function getExpiringDomains(
   const now = new Date()
   const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
 
-  return prisma.domain.findMany({
+  const domains = await prisma.domain.findMany({
     where: {
       status: 'active',
       expiryDate: {
@@ -69,13 +90,14 @@ export async function getExpiringDomains(
     },
     orderBy: { expiryDate: 'asc' },
   })
+  return domains.map(transformNameServers)
 }
 
 export async function updateDomain(
   id: number,
   input: UpdateDomainInput,
 ): Promise<Domain | null> {
-  return prisma.domain.update({
+  const domain = await prisma.domain.update({
     where: { id },
     data: {
       name: input.name,
@@ -85,10 +107,16 @@ export async function updateDomain(
       autoRenew: input.autoRenew,
       autoRenewDays: input.autoRenewDays,
       renewalPrice: input.renewalPrice,
+      nameServers: input.nameServers === undefined
+        ? undefined
+        : input.nameServers && input.nameServers.length > 0
+          ? JSON.stringify(input.nameServers)
+          : null,
       status: input.status,
       notes: input.notes,
     },
   })
+  return transformNameServers(domain)
 }
 
 export async function deleteDomain(id: number): Promise<boolean> {

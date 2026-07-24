@@ -10,6 +10,7 @@ export interface Domain {
   autoRenew: boolean
   autoRenewDays: number | null
   renewalPrice: number | null
+  nameServers: string[] | null
   status: string
   notes: string | null
   createdAt: string
@@ -25,6 +26,7 @@ export interface CreateDomainInput {
   autoRenew?: boolean
   autoRenewDays?: number | null
   renewalPrice?: number | null
+  nameServers?: string[] | null
   notes?: string | null
 }
 
@@ -37,6 +39,7 @@ export interface UpdateDomainInput {
   autoRenew?: boolean
   autoRenewDays?: number | null
   renewalPrice?: number | null
+  nameServers?: string[] | null
   status?: string
   notes?: string | null
 }

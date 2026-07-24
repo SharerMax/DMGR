@@ -135,6 +135,8 @@
 - `BaseApiClient` 已移除，各服务商的 `apiClient.ts` 提供独立 API 接口并对外导出
 - Provider 层**禁止**访问数据库、写业务判断
 - Provider 的 `config` 字段（JSON 字符串）必须在 service 层做 `JSON.parse()` 解析和验证
+- **NameServer 配置**：`features.dnsManagement === true` 的服务商支持在 `config.nameServers` 中存储用户配置的 NS 列表（多行字符串，每行一个 NS）。同步时由 `parseProviderNameServers` 解析为 `string[]`，优先级低于 syncer 返回的 `dnsServers`（服务商实际值）
+- **Syncer 域名元信息**：syncer 的 `listDomains` / `getDomainInfo` **应该**返回 `registrationDate`（注册时间）和 `dnsServers`（NS 列表）字段（若服务商 API 提供），供同步逻辑写入 Domain 表
 
 ---
 
@@ -154,7 +156,9 @@
 ## 11. 同步审计日志（SyncLog）
 
 - `providerService.syncProviderDomains` 在每次同步完成后**必须**写入 `SyncLog` 记录
-- 记录字段包含 `status`（success/failed/partial）、计数（`domainsSynced` / `dnsInserted` / `dnsDeleted`）、`details`（JSON 字符串，含具体变更的域名与 DNS 记录）
+- 记录字段包含 `status`（success/failed/partial）、计数（`domainsSynced` / `domainsUpdated` / `dnsInserted` / `dnsDeleted`）、`details`（JSON 字符串，含具体变更的域名与 DNS 记录）
+- `SyncDetails` 结构：`domainsAdded` / `domainsUpdated` / `dnsInserted` / `dnsDeleted` 四个数组，分别记录新增域名、更新域名、新增 DNS 记录、删除 DNS 记录的明细
+- 同步逻辑（`syncDomains`）对已存在域名**必须**更新服务商提供的字段（`registrationDate` / `expiryDate` / `nameServers`），跳过无变化的域名以减少冗余写入；**禁止**覆盖用户偏好字段（`autoRenew` / `autoRenewDays` / `renewalPrice` / `notes`）
 - 失败时 `error` 字段记录错误信息
 - `SyncLog` 查询必须包含 `userId` 过滤（与其他业务表一致的用户隔离）
 - `/api/sync-logs` 接口走 `routes → services → models` 分层，不在 route 层直接操作 prisma

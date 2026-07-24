@@ -23,6 +23,7 @@ const domainSchema = z.object({
   autoRenew: z.boolean().optional(),
   autoRenewDays: z.number().int().positive().optional().nullable(),
   renewalPrice: z.number().positive().optional().nullable(),
+  nameServers: z.array(z.string()).optional().nullable(),
   notes: z.string().optional().nullable(),
 })
 
