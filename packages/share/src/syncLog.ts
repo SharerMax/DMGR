@@ -17,6 +17,7 @@ export interface DNSChangeDetail {
 /** 同步日志详情 */
 export interface SyncDetails {
   domainsAdded: DomainChange[]
+  domainsUpdated: DomainChange[]
   dnsInserted: DNSChangeDetail[]
   dnsDeleted: DNSChangeDetail[]
 }

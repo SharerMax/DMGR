@@ -60,6 +60,7 @@ export class DnspodSyncer extends DomainSyncer {
     const domains: DomainInfo[] = (raw?.domains || []).map((domain: any) => ({
       name: domain.name || domain.punycode,
       status: domain.status || 'active',
+      registrationDate: domain.created_on || undefined,
       expirationDate: domain.ext_status || null,
       dnsServers: [],
     }))
@@ -85,6 +86,7 @@ export class DnspodSyncer extends DomainSyncer {
       data: {
         name: domainData.name || domain,
         status: domainData.status || 'active',
+        registrationDate: domainData.created_on || undefined,
         expirationDate: domainData.ext_status || null,
         dnsServers: [],
       },

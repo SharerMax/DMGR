@@ -43,6 +43,7 @@ export class VPS8Syncer extends DomainSyncer {
         if (domain.platform_type === 'self_platform') {
           return {
             name: domain.domain,
+            registrationDate: domain.created_at || undefined,
             expirationDate: domain.expires_at,
             status: 'active',
           }

@@ -70,6 +70,7 @@ export function DomainTable({
                       <TableRow>
                         <TableHead>域名</TableHead>
                         <TableHead>服务商</TableHead>
+                        <TableHead>注册时间</TableHead>
                         <TableHead>过期日期</TableHead>
                         <TableHead>状态</TableHead>
                         <TableHead>续期价格</TableHead>
@@ -83,6 +84,9 @@ export function DomainTable({
                           <TableRow key={domain.id}>
                             <TableCell className="font-medium">{domain.name}</TableCell>
                             <TableCell>{domain.provider_name || '未设置'}</TableCell>
+                            <TableCell>
+                              {domain.registrationDate ? format(parseISO(domain.registrationDate), 'yyyy-MM-dd', { locale: zhCN }) : '-'}
+                            </TableCell>
                             <TableCell>
                               {domain.expiryDate ? format(parseISO(domain.expiryDate), 'yyyy-MM-dd', { locale: zhCN }) : '-'}
                             </TableCell>

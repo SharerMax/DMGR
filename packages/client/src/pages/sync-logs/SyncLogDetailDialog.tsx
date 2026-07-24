@@ -69,6 +69,10 @@ export function SyncLogDetailDialog({ log, onOpenChange }: SyncLogDetailDialogPr
                 {' '}
                 {log.domainsSynced}
                 {' '}
+                · 更新域名
+                {' '}
+                {details?.domainsUpdated?.length || 0}
+                {' '}
                 · 新增 DNS
                 {' '}
                 {log.dnsInserted}
@@ -98,6 +102,24 @@ export function SyncLogDetailDialog({ log, onOpenChange }: SyncLogDetailDialogPr
                     <div className="flex flex-wrap gap-2">
                       {details.domainsAdded.map(d => (
                         <Badge key={d.name} variant="outline" className="text-status-success">
+                          {d.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 更新域名 */}
+                {details.domainsUpdated?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2 text-status-info">
+                      更新域名（
+                      {details.domainsUpdated.length}
+                      ）
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {details.domainsUpdated.map(d => (
+                        <Badge key={d.name} variant="outline" className="text-status-info">
                           {d.name}
                         </Badge>
                       ))}
@@ -168,7 +190,7 @@ export function SyncLogDetailDialog({ log, onOpenChange }: SyncLogDetailDialogPr
                 )}
 
                 {/* 无变更 */}
-                {details.domainsAdded.length === 0 && details.dnsInserted.length === 0 && details.dnsDeleted.length === 0 && (
+                {details.domainsAdded.length === 0 && (details.domainsUpdated?.length || 0) === 0 && details.dnsInserted.length === 0 && details.dnsDeleted.length === 0 && (
                   <div className="text-center py-4 text-muted-foreground">本次同步无变更</div>
                 )}
               </>

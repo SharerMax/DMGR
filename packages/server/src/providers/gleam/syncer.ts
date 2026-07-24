@@ -47,6 +47,7 @@ export class GleamSyncer extends DomainSyncer {
     const domains: DomainInfo[] = response.data.map((subdomain: GleamSubdomain) => ({
       name: subdomain.fqdn,
       status: subdomain.status,
+      registrationDate: subdomain.created_at || undefined,
     }))
 
     return { success: true, data: domains }

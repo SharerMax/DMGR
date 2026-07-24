@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 interface DomainFormValues {
   name: string
   providerId: string
+  registrationDate: string
   expiryDate: string
   autoRenew: boolean
   autoRenewDays: string
@@ -61,6 +62,7 @@ export function DomainFormDialog({
     defaultValues: {
       name: '',
       providerId: '',
+      registrationDate: '',
       expiryDate: '',
       autoRenew: false,
       autoRenewDays: '',
@@ -79,6 +81,7 @@ export function DomainFormDialog({
       reset({
         name: editingDomain.name,
         providerId: editingDomain.providerId?.toString() || '',
+        registrationDate: editingDomain.registrationDate?.split('T')[0] || '',
         expiryDate: editingDomain.expiryDate?.split('T')[0] || '',
         autoRenew: !!editingDomain.autoRenew,
         autoRenewDays: editingDomain.autoRenewDays?.toString() || '',
@@ -90,6 +93,7 @@ export function DomainFormDialog({
       reset({
         name: '',
         providerId: '',
+        registrationDate: '',
         expiryDate: '',
         autoRenew: false,
         autoRenewDays: '',
@@ -182,6 +186,7 @@ export function DomainFormDialog({
       const payload = {
         name: data.name,
         providerId: data.providerId ? Number(data.providerId) : null,
+        registrationDate: data.registrationDate || null,
         expiryDate: data.expiryDate || null,
         autoRenew: data.autoRenew,
         autoRenewDays: data.autoRenew && data.autoRenewDays
@@ -250,6 +255,14 @@ export function DomainFormDialog({
                   </SelectContent>
                 </Select>
               )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registration_date">注册时间</Label>
+            <Input
+              id="registration_date"
+              type="date"
+              {...register('registrationDate')}
             />
           </div>
           <div className="space-y-2">

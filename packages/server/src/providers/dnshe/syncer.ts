@@ -48,6 +48,7 @@ export class DnsheSyncer extends DomainSyncer {
     const domains: DomainInfo[] = response.data.subdomains.map((subdomain: DnsheSubdomain) => ({
       name: subdomain.full_domain,
       status: subdomain.status,
+      registrationDate: subdomain.created_at || undefined,
       expirationDate: subdomain.expires_at ?? null,
     }))
 

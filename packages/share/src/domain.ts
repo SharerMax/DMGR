@@ -5,6 +5,7 @@ export interface Domain {
   providerId: number | null
   provider_name?: string | null
   userId: number
+  registrationDate: string | null
   expiryDate: string | null
   autoRenew: boolean
   autoRenewDays: number | null
@@ -19,6 +20,7 @@ export interface Domain {
 export interface CreateDomainInput {
   name: string
   providerId?: number | null
+  registrationDate?: string | null
   expiryDate?: string | null
   autoRenew?: boolean
   autoRenewDays?: number | null
@@ -30,6 +32,7 @@ export interface CreateDomainInput {
 export interface UpdateDomainInput {
   name?: string
   providerId?: number | null
+  registrationDate?: string | null
   expiryDate?: string | null
   autoRenew?: boolean
   autoRenewDays?: number | null

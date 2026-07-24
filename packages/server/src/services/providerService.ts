@@ -2,7 +2,7 @@ import type { Provider } from '../models/provider.js'
 import type { DomainSyncer } from '../providers/index.js'
 import logger from '@/utils/logger.js'
 import { syncDomainDNSRecords } from '../models/dnsRecord.js'
-import { createDomain, deleteDomain, getDomainsByProviderId, getDomainsByUserId } from '../models/domain.js'
+import { createDomain, deleteDomain, getDomainsByProviderId, getDomainsByUserId, updateDomain } from '../models/domain.js'
 import {
   createProvider,
   deleteProvider,
@@ -42,12 +42,14 @@ export interface DNSChangeDetail {
 
 export interface SyncDetails {
   domainsAdded: DomainChange[]
+  domainsUpdated: DomainChange[]
   dnsInserted: DNSChangeDetail[]
   dnsDeleted: DNSChangeDetail[]
 }
 
 export interface SyncResult {
   syncedCount: number
+  updatedCount: number
   domains: any[]
   dnsRecordsInserted: number
   dnsRecordsDeleted: number
@@ -236,26 +238,64 @@ function generateMockDomains(provider: Provider) {
   ]
 }
 
-async function syncNewDomains(userId: number, providerId: number, domainList: Array<{ name: string, expiryDate?: string | null, autoRenew?: boolean }>) {
-  const existingDomains = await getDomainsByUserId(userId)
-  const existingDomainNames = new Set(existingDomains.map(d => d.name))
+interface SyncDomainsResult {
+  added: Array<{ id: number, name: string }>
+  updated: Array<{ id: number, name: string }>
+}
 
-  const syncedDomains = []
+/**
+ * 同步域名列表：新增本地不存在的域名，更新已存在域名来自服务商的字段。
+ * 仅更新服务商能提供的字段（registrationDate、expiryDate），不覆盖用户偏好（autoRenew 等）。
+ */
+async function syncDomains(
+  userId: number,
+  providerId: number,
+  domainList: Array<{ name: string, registrationDate?: string | null, expiryDate?: string | null, autoRenew?: boolean }>,
+): Promise<SyncDomainsResult> {
+  const existingDomains = await getDomainsByUserId(userId)
+  const existingDomainMap = new Map(existingDomains.map(d => [d.name, d]))
+
+  const added: Array<{ id: number, name: string }> = []
+  const updated: Array<{ id: number, name: string }> = []
+
   for (const domain of domainList) {
-    if (!existingDomainNames.has(domain.name)) {
-      logger.info(`同步域名: ${domain.name} ${domain.expiryDate} ${domain.autoRenew}`)
+    const existing = existingDomainMap.get(domain.name)
+    if (!existing) {
+      logger.info(`同步新增域名: ${domain.name} ${domain.expiryDate} ${domain.autoRenew}`)
       const newDomain = await createDomain({
         name: domain.name,
         providerId,
         userId,
+        registrationDate: domain.registrationDate || null,
         expiryDate: domain.expiryDate || null,
         autoRenew: domain.autoRenew,
       })
-      syncedDomains.push(newDomain)
+      added.push({ id: newDomain.id, name: newDomain.name })
+    }
+    else {
+      // 仅更新服务商能提供的字段，避免覆盖用户手动设置的字段
+      const newRegistrationDate = domain.registrationDate || null
+      const newExpiryDate = domain.expiryDate || null
+      const oldRegistrationDate = existing.registrationDate ? existing.registrationDate.toISOString().split('T')[0] : null
+      const oldExpiryDate = existing.expiryDate ? existing.expiryDate.toISOString().split('T')[0] : null
+
+      // 跳过无变化的域名
+      if (newRegistrationDate === oldRegistrationDate && newExpiryDate === oldExpiryDate) {
+        continue
+      }
+
+      logger.info(`同步更新域名: ${domain.name} ${domain.registrationDate} ${domain.expiryDate}`)
+      const updatedDomain = await updateDomain(existing.id, {
+        registrationDate: newRegistrationDate,
+        expiryDate: newExpiryDate,
+      })
+      if (updatedDomain) {
+        updated.push({ id: updatedDomain.id, name: updatedDomain.name })
+      }
     }
   }
 
-  return syncedDomains
+  return { added, updated }
 }
 
 /**
@@ -278,16 +318,18 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
     const syncDetails: SyncDetails = {
       domainsAdded: [],
+      domainsUpdated: [],
       dnsInserted: [],
       dnsDeleted: [],
     }
 
     if (!syncer || !syncer.validateConfig()) {
       const mockDomains = generateMockDomains(provider)
-      const syncedDomains = await syncNewDomains(userId, providerId, mockDomains)
-      syncDetails.domainsAdded = syncedDomains.map(d => ({ name: d.name }))
+      const { added: syncedDomains } = await syncDomains(userId, providerId, mockDomains)
+      syncDetails.domainsAdded = syncedDomains
       const result: SyncResult = {
         syncedCount: syncedDomains.length,
+        updatedCount: 0,
         domains: syncedDomains,
         dnsRecordsInserted: 0,
         dnsRecordsDeleted: 0,
@@ -313,12 +355,14 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
     const domainList = syncResult.domains.map(d => ({
       name: d.name,
+      registrationDate: d.registrationDate || null,
       expiryDate: d.expirationDate || null,
       autoRenew: providerSupportsAutoRenew(provider.type),
     }))
 
-    const newDomains = await syncNewDomains(userId, providerId, domainList)
-    syncDetails.domainsAdded = newDomains.map(d => ({ name: d.name }))
+    const { added: newDomains, updated: updatedDomains } = await syncDomains(userId, providerId, domainList)
+    syncDetails.domainsAdded = newDomains
+    syncDetails.domainsUpdated = updatedDomains
 
     const allUserDomains = await getDomainsByUserId(userId)
     const domainNameToId = new Map<string, number>()
@@ -383,6 +427,7 @@ export async function syncProviderDomains(userId: number, providerId: number): P
 
     const result: SyncResult = {
       syncedCount: newDomains.length,
+      updatedCount: updatedDomains.length,
       domains: newDomains,
       dnsRecordsInserted: totalInserted,
       dnsRecordsDeleted: totalDeleted,

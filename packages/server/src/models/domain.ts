@@ -14,6 +14,7 @@ export async function createDomain(input: CreateDomainInput & { userId: number }
       name: input.name,
       providerId: input.providerId,
       userId: input.userId,
+      registrationDate: input.registrationDate ? new Date(input.registrationDate) : null,
       expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
       autoRenew: input.autoRenew ?? false,
       autoRenewDays: input.autoRenewDays,
@@ -79,6 +80,7 @@ export async function updateDomain(
     data: {
       name: input.name,
       providerId: input.providerId,
+      registrationDate: input.registrationDate === undefined ? undefined : input.registrationDate ? new Date(input.registrationDate) : null,
       expiryDate: input.expiryDate === undefined ? undefined : input.expiryDate ? new Date(input.expiryDate) : null,
       autoRenew: input.autoRenew,
       autoRenewDays: input.autoRenewDays,
