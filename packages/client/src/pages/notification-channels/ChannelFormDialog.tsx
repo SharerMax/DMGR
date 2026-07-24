@@ -159,21 +159,13 @@ export function ChannelFormDialog({
               name="type"
               rules={{ required: '请选择渠道类型' }}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  items={{ email: '邮件', webhook: 'Webhook', telegram: 'Telegram', feishu: '飞书' }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="选择渠道类型">
-                      {(value: string | null) => {
-                        if (!value)
-                          return null
-                        const labels: Record<string, string> = {
-                          email: '邮件',
-                          webhook: 'Webhook',
-                          telegram: 'Telegram',
-                          feishu: '飞书',
-                        }
-                        return labels[value] || value
-                      }}
-                    </SelectValue>
+                    <SelectValue placeholder="选择渠道类型" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="email">邮件</SelectItem>

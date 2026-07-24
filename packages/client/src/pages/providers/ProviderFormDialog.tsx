@@ -158,15 +158,13 @@ export function ProviderFormDialog({
                 name="type"
                 rules={{ required: '请选择服务商类型' }}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={value => handleTypeChange(value ?? '')}>
+                  <Select
+                    value={field.value}
+                    onValueChange={value => handleTypeChange(value ?? '')}
+                    items={providerTypes.map(t => ({ value: t.id, label: t.name }))}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="请选择服务商类型">
-                        {(value: string | null) => {
-                          if (!value)
-                            return null
-                          return providerTypes.find(t => t.id === value)?.name || value
-                        }}
-                      </SelectValue>
+                      <SelectValue placeholder="请选择服务商类型" />
                     </SelectTrigger>
                     <SelectContent>
                       {providerTypes.map(type => (
