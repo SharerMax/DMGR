@@ -12,10 +12,13 @@ Domain Manager 是一个基于 React + Express + Prisma + SQLite 构建的域名
 
 - **域名管理**：多服务商域名统一管理，支持到期提醒
 - **DNS 记录管理**：增删改查 DNS 记录，自动同步到服务商
-- **服务商对接**：支持阿里云、腾讯云、Cloudflare、DNSPod、Namecheap、VPS8、Gleam 等
+- **域名元信息同步**：同步域名注册时间与 NameServer 列表，支持新增与更新已存在域名
+- **服务商对接**：支持阿里云、腾讯云、Cloudflare、DNSHE、DNSPod、Namecheap、VPS8、Gleam 等
+- **NameServer 配置**：支持 DNS 管理的服务商可配置自定义 NS 列表，同步时应用到域名
 - **自动续期**：支持域名自动续期，可配置 cron 定时任务
 - **通知提醒**：支持多渠道通知（Email、Telegram、飞书、Webhook），到期自动提醒
 - **续期日志**：完整的续期操作日志，可追溯历史记录
+- **同步审计**：通过 SyncLog 记录服务商域名同步操作的成功/失败/部分成功状态及新增、更新、DNS 变更明细
 
 ## 技术栈
 
@@ -38,6 +41,7 @@ domain/
 │   │       ├── components/  # 组件（ui/ 为 shadcn/ui）
 │   │       ├── lib/         # API 客户端 & 工具函数
 │   │       └── hooks/       # 自定义 Hooks
+│   ├── share/           # 前后端共享类型（仅类型导出，源码直消费）
 │   └── server/          # 后端（Express + Prisma）
 │       └── src/
 │           ├── routes/      # API 路由（控制器层）
@@ -100,11 +104,13 @@ pnpm build
 | `LOG_DIR` | `./logs` | 日志文件目录（生产环境） |
 | `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | 自动续期 cron 表达式 |
 | `DATABASE_URL` | `file:./dev.db` | SQLite 数据库文件路径 |
-| `SMTP_HOST` | - | SMTP 服务器地址（Email 通知渠道必填） |
-| `SMTP_PORT` | `465` | SMTP 端口（465 SSL / 587 STARTTLS） |
-| `SMTP_USER` | - | SMTP 用户名（Email 通知渠道必填） |
-| `SMTP_PASS` | - | SMTP 密码 / 授权码（Email 通知渠道必填） |
-| `SMTP_FROM` | - | 发件人地址（Email 通知渠道必填） |
+| `SMTP_HOST` | - | SMTP 服务器地址（选填¹） |
+| `SMTP_PORT` | `587` | SMTP 端口（465 SSL / 587 STARTTLS） |
+| `SMTP_USER` | - | SMTP 用户名（选填¹） |
+| `SMTP_PASS` | - | SMTP 密码 / 授权码（选填¹） |
+| `SMTP_FROM` | - | 发件人地址（选填¹） |
+
+> ¹ SMTP 环境变量为 Email 通知渠道的默认值（选填），也可通过系统设置页面配置。数据库配置优先于环境变量，仅当使用 Email 通知渠道时需要完整配置。
 
 ## 测试账号
 

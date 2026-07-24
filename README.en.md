@@ -12,10 +12,13 @@ Domain Manager is a domain management system built with React + Express + Prisma
 
 - **Domain Management**: Unified management of domains across multiple providers with expiration reminders
 - **DNS Record Management**: CRUD operations on DNS records with automatic sync to providers
-- **Provider Integration**: Supports Alibaba Cloud, Tencent Cloud, Cloudflare, DNSPod, Namecheap, VPS8, Gleam, and more
+- **Domain Metadata Sync**: Sync domain registration date and NameServer list, supports adding and updating existing domains
+- **Provider Integration**: Supports Alibaba Cloud, Tencent Cloud, Cloudflare, DNSHE, DNSPod, Namecheap, VPS8, Gleam, and more
+- **NameServer Config**: DNS-management-enabled providers can configure custom NS list, applied to domains during sync
 - **Auto Renewal**: Automated domain renewal with configurable cron schedule
 - **Notifications**: Multi-channel notifications (Email, Telegram, Feishu, Webhook) with automatic expiration alerts
 - **Renewal Logs**: Complete renewal operation history with full traceability
+- **Sync Audit**: SyncLog records provider domain sync operations with success/failed/partial status and added, updated, DNS change details
 
 ## Tech Stack
 
@@ -38,6 +41,7 @@ domain/
 │   │       ├── components/  # Components (ui/ is shadcn/ui)
 │   │       ├── lib/         # API client & utilities
 │   │       └── hooks/       # Custom hooks
+│   ├── share/           # Shared types (type-only exports, source-direct consumption)
 │   └── server/          # Backend (Express + Prisma)
 │       └── src/
 │           ├── routes/      # API routes (controller layer)
@@ -100,11 +104,13 @@ pnpm build
 | `LOG_DIR` | `./logs` | Log file directory (production) |
 | `RENEWAL_CRON_EXPRESSION` | `0 2 * * *` | Auto-renewal cron expression |
 | `DATABASE_URL` | `file:./dev.db` | SQLite database file path |
-| `SMTP_HOST` | - | SMTP server host (required for Email channel) |
-| `SMTP_PORT` | `465` | SMTP port (465 SSL / 587 STARTTLS) |
-| `SMTP_USER` | - | SMTP username (required for Email channel) |
-| `SMTP_PASS` | - | SMTP password / auth code (required for Email channel) |
-| `SMTP_FROM` | - | Sender address (required for Email channel) |
+| `SMTP_HOST` | - | SMTP server host (optional¹) |
+| `SMTP_PORT` | `587` | SMTP port (465 SSL / 587 STARTTLS) |
+| `SMTP_USER` | - | SMTP username (optional¹) |
+| `SMTP_PASS` | - | SMTP password / auth code (optional¹) |
+| `SMTP_FROM` | - | Sender address (optional¹) |
+
+> ¹ SMTP environment variables are optional defaults for the Email notification channel, also configurable via the system settings page. Database config takes precedence over env vars; complete configuration is required only when using the Email channel.
 
 ## Test Account
 

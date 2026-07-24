@@ -147,8 +147,8 @@
 - `notifications/base.ts` 定义 `NotificationSender` 接口、`NotificationType` 类型与 `NotificationSenderFactory` 工厂（唯一来源）
 - `notifications/config.ts` 的 `BUILT_IN_NOTIFICATION_CHANNELS` 声明各渠道的字段配置（供前端动态渲染表单）
 - `NotificationSender.send(content, type)` 接收 `type` 参数，渠道据此自定义通知内容（如 email 自定义主题、webhook 携带 type 字段）
-- Email 渠道的 SMTP 配置通过环境变量读取（`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`，详见 `skills/domain-manager-dev` §7）
-- 创建/更新 Email 通知渠道时，service 层**必须**调用 `assertEmailConfigured()` 校验 SMTP 配置，配置缺失时抛出友好错误（前端 `toast.error(error.message)` 提示）
+- Email 渠道的 SMTP 配置为**选填**，环境变量（`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`，详见 `skills/domain-manager-dev` §7）作为默认值，也可通过系统设置页面配置（数据库配置优先于环境变量）
+- 创建/更新 Email 通知渠道时，service 层**必须**调用 `isEmailConfigured()` 校验 SMTP 配置完整性，配置缺失时抛出友好错误（前端 `toast.error(error.message)` 提示）
 - Notifications 适配层**禁止**访问数据库、写业务判断
 
 ---

@@ -242,9 +242,11 @@ skills 文件结尾的检查清单统一改为：
 |--------|---------|
 | 路由库 | `react-router-dom` 均为「禁用」语境，React Router 8.x 从 `react-router` 导入 |
 | 通知渠道 | 全文为 Email / Telegram / Feishu / Webhook，无已移除的 SMS/短信（rules/ 和 skills/ 范围内） |
-| Provider 列表 | 7 个服务商（aliyun/tencent/cloudflare/dnspod/namecheap/vps8/gleam）在矩阵、目录结构、Select 模板、调试章节中一致出现 |
+| Provider 列表 | 8 个服务商（aliyun/tencent/cloudflare/dnshe/dnspod/namecheap/vps8/gleam）在矩阵、目录结构、Select 模板、调试章节中一致出现 |
 | 技术栈版本 | Node >= 22.21、pnpm >= 11.9、TypeScript 6.x、Express 5.2、Zod 4.4、Pino 10.3 |
 | `@types/node` | 固定 `^22.20.0`，不升级到 v26+ |
+| README 同步 | `README.md` 与 `README.en.md` 内容一致（仅语言不同）；功能列表、服务商列表、技术栈与 `rules/` 一致 |
+| README 与 rules 一致 | README 的「主要功能」与 `rules/project.md` §1 一致；服务商列表与 `rules/backend.md` §8 矩阵一致 |
 
 ---
 
@@ -277,3 +279,51 @@ skills 文件结尾的检查清单统一改为：
 - ❌ 同一信息在多个文件定义（违反 SSOT）
 - ❌ 交叉引用指向不存在的章节（链接失效）
 - ❌ 优化后未运行 Grep 验证（一致性未检查）
+- ❌ README 与 rules/ 内容不一致（功能列表、服务商列表、技术栈脱节）
+- ❌ 只更新 `README.md` 未同步 `README.en.md`（双语不同步）
+- ❌ README 重复 rules/ 的具体规则条目（应只做概要介绍）
+
+---
+
+## 11. README 处理标准
+
+`README.md`（中文）和 `README.en.md`（英文）是面向人类用户的项目入口文档，与面向 AI Agent 的 `AGENTS.md` 区分。优化时必须同步处理。
+
+### 11.1 定位与边界
+
+| 文档 | 面向 | 内容特征 |
+|------|------|---------|
+| `README.md` / `README.en.md` | 人类用户/开发者 | 项目介绍、功能列表、快速开始、环境变量、API 概览 |
+| `AGENTS.md` | AI Agent | 决策树导航、文件速查表（无具体规则内容） |
+
+**关键边界**：README 是用户入口，AGENTS.md 是 Agent 入口，两者**不重复**具体规则内容。
+
+### 11.2 必备章节
+
+README 必须包含以下章节（中英文同步）：
+
+| 章节 | 内容 | SSOT 来源 |
+|------|------|----------|
+| 项目介绍 | 一句话描述项目 | - |
+| 主要功能 | 功能列表（bullet points） | `rules/project.md` §1 |
+| 技术栈 | 前后端技术栈表 | `rules/backend.md` §1、`rules/frontend.md` §1 |
+| 项目结构 | 顶层目录树 | `AGENTS.md` 顶层目录结构 |
+| 快速开始 | 环境要求、安装、启动、构建 | `rules/local.md` §2-3 |
+| 环境变量 | 变量清单表 | `skills/domain-manager-dev` §7 |
+| 测试账号 | 默认账号密码 | `rules/local.md` §4 |
+| API 接口 | 统一响应格式 + 主要接口表 | `rules/project.md` §5 |
+| 开发约定 | 核心约定（精简版） | `rules/project.md` 各节 |
+| 许可证 | MIT | - |
+
+### 11.3 同步更新规则
+
+- 当 `rules/` 中的功能列表、技术栈、服务商列表、环境变量等变更时，**必须同步更新** README 对应章节
+- 当新增/移除服务商时，README 的「服务商对接」必须同步
+- 当新增功能能力时，README 的「主要功能」必须同步
+- `README.md` 与 `README.en.md` 必须**同步维护**，内容一致（仅语言不同）
+
+### 11.4 SSOT 处理
+
+- README **不重复** `rules/` 的具体规则条目，只做概要介绍
+- 环境变量清单的 SSOT 在 `skills/domain-manager-dev`，README 只列常用变量
+- 开发约定在 README 中只列核心 5-8 条，完整规则见 `rules/project.md`
