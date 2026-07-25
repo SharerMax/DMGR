@@ -30,6 +30,7 @@ import Profile from '@/pages/profile'
 import Providers from '@/pages/providers'
 import RenewalLogs from '@/pages/renewal-logs'
 import SyncLogs from '@/pages/sync-logs'
+import SystemConfig from '@/pages/system-config'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 
@@ -167,6 +168,15 @@ function Layout({ children }: { children: React.ReactNode }) {
               </nav>
             </div>
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => navigate('/system-config')}
+                title="系统配置"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -314,6 +324,14 @@ function AppRoutes() {
         element={(
           <ProtectedRoute>
             <SyncLogs />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/system-config"
+        element={(
+          <ProtectedRoute>
+            <SystemConfig />
           </ProtectedRoute>
         )}
       />

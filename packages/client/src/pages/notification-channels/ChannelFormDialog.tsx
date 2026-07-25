@@ -2,6 +2,7 @@ import type { CreateChannelInput, NotificationChannel } from '@/stores/notificat
 import { AlertTriangle } from 'lucide-react'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -243,7 +244,13 @@ export function ChannelFormDialog({
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 SMTP 服务器未配置，邮件渠道将默认禁用。
-                请先点击上方「SMTP 配置」按钮完成配置。
+                请先前往
+                {' '}
+                <Link to="/system-config" className="underline font-medium">
+                  系统配置
+                </Link>
+                {' '}
+                页面完成 SMTP 配置。
               </span>
             </div>
           )}
