@@ -112,6 +112,7 @@
 | 通知记录 | `notificationLogs.ts` | 通知发送记录查询 |
 | 续期日志 | `renewalLogs.ts` | 续期记录与统计 |
 | 同步日志 | `syncLogs.ts` | 服务商域名同步记录与详情 |
+| NS 检查配置 | `nsCheckSettings.ts` | NS 检查 DNS 服务器配置与测试 |
 | 主题 | `theme.ts` | `light` / `dark` / `system` |
 
 - Store 的 action 使用 `set()` 更新状态
@@ -176,10 +177,11 @@
 | `/renewal-logs` | `pages/renewal-logs/` | 续期日志（受保护） |
 | `/profile` | `pages/profile/` | 个人资料与密码修改（受保护） |
 | `/auto-renew-config` | `pages/auto-renew-config/` | 自动续期配置（受保护） |
+| `/system-config` | `pages/system-config/` | 系统配置（SMTP、NS 检查服务器，受保护） |
 
 - 所有受保护路由使用 `ProtectedRoute` 组件包裹，未登录自动重定向到 `/login`
 
-**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 4 项（点击 Logo 返回概览首页）：
+**顶部导航结构（dropdown）**：导航栏顶级菜单精简为 4 项（点击 Logo 返回概览首页），右上角设置图标链接到系统配置页面：
 
 | 顶级菜单 | 子项 |
 |---------|------|
@@ -187,6 +189,7 @@
 | 服务商（dropdown） | 服务商列表 (`/providers`)、同步记录 (`/sync-logs`) |
 | 通知（dropdown） | 通知配置 (`/notification-configs`)、渠道配置 (`/notification-channels`)、通知记录 (`/notification-logs`) |
 | 续期（dropdown） | 续期日志 (`/renewal-logs`)、续期配置 (`/auto-renew-config`) |
+| 设置（图标） | 系统配置 (`/system-config`) |
 
 ---
 
