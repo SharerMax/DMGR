@@ -68,7 +68,6 @@ catalog:
   react-router: ^8.3.0
   rotating-file-stream: ^3.2.9
   shadcn: ^4.15.0
-  sonner: ^2.0.7
   tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.3
   tencentcloud-sdk-nodejs-dnspod: ^4.1.266

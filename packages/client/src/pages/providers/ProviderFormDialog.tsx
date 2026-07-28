@@ -2,7 +2,6 @@ import type { CreateProviderInput, Provider, ProviderField, ProviderType } from 
 import { ChevronDown, Settings2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -26,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/components/ui/toast'
 
 interface ProviderFormValues {
   type: string
@@ -119,7 +119,7 @@ export function ProviderFormDialog({
       onOpenChange(false)
     }
     catch (error: any) {
-      toast.error(error.message || '操作失败')
+      toast.add({ title: error.message || '操作失败', type: 'error' })
     }
   }
 

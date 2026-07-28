@@ -2,11 +2,11 @@ import type { NsCheckSetting, NsCheckTestResult, UpdateNsCheckSettingInput } fro
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from '@/components/ui/toast'
 import { useNsCheckSettingStore } from '@/stores/nsCheckSettings'
 
 interface NsCheckFormValues {
@@ -298,20 +298,20 @@ export function NsCheckCard() {
         server: data.server,
       }
       await updateNsCheckSetting(payload)
-      toast.success('NS 检查配置已保存')
+      toast.add({ title: 'NS 检查配置已保存', type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '保存 NS 检查配置失败')
+      toast.add({ title: error.message || '保存 NS 检查配置失败', type: 'error' })
     }
   }
 
   const handleTest = async () => {
     if (!testDomain.trim()) {
-      toast.error('请输入测试域名')
+      toast.add({ title: '请输入测试域名', type: 'error' })
       return
     }
     if (serverValue && !isValidFormat) {
-      toast.error('服务器地址格式错误，请先修正')
+      toast.add({ title: '服务器地址格式错误，请先修正', type: 'error' })
       return
     }
     setTesting(true)
@@ -323,14 +323,14 @@ export function NsCheckCard() {
       })
       setTestResult(result)
       if (result.success) {
-        toast.success(`查询成功，找到 ${result.records.length} 条 NS 记录`)
+        toast.add({ title: `查询成功，找到 ${result.records.length} 条 NS 记录`, type: 'success' })
       }
       else {
-        toast.error(result.error || '查询失败')
+        toast.add({ title: result.error || '查询失败', type: 'error' })
       }
     }
     catch (error: any) {
-      toast.error(error.message || '测试失败')
+      toast.add({ title: error.message || '测试失败', type: 'error' })
     }
     finally {
       setTesting(false)

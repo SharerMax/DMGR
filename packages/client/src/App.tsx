@@ -1,7 +1,6 @@
 import { Bell, FileText, Globe, LogOut, Mailbox, Moon, RefreshCw, Send, Server, Settings, Sun, SunMoon, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router'
-import { Toaster } from 'sonner'
 import Logo from '@/components/Logo'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +17,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
+import { Toaster } from '@/components/ui/toast'
 import { ConfirmDialogProvider, useConfirm } from '@/hooks/useConfirm'
 import AutoRenewConfig from '@/pages/auto-renew-config'
 import Dashboard from '@/pages/dashboard'
@@ -350,7 +350,7 @@ function App() {
   return (
     <ConfirmDialogProvider>
       <BrowserRouter>
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster />
         <AppRoutes />
       </BrowserRouter>
     </ConfirmDialogProvider>

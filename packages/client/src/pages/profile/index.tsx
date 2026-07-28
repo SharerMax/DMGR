@@ -3,11 +3,11 @@ import { zhCN } from 'date-fns/locale'
 import { Lock, Mail, Save, User } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/auth'
 
 interface EmailFormValues {
@@ -50,10 +50,10 @@ export default function Profile() {
     setLoading(true)
     try {
       await updateProfile(data.email || null)
-      toast.success('邮箱更新成功')
+      toast.add({ title: '邮箱更新成功', type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '更新失败')
+      toast.add({ title: error.message || '更新失败', type: 'error' })
     }
     finally {
       setLoading(false)
@@ -64,11 +64,11 @@ export default function Profile() {
     setPasswordLoading(true)
     try {
       await changePassword(data.currentPassword, data.newPassword)
-      toast.success('密码修改成功')
+      toast.add({ title: '密码修改成功', type: 'success' })
       resetPasswordForm({ currentPassword: '', newPassword: '' })
     }
     catch (error: any) {
-      toast.error(error.message || '修改密码失败')
+      toast.add({ title: error.message || '修改密码失败', type: 'error' })
     }
     finally {
       setPasswordLoading(false)

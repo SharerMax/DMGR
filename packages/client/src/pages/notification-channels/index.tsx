@@ -1,8 +1,8 @@
 import type { CreateChannelInput, NotificationChannel } from '@/stores/notificationChannels'
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useNotificationChannelStore } from '@/stores/notificationChannels'
 import { useSmtpSettingStore } from '@/stores/smtpSettings'
@@ -33,11 +33,11 @@ export default function NotificationChannels() {
   const handleSubmit = async (payload: CreateChannelInput, editing: NotificationChannel | null) => {
     if (editing) {
       await updateChannel(editing.id, payload)
-      toast.success('通知渠道已更新')
+      toast.add({ title: '通知渠道已更新', type: 'success' })
     }
     else {
       await createChannel(payload)
-      toast.success('通知渠道已创建')
+      toast.add({ title: '通知渠道已创建', type: 'success' })
     }
   }
 
@@ -52,10 +52,10 @@ export default function NotificationChannels() {
       return
     try {
       await deleteChannel(id)
-      toast.success('通知渠道已删除')
+      toast.add({ title: '通知渠道已删除', type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '删除失败')
+      toast.add({ title: error.message || '删除失败', type: 'error' })
     }
   }
 

@@ -2,7 +2,6 @@ import type { CreateDNSRecordInput, DNSRecord } from '@/stores/dnsRecords'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { toast } from '@/components/ui/toast'
 
 const DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'PTR', 'SOA']
 
@@ -114,7 +114,7 @@ export function DnsRecordDialog({
       })
     }
     catch (error: any) {
-      toast.error(error.message || '操作失败')
+      toast.add({ title: error.message || '操作失败', type: 'error' })
     }
   }
 

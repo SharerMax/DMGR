@@ -2,7 +2,6 @@ import type { CreateDomainInput, Domain } from '@/stores/domains'
 import type { Provider, ProviderType } from '@/stores/providers'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/components/ui/toast'
 
 interface DomainFormValues {
   name: string
@@ -200,7 +200,7 @@ export function DomainFormDialog({
       onOpenChange(false)
     }
     catch (error: any) {
-      toast.error(error.message || '操作失败')
+      toast.add({ title: error.message || '操作失败', type: 'error' })
     }
   }
 

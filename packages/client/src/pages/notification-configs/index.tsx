@@ -3,10 +3,10 @@ import type { NotificationConfigType } from '@/stores/notificationConfigs'
 import { Bell, CheckCircle2, Clock, RefreshCw, XCircle } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useNotificationConfigStore } from '@/stores/notificationConfigs'
 import { ConfigCard } from './ConfigCard'
@@ -106,12 +106,12 @@ export default function NotificationConfigs() {
         updateConfig('renewal_failed', { enabled: data.renewalFailedEnabled }),
         updateConfig('sync_completed', { enabled: data.syncCompletedEnabled }),
       ])
-      toast.success('通知配置已保存')
+      toast.add({ title: '通知配置已保存', type: 'success' })
       await fetchConfigs()
     }
     catch (error: unknown) {
       const message = error instanceof Error ? error.message : '保存通知配置失败'
-      toast.error(message)
+      toast.add({ title: message, type: 'error' })
     }
   }
 
@@ -127,11 +127,11 @@ export default function NotificationConfigs() {
     }
     try {
       await resetConfig(type)
-      toast.success('已重置为默认值')
+      toast.add({ title: '已重置为默认值', type: 'success' })
     }
     catch (error: unknown) {
       const message = error instanceof Error ? error.message : '重置失败'
-      toast.error(message)
+      toast.add({ title: message, type: 'error' })
     }
   }
 

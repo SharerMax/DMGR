@@ -3,13 +3,13 @@ import { AlertTriangle } from 'lucide-react'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Link } from 'react-router'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
 
 interface ChannelFormValues {
   type: CreateChannelInput['type']
@@ -139,7 +139,7 @@ export function ChannelFormDialog({
       onOpenChange(false)
     }
     catch (error: any) {
-      toast.error(error.message || '保存失败')
+      toast.add({ title: error.message || '保存失败', type: 'error' })
     }
   }
 

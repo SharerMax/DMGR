@@ -1,8 +1,8 @@
 import type { CreateProviderInput, Provider } from '@/stores/providers'
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useDomainStore } from '@/stores/domains'
 import { useProviderStore } from '@/stores/providers'
@@ -57,10 +57,10 @@ export default function Providers() {
       if (result.deletedDomainCount > 0) {
         parts.push(`同时删除了 ${result.deletedDomainCount} 个关联域名`)
       }
-      toast.success(parts.join('，'))
+      toast.add({ title: parts.join('，'), type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '删除失败')
+      toast.add({ title: error.message || '删除失败', type: 'error' })
     }
   }
 
@@ -86,10 +86,10 @@ export default function Providers() {
           parts.push('DNS 记录无变化')
         }
       }
-      toast.success(`同步成功！${parts.join('；')}`)
+      toast.add({ title: `同步成功！${parts.join('；')}`, type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '同步失败')
+      toast.add({ title: error.message || '同步失败', type: 'error' })
     }
     finally {
       setSyncingProvider(null)

@@ -1,11 +1,11 @@
 import type { SmtpSetting, UpdateSmtpSettingInput } from '@/stores/smtpSettings'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from '@/components/ui/toast'
 import { useSmtpSettingStore } from '@/stores/smtpSettings'
 
 interface SmtpFormValues {
@@ -63,10 +63,10 @@ export function SmtpCard() {
         payload.pass = data.pass
       }
       await updateSmtpSetting(payload)
-      toast.success('SMTP 配置已保存')
+      toast.add({ title: 'SMTP 配置已保存', type: 'success' })
     }
     catch (error: any) {
-      toast.error(error.message || '保存 SMTP 配置失败')
+      toast.add({ title: error.message || '保存 SMTP 配置失败', type: 'error' })
     }
   }
 

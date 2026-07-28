@@ -3,8 +3,8 @@ import type { CreateDNSRecordInput, DNSRecord } from '@/stores/dnsRecords'
 import type { CreateDomainInput, Domain } from '@/stores/domains'
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useDNSRecordStore } from '@/stores/dnsRecords'
 import { useDomainStore } from '@/stores/domains'
@@ -101,7 +101,7 @@ export default function Domains() {
       await deleteDomain(id)
     }
     catch (error: any) {
-      toast.error(error.message || '删除失败')
+      toast.add({ title: error.message || '删除失败', type: 'error' })
     }
   }
 
@@ -118,7 +118,7 @@ export default function Domains() {
       await deleteRecord(id)
     }
     catch (error: any) {
-      toast.error(error.message || '删除失败')
+      toast.add({ title: error.message || '删除失败', type: 'error' })
     }
   }
 
