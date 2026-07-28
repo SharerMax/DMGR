@@ -12,31 +12,14 @@
 1. **创建页面组件** — 在 `pages/<route>/` 下创建 `index.tsx`（编排根）+ 按职责拆分子组件（筛选器 / 表格 / 表单弹窗等 `PascalCase.tsx`）
 2. **使用 Zustand store** — 在 `stores/` 中找到或新建对应领域的 store
 3. **使用 react-hook-form 处理表单** — 所有用户输入走 `useForm`
-4. **使用 sonner toast 反馈** — 操作结果走 `toast.success / toast.error`
+4. **使用 shadcn toast 反馈** — 操作结果走 `toast.add({ title, type: 'success' | 'error' })`
 5. **使用 useConfirm 处理危险操作** — 删除等危险操作走确认对话框
 6. **在 App.tsx 注册路由** — 添加 `<Route path="/reminders" element={<Reminders />} />`
 7. **质量保证** — `pnpm lint` → `pnpm typecheck` → `pnpm build:client`
 
 ---
 
-## 2. 核心技术栈速查
-
-| 技术 | 用途 | 关键文件 |
-|------|------|---------|
-| **React 19** | UI 框架 | `.tsx` 文件 |
-| **react-router** | 路由（8.x，禁用 `react-router-dom`） | `App.tsx` |
-| **Zustand** | 状态管理 | `stores/*.ts` |
-| **react-hook-form** | 表单验证 | 所有表单 |
-| **Axios** | HTTP 请求 | `lib/api.ts` |
-| **sonner** | 用户反馈 / Toast | `App.tsx` 中挂载，全局使用 |
-| **shadcn/ui** | UI 组件库 | `components/ui/*.tsx` |
-| **Tailwind CSS** | 样式 | 内联 `className` |
-| **lucide-react** | 图标库 | `<Globe />`, `<Database />`, `<RefreshCw />` 等 |
-| **date-fns** | 日期处理 | `format()`, `differenceInDays()` 等 |
-
----
-
-## 3. 目录结构（前端细节，唯一来源）
+## 2. 目录结构（前端细节，唯一来源）
 
 ```
 packages/client/src/
@@ -102,15 +85,15 @@ packages/client/src/
 
 ---
 
-## 4. 表单验证模板
+## 3. 表单验证模板
 
 表单规则见 `rules/frontend.md` §2。以下是代码模板。
 
-### 4.1 标准表单模板（带原生 Input）
+### 3.1 标准表单模板（带原生 Input）
 
 ```tsx
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -128,10 +111,10 @@ const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = u
 const onSubmit = handleSubmit(async (data) => {
   try {
     await createDomain(data)
-    toast.success('域名创建成功')
+    toast.add({ title: '域名创建成功', type: 'success' })
     reset()
   } catch (error: any) {
-    toast.error(error.message || '创建失败')
+    toast.add({ title: error.message || '创建失败', type: 'error' })
   }
 })
 
@@ -185,7 +168,7 @@ return (
 )
 ```
 
-### 4.2 shadcn/ui Select + Controller 模板
+### 3.2 shadcn/ui Select + Controller 模板
 
 shadcn/ui 的 `Select` / `Switch` / `Checkbox` 等非原生组件**必须**使用 `Controller` 包装，不能用 `register`：
 
@@ -230,7 +213,7 @@ const { control, formState: { errors } } = useForm({
 )}
 ```
 
-### 4.3 Switch + Controller 模板
+### 3.3 Switch + Controller 模板
 
 ```tsx
 import { Controller } from 'react-hook-form'
@@ -248,13 +231,13 @@ import { Switch } from '@/components/ui/switch'
 />
 ```
 
-### 4.4 动态字段（Provider config）
+### 3.4 动态字段（Provider config）
 
 服务商的配置字段由后端 `providers/config.ts` 中的 `fields` 动态决定，前端根据 `provider.type` 渲染不同字段：
 
 ```tsx
 import { useForm, Controller, watch } from 'react-hook-form'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 // 假设 typeFields 由 providers store 获取
 // 字段格式: { key: string, label: string, type: 'text' | 'password', required: boolean, placeholder?: string }
@@ -292,27 +275,27 @@ const typeFields = BUILT_IN_PROVIDERS[selectedType]?.fields || []
 
 ---
 
-## 5. Toast + useConfirm 模板
+## 4. Toast + useConfirm 模板
 
 通知规则见 `rules/frontend.md` §7。
 
-### 5.1 Toast（sonner）
+### 4.1 Toast（shadcn）
 
 ```typescript
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
-toast.success('操作成功')
-toast.success(`同步成功！新增 ${newDomains} 个域名`)
-toast.error(error.message || '操作失败')
-toast.info('提示信息')
-toast.warning('域名即将到期，请及时续期')
+toast.add({ title: '操作成功', type: 'success' })
+toast.add({ title: `同步成功！新增 ${newDomains} 个域名`, type: 'success' })
+toast.add({ title: error.message || '操作失败', type: 'error' })
+toast.add({ title: '提示信息', type: 'info' })
+toast.add({ title: '域名即将到期，请及时续期', type: 'warning' })
 ```
 
-### 5.2 确认对话框（useConfirm）
+### 4.2 确认对话框（useConfirm）
 
 ```tsx
 import { useConfirm } from '@/hooks/useConfirm'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 const { confirm } = useConfirm()
 
@@ -327,16 +310,16 @@ const handleDelete = async (provider: Provider) => {
 
   try {
     await deleteProvider(provider.id)
-    toast.success('服务商已删除')
+    toast.add({ title: '服务商已删除', type: 'success' })
   } catch (error: any) {
-    toast.error(error.message || '删除失败')
+    toast.add({ title: error.message || '删除失败', type: 'error' })
   }
 }
 ```
 
 ---
 
-## 6. Zustand Store 模板
+## 5. Zustand Store 模板
 
 Store 规则见 `rules/frontend.md` §4。
 
@@ -413,24 +396,24 @@ const { domains, loading, fetchDomains, createDomain, deleteDomain } = useDomain
 
 // 页面加载时获取数据
 useEffect(() => {
-  fetchDomains().catch((err) => toast.error(err.message))
+  fetchDomains().catch((err) => toast.add({ title: err.message, type: 'error' }))
 }, [])
 
 // 或在表单提交后刷新
 const handleCreate = async (data) => {
   try {
     await createDomain(data)
-    toast.success('创建成功')
+    toast.add({ title: '创建成功', type: 'success' })
     // 不需要手动刷新，Store 已自动更新
   } catch (error: any) {
-    toast.error(error.message)
+    toast.add({ title: error.message, type: 'error' })
   }
 }
 ```
 
 ---
 
-## 7. API 调用模式
+## 6. API 调用模式
 
 API 规则见 `rules/frontend.md` §5。
 
@@ -459,18 +442,18 @@ const res = await api.get<Domain[]>('/domains', {
 
 ---
 
-## 8. shadcn/ui 组件模板
+## 7. shadcn/ui 组件模板
 
 组件规则见 `rules/frontend.md` §3。
 
-### 8.1 添加新的 shadcn/ui 组件
+### 7.1 添加新的 shadcn/ui 组件
 
 ```bash
 cd packages/client
 pnpm dlx shadcn@latest add checkbox switch table
 ```
 
-### 8.2 Card 模板
+### 7.2 Card 模板
 
 ```tsx
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -486,7 +469,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 </Card>
 ```
 
-### 8.3 Table 模板
+### 7.3 Table 模板
 
 ```tsx
 import {
@@ -532,7 +515,7 @@ import { Badge } from '@/components/ui/badge'
 
 ---
 
-## 9. 主题与语义色
+## 8. 主题与语义色
 
 主题规则见 `rules/frontend.md` §6。
 
@@ -557,7 +540,7 @@ const { theme, setTheme } = useThemeStore()
 
 ---
 
-## 10. 路由与受保护路由
+## 9. 路由与受保护路由
 
 路由规则见 `rules/frontend.md` §8。
 
@@ -579,9 +562,3 @@ const { theme, setTheme } = useThemeStore()
   </ProtectedRoute>
 } />
 ```
-
----
-
-## 11. 提交前检查
-
-代码审查与自检清单见 `skills/domain-manager-review`。

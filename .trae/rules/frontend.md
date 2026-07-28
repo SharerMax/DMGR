@@ -1,6 +1,6 @@
 # 前端开发规范
 
-> 适用于 `packages/client/` 下的所有代码。核心技术栈：React 19 + TypeScript + Vite + shadcn/ui + Tailwind CSS v4 + Zustand + react-hook-form + Axios + sonner。
+> 适用于 `packages/client/` 下的所有代码。核心技术栈：React 19 + TypeScript + Vite + shadcn/ui + Tailwind CSS v4 + Zustand + react-hook-form + Axios + shadcn toast（Base UI）。
 > 本文件为**声明式规则**（「必须 / 禁止」），不含代码模板。模板见 `skills/domain-manager-frontend`。
 
 ---
@@ -15,7 +15,7 @@
 | 状态 | Zustand | 按领域拆分 store |
 | HTTP | Axios | 统一实例（`lib/api.ts`） |
 | 表单 | react-hook-form | **所有表单必须使用** |
-| 通知 | sonner | `toast.success/error/info` |
+| 通知 | shadcn toast（Base UI） | `toast.add({ title, type })`，组件位于 `@/components/ui/toast` |
 | 图标 | lucide-react | 统一图标库 |
 | 日期 | date-fns + react-day-picker | 日期处理与选择器 |
 | 路由 | React Router 8.x | API 从 `react-router` 导入（禁用 `react-router-dom`） |
@@ -32,8 +32,8 @@
 - 字段下方用 `text-xs text-red-500` 显示 `errors.xxx.message`
 - 提交按钮在 `isSubmitting` 状态下必须 `disabled`，防止重复提交
 - 表单提交成功后必须调用 `reset()` 重置字段
-- **禁止使用 `alert()`** — 所有用户提示走 `toast.*` 或 `useConfirm`
-- 表单模板见 `skills/domain-manager-frontend` §4
+- **禁止使用 `alert()`** — 所有用户提示走 `toast.add` 或 `useConfirm`
+- 表单模板见 `skills/domain-manager-frontend` §3
 
 ### 验证规则速查
 
@@ -49,7 +49,7 @@
 ### 错误消息处理
 
 - 前端验证失败：使用 `react-hook-form` 的 `errors.xxx.message`（用户即时可见）
-- 后端返回的错误：使用 `toast.error(error.message)` 弹出通知
+- 后端返回的错误：使用 `toast.add({ title: error.message, type: 'error' })` 弹出通知
 - 错误消息使用 `error.message`（Axios 拦截器已处理），**不用** `error.response?.data?.error`
 
 ---
@@ -92,7 +92,7 @@
 
 ### 3.4 确认对话框
 
-危险操作（删除服务商、删除域名、退出登录等）**必须**使用 `useConfirm` 对话框二次确认（模板见 `skills/domain-manager-frontend` §5）
+危险操作（删除服务商、删除域名、退出登录等）**必须**使用 `useConfirm` 对话框二次确认（模板见 `skills/domain-manager-frontend` §4）
 
 ---
 
@@ -121,7 +121,7 @@
 - **共享类型**：store 中使用的实体类型（`Domain` / `Provider` / `DNSRecord` 等）、Input 类型、Stats 类型**必须**从 `share` 包 `import type` 消费，禁止在 `stores/` 中重复定义同名类型
   - 正确：`import type { Domain, CreateDomainInput } from 'share'`
   - **本地扩展例外**：当 share 类型不满足前端特定需求时（如 UI Select 的 `'all'` 哨兵值、分页参数 `page`/`pageSize`），可在 store 中定义本地扩展接口继承 share 类型：`interface DomainFilters extends SharedDomainFilters { page?: number; pageSize?: number }`
-- Store 模板见 `skills/domain-manager-frontend` §6、`skills/domain-manager-share` §4
+- Store 模板见 `skills/domain-manager-frontend` §5、`skills/domain-manager-share` §4
 
 ---
 
@@ -130,7 +130,7 @@
 - 统一使用 `lib/api.ts` 的 Axios 实例，**禁止直接 `fetch()`**
 - Axios 拦截器自动处理：附带 JWT token、401 自动跳转 `/login`、成功响应自动提取 `res.data.data`、错误时 `error.message` 即为后端可读消息
 - **响应类型**：所有 API 调用的响应类型必须从 `share` 包 `import type` 消费（`Domain` / `Provider` / `PaginatedResponse<T>` / `ApiResponse<T>` 等），与后端 API 契约保持一致
-- 调用模板见 `skills/domain-manager-frontend` §7、`skills/domain-manager-share` §4
+- 调用模板见 `skills/domain-manager-frontend` §6、`skills/domain-manager-share` §4
 
 ---
 
@@ -140,21 +140,22 @@
 - 使用 Tailwind CSS v4 的 CSS 变量（Vega 主题）
 - **禁止硬编码颜色值**（如 `color: #000` / `bg-gray-100`），必须使用语义色 `text-foreground` / `bg-background` / `border-border`
 - **状态色必须使用 CSS 变量语义类**：`text-status-success` / `text-status-warning` / `text-status-error` / `text-status-info` / `text-status-disabled` / `text-status-danger`（对应背景色 `bg-status-*-bg` / `bg-status-*-bg-light`），变量定义在 `index.css` 的 `:root` 和 `.dark` 中，`error` 和 `danger` 引用 `var(--destructive)`
-- Toaster 配置：`position="top-right"`、`richColors`、`closeButton`
 
 ---
 
-## 7. 通知系统（sonner）
+## 7. 通知系统（shadcn toast）
 
-- **禁止使用 `alert()`** — 所有用户提示走 `toast.*` 或 `useConfirm`
-- Toaster 在 `App.tsx` 中挂载：`<Toaster position="top-right" richColors closeButton />`
+- 通知组件为 shadcn toast（基于 Base UI `@base-ui/react/toast`），源码位于 `@/components/ui/toast`
+- Toaster 在 `App.tsx` 中挂载 `<Toaster />`（无 props，使用默认配置，固定底部右侧）
+- `toast` 对象通过 `createToastManager()` 创建，使用 Base UI 原生 API：`toast.add({ title, description?, type })` 添加通知，`type` 取值为 `'success' | 'error' | 'info' | 'warning' | 'loading'`
+- 完整 manager API（`toast.add` / `toast.close` / `toast.update` / `toast.promise`）详见 [Base UI Toast 文档](https://base-ui.com/react/components/toast)
 
 **Toast vs Dialog 选择**：
 
 | 场景 | 使用 |
 |------|------|
-| 操作成功反馈 | `toast.success` |
-| 错误信息 | `toast.error` |
+| 操作成功反馈 | `toast.add({ title, type: 'success' })` |
+| 错误信息 | `toast.add({ title, type: 'error' })` |
 | 需要用户确认的危险操作 | `useConfirm()` 对话框 |
 | 表单输入错误 | 字段下方 `text-red-500` 错误提示 |
 

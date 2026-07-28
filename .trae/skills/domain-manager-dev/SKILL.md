@@ -11,7 +11,7 @@
 
 1. **读文档**：根据变更类型，阅读 `.trae/rules/<type>.md` 中的规范 + `.trae/skills/domain-manager-<topic>/SKILL.md` 中的实操指南
 2. **实现**：严格按分层架构实现代码
-   - 前端表单：`react-hook-form` + `sonner toast`
+   - 前端表单：`react-hook-form` + `shadcn toast`
    - 危险操作：前端 `useConfirm` + 后端 `userId` 隔离
    - Provider 相关：在 `providers/<name>/` 目录内完成，能力声明在 `providers/config.ts`
 3. **质量检查**（失败不得提交）：
@@ -25,13 +25,7 @@
 
 ---
 
-## 2. 启动开发环境与测试账号
-
-启动命令、测试账号见 `rules/local.md` §3 和 §4。
-
----
-
-## 3. 代码质量检查与构建
+## 2. 代码质量检查与构建
 
 ```bash
 # 前后端同时检查
@@ -47,13 +41,13 @@ cd packages/client && pnpm build
 
 ---
 
-## 4. 依赖管理（pnpm + catalog）
+## 3. 依赖管理（pnpm + catalog）
 
-### 4.1 版本范围声明位置
+### 3.1 版本范围声明位置
 
 所有依赖版本集中在**项目根目录的 `pnpm-workspace.yaml`** 的 `catalog:` 字段，按字母序。每个 workspace 的 `package.json` 中以 `"pkg": "catalog:"` 引用。
 
-### 4.2 添加新依赖
+### 3.2 添加新依赖
 
 ```bash
 # 给前端 workspace 添加依赖
@@ -66,7 +60,7 @@ pnpm --filter server add <package>
 # 或将新版本推到 catalog: pnpm update --latest
 ```
 
-### 4.3 升级依赖
+### 3.3 升级依赖
 
 ```bash
 # 升级所有依赖到最新版本（同时更新 catalog 范围）
@@ -76,19 +70,19 @@ pnpm update --latest
 pnpm update <package> --latest
 ```
 
-### 4.4 重新解析（解决 ERR_PNPM_LOCKFILE_CONFIG_MISMATCH）
+### 3.4 重新解析（解决 ERR_PNPM_LOCKFILE_CONFIG_MISMATCH）
 
 ```bash
 pnpm install --no-frozen-lockfile
 ```
 
-### 4.5 minimumReleaseAge 策略
+### 3.5 minimumReleaseAge 策略
 
 pnpm 对新发布的包设置了 "冷静期"。如果某个包因版本太新被挡下，等待时间窗口或在 catalog 中手动指定一个稍旧但安全的版本范围。**不要绕过该策略**（规则见 `rules/project.md` §2）。
 
 ---
 
-## 5. 数据库操作（Prisma + SQLite）
+## 4. 数据库操作（Prisma + SQLite）
 
 ```bash
 cd packages/server
@@ -112,7 +106,7 @@ pnpm tsx src/prisma/cleanup.ts
 
 ---
 
-## 6. 在主入口挂载路由
+## 5. 在主入口挂载路由
 
 后端路由定义模板见 `skills/domain-manager-backend` §3。挂载方式：
 
@@ -126,7 +120,7 @@ app.use('/api/sync-logs', syncLogRoutes)  // 同步审计日志（GET /, GET /:i
 
 ---
 
-## 7. 环境变量（唯一来源）
+## 6. 环境变量（唯一来源）
 
 在 `packages/server/` 下创建 `.env` 文件（.gitignore 已排除）：
 

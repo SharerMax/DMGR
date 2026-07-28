@@ -309,7 +309,7 @@ README 必须包含以下章节（中英文同步）：
 | 技术栈 | 前后端技术栈表 | `rules/backend.md` §1、`rules/frontend.md` §1 |
 | 项目结构 | 顶层目录树 | `AGENTS.md` 顶层目录结构 |
 | 快速开始 | 环境要求、安装、启动、构建 | `rules/local.md` §2-3 |
-| 环境变量 | 变量清单表 | `skills/domain-manager-dev` §7 |
+| 环境变量 | 变量清单表 | `skills/domain-manager-dev` §6 |
 | 测试账号 | 默认账号密码 | `rules/local.md` §4 |
 | API 接口 | 统一响应格式 + 主要接口表 | `rules/project.md` §5 |
 | 开发约定 | 核心约定（精简版） | `rules/project.md` 各节 |

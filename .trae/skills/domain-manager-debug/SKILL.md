@@ -51,7 +51,7 @@ ls -la packages/server/prisma/
 **常见原因**：
 - ❌ shadcn/ui 的 `Select` / `Switch` 使用了 `register` 而不是 `Controller`
 - ❌ 提交按钮没有写 `type="submit"`（按钮默认是 submit，但要确认）
-- ❌ `onSubmit` 中写了 `alert(error)` 而不是 `toast.error(error.message)`
+- ❌ `onSubmit` 中写了 `alert(error)` 而不是 `toast.add({ title: error.message, type: 'error' })`
 
 ### 2.3 API 请求返回 undefined
 
@@ -174,7 +174,7 @@ pnpm dev | pnpm pino-pretty
 | 端口占用 (3000/3001) | Windows: `netstat -ano \| findstr :3001` 然后 `taskkill /PID <id> /F` |
 | Token 过期 | 重新登录，或延长 `middleware/auth.ts` 中的有效期 |
 | 表单验证不触发 | 确认用 `useForm` + `register` / `Controller` |
-| Toast 不显示 | 检查 `App.tsx` 中是否挂载了 `<Toaster />`，以及是否使用了 `sonner` 的 `toast` |
+| Toast 不显示 | 检查 `App.tsx` 中是否挂载了 `<Toaster />`，以及是否从 `@/components/ui/toast` 导入了 `toast` |
 
 ---
 
@@ -306,10 +306,3 @@ pnpm lint:fix
 # 查看不可自动修复的问题
 pnpm lint
 ```
-
----
-
-## 10. 调试后清理
-
-- ✅ 删除了所有临时的 `console.log` / `console.error` / 调试日志
-- ✅ 完整自检清单见 `skills/domain-manager-review` §7

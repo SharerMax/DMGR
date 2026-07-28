@@ -399,11 +399,9 @@ pnpm build:server  # 验证后端产物中无 share 运行时引用
 
 ## 8. 验证清单
 
-修改 share 包后必须确认：
+通用检查（`pnpm typecheck` / `pnpm lint` / `pnpm build:server`）见 `skills/domain-manager-review` §7。修改 share 包后额外确认：
 
-- [ ] `pnpm typecheck`（前后端 + share 三个 workspace 全部通过）
-- [ ] `pnpm lint`（0 errors）
-- [ ] `pnpm build:server`（验证后端 `dist/` 中无 `from 'share'` 的运行时引用）
 - [ ] 新增文件已加入 `src/index.ts` 聚合导出（按字母序）
 - [ ] 消费方一律使用 `import type`（grep 检查：`Select-String -Path "packages\*\src\**\*.ts" -Pattern "^import\s+\{[^}]*\}\s+from\s+'share'"` 应仅匹配 `import type`）
 - [ ] 未在 share 中导出任何 const / function / class
+- [ ] `pnpm build:server` 后端 `dist/` 中无 `from 'share'` 的运行时引用

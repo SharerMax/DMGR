@@ -65,6 +65,7 @@
 - `AuthenticatedRequest` 类型定义：`user?: { userId: number; username: string; email?: string }`
 - 业务层必须使用 `req.user.userId` 过滤数据，**用户只能访问自己的数据**
 - `userId` 从 JWT token 解析，**不可信任客户端传递的 userId**
+- 登录支持用户名和邮箱认证（自动识别 `@` 符号判断类型）
 
 ---
 
@@ -147,9 +148,9 @@
 - `notifications/base.ts` 定义 `NotificationSender` 接口、`NotificationType` 类型与 `NotificationSenderFactory` 工厂（唯一来源）
 - `notifications/config.ts` 的 `BUILT_IN_NOTIFICATION_CHANNELS` 声明各渠道的字段配置（供前端动态渲染表单）
 - `NotificationSender.send(content, type)` 接收 `type` 参数，渠道据此自定义通知内容（如 email 自定义主题、webhook 携带 type 字段）
-- Email 渠道的 SMTP 配置为**选填**，环境变量（`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`，详见 `skills/domain-manager-dev` §7）作为默认值，也可通过系统设置页面（`/system-config`）配置（数据库配置优先于环境变量）
+- Email 渠道的 SMTP 配置为**选填**，环境变量（`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`，详见 `skills/domain-manager-dev` §6）作为默认值，也可通过系统设置页面（`/system-config`）配置（数据库配置优先于环境变量）
 - SMTP 配置不再在通知渠道页面管理，统一移至系统配置页面
-- 创建/更新 Email 通知渠道时，service 层**必须**调用 `isEmailConfigured()` 校验 SMTP 配置完整性，配置缺失时抛出友好错误（前端 `toast.error(error.message)` 提示）
+- 创建/更新 Email 通知渠道时，service 层**必须**调用 `isEmailConfigured()` 校验 SMTP 配置完整性，配置缺失时抛出友好错误（前端 `toast.add({ title: error.message, type: 'error' })` 提示）
 - Notifications 适配层**禁止**访问数据库、写业务判断
 
 ---
@@ -163,11 +164,3 @@
 - 失败时 `error` 字段记录错误信息
 - `SyncLog` 查询必须包含 `userId` 过滤（与其他业务表一致的用户隔离）
 - `/api/sync-logs` 接口走 `routes → services → models` 分层，不在 route 层直接操作 prisma
-
----
-
-## 12. 统一响应格式与日志
-
-统一响应格式见 `rules/project.md` §5。日志规范见 `rules/project.md` §6。
-
-后端登录必须支持用户名和邮箱认证（自动识别 `@` 符号判断类型）。

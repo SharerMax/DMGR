@@ -492,17 +492,7 @@ const total = await prisma.domain.count({ where: { userId } })
 
 ---
 
-## 12. SyncLog 同步审计说明
-
-日志规则见 `rules/project.md` §6。SyncLog 审计规则见 `rules/backend.md` §10。
-
-- `providerService.syncProviderDomains` 在每次同步完成后写入一条 `SyncLog` 记录
-- `models/dnsRecord.ts` 的 `syncDomainDNSRecords` 返回 `insertedRecords` 与 `deletedRecords` 数组（而非仅计数），供 service 层组装 `details`
-- 前端通过 `/api/sync-logs` 查询历史同步记录（含筛选与分页）
-
----
-
-## 13. 添加新服务商的步骤
+## 12. 添加新服务商的步骤
 
 1. **创建目录** `providers/<new-provider>/`
 2. **实现 apiClient.ts** — 封装官方 SDK / HTTP API
@@ -512,9 +502,3 @@ const total = await prisma.domain.count({ where: { userId } })
 6. **实现 index.ts** — 注册到 `DNSProviderFactory`
 7. **更新 config.ts** — 在 `BUILT_IN_PROVIDERS` 中添加新服务商的 `fields` 和 `features` 配置
 8. **在 providers/index.ts 中 import** — 触发注册
-
----
-
-## 14. 提交前检查
-
-代码审查与自检清单见 `skills/domain-manager-review`。
