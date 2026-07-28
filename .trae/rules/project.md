@@ -82,15 +82,33 @@ feat(server): add notifications module with email and webhook senders
 
 提交代码前必须完成：`pnpm lint:fix` → `pnpm lint`（0 errors）→ `pnpm typecheck`（前后端通过）
 
-### 3.3 前后端拆分提交
+### 3.3 拆分提交
 
-当一次变更同时涉及前端（`packages/client`）和后端（`packages/server` / `packages/share`）时，**必须**拆分为独立的提交，禁止混合提交：
+提交**必须**按变更类型拆分为独立提交，禁止无关变更混合提交。下次克隆者应能从单次提交的标题理解其独立目的。
+
+#### 3.3.1 按「项目代码 vs 文档」拆分
+
+- **项目代码提交**：包含 `packages/` 下代码、`pnpm-workspace.yaml` / `pnpm-lock.yaml` 等依赖文件、`packages/server/prisma/` 数据库迁移
+- **文档提交**：包含 `.trae/rules/*.md`、`.trae/skills/*.md`、`AGENTS.md`、`README.md` 等所有文档变更，type 使用 `docs`
+- **禁止混合**：项目代码与文档不得在同一提交内共存；即使文档是某次代码变更的同步说明，也必须拆分为两次提交（先代码、后文档，或先文档、后代码均可，但**文档应在后续提交中跟进**而非反向滞后过多）
+- **例外**：数据库迁移属于项目代码，跟随后端提交，scope 使用 `db` 或 `server`
+
+#### 3.3.2 按「前端 vs 后端」拆分
+
+当一次变更同时涉及前端（`packages/client`）和后端（`packages/server` / `packages/share`）时，**必须**拆分为独立的提交：
 
 - **后端提交**（scope 为 `server`）：包含 `packages/server/` 与 `packages/share/` 下的变更
 - **前端提交**（scope 为 `client`）：包含 `packages/client/` 下的变更
-- **规则文档**（`.trae/rules/*.md` / `AGENTS.md`）：跟随相关功能的提交；若为纯文档变更，type 使用 `docs`
 - **提交顺序**：先提交后端（API 契约先行），再提交前端（消费契约），保证每次提交都能独立通过 `pnpm typecheck`
-- **数据库迁移**（`packages/server/prisma/`）：跟随后端提交，scope 使用 `db` 或 `server`
+
+#### 3.3.3 拆分优先级
+
+当一次变更同时触发多个拆分规则时（如「前端 + 后端 + 文档」），按以下优先级完整拆分：
+
+1. 先按 §3.3.1 拆出**所有文档提交**（`.trae/rules/` / `.trae/skills/` / `AGENTS.md` / `README.md`）
+2. 剩余项目代码再按 §3.3.2 拆分为**后端提交**和**前端提交**
+
+最终一次大型变更可能产生 3 个独立提交（`docs` + `feat(server)` + `feat(client)`），均应能独立通过 `pnpm typecheck`（文档提交因不涉及代码，自然通过）。
 
 ---
 
