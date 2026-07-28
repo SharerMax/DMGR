@@ -58,9 +58,9 @@
 
 ### 2.2 用户反馈
 
-- ✅ **没有使用 `alert()`** — 所有反馈走 `sonner` 的 `toast.success/error/info`
+- ✅ **没有使用 `alert()`** — 所有反馈走 `@/components/ui/toast` 的 `toast.add({ title, type })`
 - ✅ 删除等危险操作使用 `useConfirm()` 对话框确认
-- ✅ `toast.error` 使用 `error.message` 作为消息（Axios 拦截器已处理）
+- ✅ `toast.add({ title: error.message, type: 'error' })` 使用 `error.message` 作为消息（Axios 拦截器已处理）
 
 ### 2.3 组件使用
 
@@ -190,9 +190,9 @@ const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<
 const onSubmit = handleSubmit(async (data) => {
   try {
     await createDomain(data)
-    toast.success('创建成功')
+    toast.add({ title: '创建成功', type: 'success' })
   } catch (error: any) {
-    toast.error(error.message || '创建失败')
+    toast.add({ title: error.message || '创建失败', type: 'error' })
   }
 })
 ```
