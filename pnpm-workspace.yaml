@@ -21,8 +21,8 @@ catalog:
   '@commitlint/config-conventional': ^21.2.0
   '@eslint-react/eslint-plugin': ^5.18.0
   '@fontsource-variable/inter': ^5.3.0
-  '@prisma/adapter-better-sqlite3': ^7.9.0
-  '@prisma/client': ^7.9.0
+  '@prisma/adapter-better-sqlite3': ^7.9.1
+  '@prisma/client': ^7.9.1
   '@rolldown/plugin-babel': ^0.2.3
   '@tailwindcss/vite': ^4.3.3
   '@types/babel__core': ^7.20.5
@@ -47,27 +47,27 @@ catalog:
   cors: ^2.8.6
   cron-parser: ^5.6.2
   date-fns: ^4.4.0
-  eslint: ^10.7.0
+  eslint: ^10.8.0
   eslint-plugin-react-refresh: ^0.5.3
   express: ^5.2.1
   fast-xml-parser: ^5.10.1
   husky: ^9.1.7
   jsonwebtoken: ^9.0.3
   lightningcss: ^1.33.0
-  lint-staged: ^17.1.1
-  lucide-react: ^1.26.0
+  lint-staged: ^17.2.0
+  lucide-react: ^1.27.0
   node-cron: ^4.6.0
   nodemailer: ^9.0.3
   pino: ^10.3.1
   pino-pretty: ^13.1.3
-  prisma: ^7.9.0
+  prisma: ^7.9.1
   react: ^19.2.8
   react-day-picker: ^10.0.1
   react-dom: ^19.2.8
-  react-hook-form: ^7.82.0
+  react-hook-form: ^7.83.0
   react-router: ^8.3.0
   rotating-file-stream: ^3.2.9
-  shadcn: ^4.14.1
+  shadcn: ^4.15.0
   sonner: ^2.0.7
   tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.3
