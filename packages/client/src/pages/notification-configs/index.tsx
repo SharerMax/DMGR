@@ -162,7 +162,7 @@ export default function NotificationConfigs() {
           meta={CONFIG_META.expiry_reminder}
           switchId="config-expiry-reminder"
           enabled={watch('expiryReminderEnabled')}
-          onEnabledChange={v => setValue('expiryReminderEnabled', v)}
+          onEnabledChange={v => setValue('expiryReminderEnabled', v, { shouldDirty: true })}
           onReset={() => handleReset('expiry_reminder')}
         >
           {watchedExpiryReminderEnabled && (
@@ -196,7 +196,7 @@ export default function NotificationConfigs() {
           meta={CONFIG_META.renewal_success}
           switchId="config-renewal-success"
           enabled={watch('renewalSuccessEnabled')}
-          onEnabledChange={v => setValue('renewalSuccessEnabled', v)}
+          onEnabledChange={v => setValue('renewalSuccessEnabled', v, { shouldDirty: true })}
           onReset={() => handleReset('renewal_success')}
         />
 
@@ -204,7 +204,7 @@ export default function NotificationConfigs() {
           meta={CONFIG_META.renewal_failed}
           switchId="config-renewal-failed"
           enabled={watch('renewalFailedEnabled')}
-          onEnabledChange={v => setValue('renewalFailedEnabled', v)}
+          onEnabledChange={v => setValue('renewalFailedEnabled', v, { shouldDirty: true })}
           onReset={() => handleReset('renewal_failed')}
         />
 
@@ -212,7 +212,7 @@ export default function NotificationConfigs() {
           meta={CONFIG_META.sync_completed}
           switchId="config-sync-completed"
           enabled={watch('syncCompletedEnabled')}
-          onEnabledChange={v => setValue('syncCompletedEnabled', v)}
+          onEnabledChange={v => setValue('syncCompletedEnabled', v, { shouldDirty: true })}
           onReset={() => handleReset('sync_completed')}
         />
 
