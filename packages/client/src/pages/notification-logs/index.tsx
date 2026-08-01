@@ -55,6 +55,10 @@ export default function NotificationLogs() {
     }
   }, [dateRange, setFilters, token])
 
+  useEffect(() => {
+    return () => clearFilters()
+  }, [clearFilters])
+
   const handlePageChange = (newPage: number) => {
     setFilters({ page: newPage })
   }
